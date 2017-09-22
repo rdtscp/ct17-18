@@ -61,8 +61,6 @@ You will need to have your own copy of the ct-17-18 repository. In order to fork
 
 ![Forking the CT-17-18 repository](/figures/bb_menu.png "Forking this repository.")
 
-Thereafter you will see a form similar to the below figure:
-
 ![Forking the CT-17-18 repository](/figures/bb_fork.png "Forking this repository.")
 
 Here you can name your repository and give it an optional description. **Remember** to tick "This is a private repository" as shown below:
