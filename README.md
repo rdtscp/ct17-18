@@ -57,19 +57,23 @@ Alternatively, you can use Emacs, vim, or your favourite text editor. Choose whi
 ## Obtaining your own copy of the ct-17-18 repository 
 We are going to be using the Git revision control system during the course. Git is installed on DICE machines. If you use your own machine then make sure to install Git.
 
-You will need to have your own copy of the ct-17-18 repository. In order to fork this repository hover the cursor over the "three dots"-icon to the left, and then click "Fork" as shown in the figure below:
+You will need to have your own copy of the ct-17-18 repository. In order to fork this repository, click on the plus sign in the left panel as shown below and click on *Fork* this repository:
 
-![Forking the CT-17-18 repository](/figures/howtofork.png "Forking this repository.")
+![Forking the CT-17-18 repository](/figures/bb_menu.png "Forking this repository.")
 
 Thereafter you will see a form similar to the below figure:
 
-![Forking the CT-17-18 repository](/figures/forking.png "Forking this repository.")
+![Forking the CT-17-18 repository](/figures/bb_fork.png "Forking this repository.")
 
-Here you can name your repository and give it an optional description. **Remember** to tick "This is a private repository". Finally, click "Fork repository" to finish. After forking you should grant the teaching staff read access to your repository. Click on Settings (the gear icon), and then go to "Access management", the window should look similar to the figure below:
+Here you can name your repository and give it an optional description. **Remember** to tick "This is a private repository" as shown below:
+ 
+![Forking the CT-17-18 repository](/figures/bb_fork_private.png "Forking this repository.")
+
+Finally, click "Fork repository" to finish. After forking you should grant the teaching staff read access to your repository. Click on Settings (the gear icon), and then go to "Access management", the window should look similar to the figure below:
 
 ![Granting the teaching staff read access](/figures/repopermissions.png "Granting the teaching staff read access.")
 
-You should grant the following users read access:
+You should grant the following users *write* access:
 
 * Christophe Dubach (username: cdubach)
 * Federico Pizzuti (username: fedepiz)
