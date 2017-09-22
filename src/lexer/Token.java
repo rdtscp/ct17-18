@@ -45,7 +45,7 @@ public class Token {
         // literals
         STRING_LITERAL, // \".*\"  any sequence of characters enclosed within two double quote " (please be aware of the escape character backslash \)
         INT_LITERAL,         // ('0'|...|'9')+
-        CHAR_LITERAL,      // \'('a'|...|'z'|'A'|...|'Z'|'\t'|'\n'|'.'|','|'_'|...)\'  a character starts and end with a single quote '
+        CHAR_LITERAL,      // \'('a'|...|'z'|'A'|...|'Z'|'\t'|'\b'|'\n'|'\r'|'\f'|'\''|'\"'|'\\'|'.'|','|'_'|...)\'  a character starts and end with a single quote '
 
         // logical operators
         AND, // "&&"
