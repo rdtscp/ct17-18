@@ -1,9 +1,9 @@
 # Deadlines #
 
-1. [Part 1 (parser)](desc/part1/), Thursday 13 October 2016  at 4pm, weight = 20%
-2. Part 2 (ast builder + semantic analyser), Thursday 27 October 2016  at 4pm, weight = 20%
-3. Part 3 (code generator), Thursday 17 November 2016 at 4pm, weight = 30%
-4. Part 4 (LLVM-based compiler pass), Monday 16 January 2017, 10am, weight = 30%
+1. [Part 1 (parser)](desc/part1/), Thursday 12 October 2017  at 4pm, weight = 20%
+2. Part 2 (ast builder + semantic analyser), Thursday 26 October 2017  at 4pm, weight = 20%
+3. Part 3 (code generator), Thursday 16 November 2017 at 4pm, weight = 30%
+4. Part 4 (LLVM-based compiler pass), Monday 15 January 2018, 10am, weight = 30%
 
 Note that specific instructions for each part can be found above by clicking on the part name.
 
