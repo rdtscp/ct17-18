@@ -297,7 +297,7 @@ public class Tokeniser {
                         c = scanner.next();
                         sb.append(c);
                     }
-peek = scanner.peek();
+                    peek = scanner.peek();
                     if (isInt && !Character.isLetter(peek) && !Character.isDigit(peek)) {
                         return new Token(TokenClass.INT, scanner.getLine(),scanner.getColumn());
                     }
