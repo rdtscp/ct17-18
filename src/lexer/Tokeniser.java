@@ -62,7 +62,7 @@ public class Tokeniser {
         if (c == '+')
             return new Token(TokenClass.PLUS, line, column);
 
-        // ... to be completed
+        // Recognise #include tokens.
         if (c == '#') {
             // The only valid characters that can proceed a '#'' are "include"
             String expected = "include";
@@ -78,13 +78,17 @@ public class Tokeniser {
                 }
                 
             }
-            // If we have reached here, we have a valid "#include" token; now consume its data.
-            
-
-            System.out.println("Succesfully Lexed an #include term.");
-            return new Token(TokenClass.INCLUDE, line, column);
+            // We have found "#include".
+            return new Token(TokenClass.INCLUDE, scanner.getLine(), scanner.getColumn());
         }
 
+        // Recognise "STRING_LITERAL" tokens.
+        if (c == '"') {
+            // We are now expecting any set of characters, terminated by a single ". With care taken for escaped characters.
+            while (true) {
+
+            }
+        }
 
         // if we reach this point, it means we did not recognise a valid token
         error(c, line, column);
