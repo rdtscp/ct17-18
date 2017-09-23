@@ -63,6 +63,27 @@ public class Tokeniser {
             return new Token(TokenClass.PLUS, line, column);
 
         // ... to be completed
+        if (c == '#') {
+            // The only valid characters that can proceed a '#'' are "include"
+            String expected = "include";
+            char expt_c;
+            for (int i = 0; i < expected.length(); i++) {
+                // Get the current and expected char.
+                c      = scanner.next();
+                expt_c = expected.charAt(i);
+                // If the current character is not expected.
+                if (c != expt_c) {
+                    error(c, line, column);
+                    return new Token(TokenClass.INVALID, scanner.getLine(), scanner.getColumn());
+                }
+                
+            }
+            // If we have reached here, we have a valid "#include" token; now consume its data.
+            
+
+            System.out.println("Succesfully Lexed an #include term.");
+            return new Token(TokenClass.INCLUDE, line, column);
+        }
 
 
         // if we reach this point, it means we did not recognise a valid token
