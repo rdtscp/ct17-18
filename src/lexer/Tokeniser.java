@@ -87,12 +87,16 @@ public class Tokeniser {
                     scanner.next();
                 }
             }
+            // We can only divide by IDENTIFIERs or INT_LITERALs.
+            else if (!Character.isDigit(peek) && !Character.isLetter(peek) && peek != '_') {
+                error(c, scanner.getLine(),scanner.getColumn());
+                return new Token(TokenClass.INVALID, scanner.getLine(),scanner.getColumn());
+            }
             else return new Token(TokenClass.DIV, scanner.getLine(),scanner.getColumn());
         }
 
         // Skip Whitespace.
-        if (Character.isWhitespace(c))
-            return next();
+        if (Character.isWhitespace(c)) return next();
 
         /* Recognise simple tokens. */
         if (c == '{') return new Token(TokenClass.LBRA, scanner.getLine(),scanner.getColumn());
@@ -113,7 +117,6 @@ public class Tokeniser {
         if (c == '=') {
             // EQ Token.
             if (scanner.peek() == '=') {
-                scanner.next();
                 return new Token(TokenClass.EQ, scanner.getLine(), scanner.getColumn());
             }
             // ASSIGN Token.
@@ -152,6 +155,7 @@ public class Tokeniser {
             }
             else {
                 error(c, scanner.getLine(),scanner.getColumn());
+                return new Token(TokenClass.INVALID, scanner.getLine(),scanner.getColumn());
             }
         }
         // Recognise OR token.
@@ -162,6 +166,7 @@ public class Tokeniser {
             }
             else {
                 error(c, scanner.getLine(),scanner.getColumn());
+                return new Token(TokenClass.INVALID, scanner.getLine(),scanner.getColumn());
             }
         }
         // Recognise INCLUDE token.
@@ -459,6 +464,48 @@ public class Tokeniser {
                 }
                 c = scanner.next();
                 sb.append(c);
+            }
+        }
+
+        // Recognise CHAR_LITERAL token.
+        if (c == '\'') {
+            c = scanner.next();
+            char peek = scanner.peek();
+            // Check for escape character: '\t' | '\b' | '\n' | '\r' | '\f' | '\'' | '\"' | '\\'
+            if (c == '\\') {
+                StringBuilder sb = new StringBuilder();
+                sb.append('\\'); // Append the escape char.
+                // Our valid set of escaped characters.
+                if (peek == 't' || peek == 'b' || peek == 'n' || peek == 'r' || peek == 'f' || peek == '\'' || peek == '"' || peek == '\\') {
+                    c = scanner.next();
+                    peek = scanner.peek();
+                    // Next character must be a closing single quote to be a valid CHAR_LITERAL.
+                    if (peek == '\'') {
+                        sb.append(c);
+                        scanner.next();
+                        return new Token(TokenClass.CHAR_LITERAL, sb.toString(), scanner.getLine(),scanner.getColumn());
+                    } else {
+                        scanner.next();
+                        error(c, scanner.getLine(),scanner.getColumn());
+                        return new Token(TokenClass.INVALID, scanner.getLine(),scanner.getColumn());
+                    }
+                } else {
+                    scanner.next();
+                    error(c, scanner.getLine(),scanner.getColumn());
+                    return new Token(TokenClass.INVALID, scanner.getLine(),scanner.getColumn());
+                }
+            }
+            // Otherwise we have a normal char.
+            else {
+                // Check the CHAR_LITERAL is closed correctly.
+                if (peek == '\'') {
+                    scanner.next();
+                    return new Token(TokenClass.CHAR_LITERAL, String.valueOf(c), scanner.getLine(),scanner.getColumn());
+                } else {
+                    scanner.next();
+                    error(c, scanner.getLine(),scanner.getColumn());
+                    return new Token(TokenClass.INVALID, scanner.getLine(),scanner.getColumn());
+                }
             }
         }
 
