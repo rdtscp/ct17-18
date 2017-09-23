@@ -15,7 +15,7 @@ https://htmlpreview.github.io/?https://bitbucket.org/cdubach/ct-17-18/raw/master
 
 # Marking #
 
-The marking will be done using an automated test suite on a dice machine using Java 7 (1.7 runtime).
+The marking will be done using an automated test suite on a dice machine using Java 8 (1.8 runtime).
 Please note that you are not allowed to modify the `Main.java` file which is the main entry point to the compiler.
 A checksum on the file will be performed to ensure the file has not be tempered with.
 Also make sure that the build script provided remains unchanged so that your project can be built on dice.
