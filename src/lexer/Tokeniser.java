@@ -23,7 +23,7 @@ public class Tokeniser {
 
     private void error(char c, int line, int col) {
         System.out.println("Lexing error: unrecognised character ("+c+") at "+line+":"+col);
-	error++;
+	    error++;
     }
 
 
@@ -58,37 +58,83 @@ public class Tokeniser {
         if (Character.isWhitespace(c))
             return next();
 
-        // recognises the plus operator
-        if (c == '+')
-            return new Token(TokenClass.PLUS, line, column);
+        /* Recognise simple tokens. */
+        if (c == '=') return new Token(TokenClass.ASSIGN, line, column);
+        if (c == '{') return new Token(TokenClass.LBRA, line, column);
+        if (c == '}') return new Token(TokenClass.RBRA, line, column);
+        if (c == '(') return new Token(TokenClass.LPAR, line, column);
+        if (c == ')') return new Token(TokenClass.RPAR, line, column);
+        if (c == '[') return new Token(TokenClass.LSBR, line, column);
+        if (c == ']') return new Token(TokenClass.RSBR, line, column);
+        if (c == ';') return new Token(TokenClass.SC, line, column);
+        if (c == ',') return new Token(TokenClass.COMMA, line, column);
+        if (c == '+') return new Token(TokenClass.PLUS, line, column);
+        if (c == '-') return new Token(TokenClass.MINUS, line, column);
+        if (c == '*') return new Token(TokenClass.ASTERIX, line, column);
+        if (c == '/') return new Token(TokenClass.DIV, line, column);
+        if (c == '%') return new Token(TokenClass.REM, line, column);
+        if (c == '.') return new Token(TokenClass.DOT, line, column);
 
-        // Recognise #include tokens.
+        // Recognise INCLUDE token.
         if (c == '#') {
             // The only valid characters that can proceed a '#'' are "include"
             String expected = "include";
             char expt_c;
             for (int i = 0; i < expected.length(); i++) {
+                line = scanner.getLine();
+                column = scanner.getColumn();
                 // Get the current and expected char.
                 c      = scanner.next();
                 expt_c = expected.charAt(i);
                 // If the current character is not expected.
                 if (c != expt_c) {
                     error(c, line, column);
-                    return new Token(TokenClass.INVALID, scanner.getLine(), scanner.getColumn());
+                    return new Token(TokenClass.INVALID, line, column);
                 }
                 
             }
             // We have found "#include".
-            return new Token(TokenClass.INCLUDE, scanner.getLine(), scanner.getColumn());
+            return new Token(TokenClass.INCLUDE, line, column);
         }
 
-        // Recognise "STRING_LITERAL" tokens.
+        // Recognise STRING_LITERAL token.
         if (c == '"') {
             // We are now expecting any set of characters, terminated by a single ". With care taken for escaped characters.
+            StringBuilder sb = new StringBuilder();
             while (true) {
-
+                line   = scanner.getLine();
+                column = scanner.getColumn();
+                // Try get the current char.
+                try {
+                    c = scanner.next();
+                } catch (EOFException eof) {
+                    // Reached end of file before terminating string.
+                    error(c, scanner.getLine(), scanner.getColumn());
+                    return new Token(TokenClass.INVALID, scanner.getLine(), scanner.getColumn());
+                } catch (IOException ioe) {
+                    ioe.printStackTrace();
+                    // something went horribly wrong, abort
+                    System.exit(-1);
+                    return null;
+                }
+                // Check if we are about to see an escaped character.
+                if (c == '\\') {
+                    sb.append(c);
+                    c = scanner.next();
+                    line   = scanner.getLine();
+                    column = scanner.getColumn();
+                    sb.append(c);
+                }
+                // End of string.
+                else if (c == '"') {
+                    break;
+                } else {
+                    sb.append(c);
+                }
             }
+            return new Token(TokenClass.STRING_LITERAL, sb.toString(), line, column);
         }
+
 
         // if we reach this point, it means we did not recognise a valid token
         error(c, line, column);
