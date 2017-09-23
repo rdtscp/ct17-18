@@ -54,12 +54,11 @@ public class Tokeniser {
         // get the next character
         char c = scanner.next();
 
-        // skip white spaces
+        // Skip white spaces
         if (Character.isWhitespace(c))
             return next();
 
         /* Recognise simple tokens. */
-        if (c == '=') return new Token(TokenClass.ASSIGN, line, column);
         if (c == '{') return new Token(TokenClass.LBRA, line, column);
         if (c == '}') return new Token(TokenClass.RBRA, line, column);
         if (c == '(') return new Token(TokenClass.LPAR, line, column);
@@ -74,6 +73,41 @@ public class Tokeniser {
         if (c == '/') return new Token(TokenClass.DIV, line, column);
         if (c == '%') return new Token(TokenClass.REM, line, column);
         if (c == '.') return new Token(TokenClass.DOT, line, column);
+
+        // Recognise ASSIGN/EQ tokens.
+        if (c == '=') {
+            // EQ Token.
+            if (scanner.peek() == '=') {
+                scanner.next();
+                return new Token(TokenClass.EQ, line, column);
+            }
+            // ASSIGN Token.
+            else return new Token(TokenClass.ASSIGN, line, column);
+        }
+
+        // Recognise NE token.
+        if (c == '!' && scanner.peek() == '=') {
+            scanner.next();
+            return new Token(TokenClass.NE, line, column);
+        }
+
+        // Recognise LT/LE tokens.
+        if (c == '<') {
+            if (scanner.peek() == '=') {
+                scanner.next();
+                return new Token(TokenClass.LE, line, column);
+            }
+            else return new Token(TokenClass.LT, line, column);
+        }
+
+        // Recognise GT/GE tokens.
+        if (c == '>') {
+            if (scanner.peek() == '=') {
+                scanner.next();
+                return new Token(TokenClass.GE, line, column);
+            }
+            return new Token(TokenClass.GT, line, column);
+        }
 
         // Recognise INCLUDE token.
         if (c == '#') {
@@ -135,6 +169,10 @@ public class Tokeniser {
             return new Token(TokenClass.STRING_LITERAL, sb.toString(), line, column);
         }
 
+        // Recognise IDENTIFIER/keywords/types token.
+        if (Character.isLetter(c)) {
+
+        }
 
         // if we reach this point, it means we did not recognise a valid token
         error(c, line, column);
