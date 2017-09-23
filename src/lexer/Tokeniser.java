@@ -48,10 +48,7 @@ public class Tokeniser {
      */
     private Token next() throws IOException {
 
-        int line = scanner.getLine();
-        int column = scanner.getColumn();
-
-        // get the next character
+        // Get the next Char.
         char c = scanner.next();
 
         // Parse DIV token taking into account comments.
@@ -93,7 +90,7 @@ public class Tokeniser {
             else return new Token(TokenClass.DIV, scanner.getLine(),scanner.getColumn());
         }
 
-        // Skip white spaces
+        // Skip Whitespace.
         if (Character.isWhitespace(c))
             return next();
 
@@ -112,9 +109,6 @@ public class Tokeniser {
         if (c == '%') return new Token(TokenClass.REM, scanner.getLine(),scanner.getColumn());
         if (c == '.') return new Token(TokenClass.DOT, scanner.getLine(),scanner.getColumn());
         
-        
-
-
         // Recognise ASSIGN/EQ tokens.
         if (c == '=') {
             // EQ Token.
@@ -189,13 +183,11 @@ public class Tokeniser {
             // We have found "#include".
             return new Token(TokenClass.INCLUDE, scanner.getLine(),scanner.getColumn());
         }
-        // Recognise STRING_LITERAL token.
+        // Recognise STRING_LITERAL token. @TODO, multiple lines fix.
         if (c == '"') {
             // We are now expecting any set of characters, terminated by a single ". With care taken for escaped characters.
             StringBuilder sb = new StringBuilder();
             while (true) {
-                line   = scanner.getLine();
-                column = scanner.getColumn();
                 // Try get the current char.
                 try {
                     c = scanner.next();
@@ -213,8 +205,6 @@ public class Tokeniser {
                 if (c == '\\') {
                     sb.append(c);
                     c = scanner.next();
-                    line   = scanner.getLine();
-                    column = scanner.getColumn();
                     sb.append(c);
                 }
                 // End of string.
@@ -251,7 +241,8 @@ public class Tokeniser {
                     c = scanner.next();
                     sb.append(c);
                 }
-                if (isChar && scanner.peek() == ' ') {
+                peek = scanner.peek();
+                if (isChar && !Character.isLetter(peek) && !Character.isDigit(peek)){
                     return new Token(TokenClass.CHAR, scanner.getLine(),scanner.getColumn());
                 }
             }
@@ -274,7 +265,8 @@ public class Tokeniser {
                     c = scanner.next();
                     sb.append(c);
                 }
-                if (isElse && scanner.peek() == ' ') {
+                peek = scanner.peek();
+                if (isElse && !Character.isLetter(peek) && !Character.isDigit(peek)) {
                     return new Token(TokenClass.ELSE, scanner.getLine(),scanner.getColumn());
                 }
             }
@@ -305,7 +297,8 @@ public class Tokeniser {
                         c = scanner.next();
                         sb.append(c);
                     }
-                    if (isInt && scanner.peek() == ' ') {
+peek = scanner.peek();
+                    if (isInt && !Character.isLetter(peek) && !Character.isDigit(peek)) {
                         return new Token(TokenClass.INT, scanner.getLine(),scanner.getColumn());
                     }
                 }
@@ -329,7 +322,8 @@ public class Tokeniser {
                     c = scanner.next();
                     sb.append(c);
                 }
-                if (isReturn && scanner.peek() == ' ') {
+                peek = scanner.peek();
+                if (isReturn && !Character.isLetter(peek) && !Character.isDigit(peek)) {
                     return new Token(TokenClass.RETURN, scanner.getLine(),scanner.getColumn());
                 }
             }
@@ -354,7 +348,8 @@ public class Tokeniser {
                         c = scanner.next();
                         sb.append(c);
                     }
-                    if (isSizeof && scanner.peek() == ' ') {
+                    peek = scanner.peek();
+                    if (isSizeof && !Character.isLetter(peek) && !Character.isDigit(peek)) {
                         return new Token(TokenClass.SIZEOF, scanner.getLine(),scanner.getColumn());
                     }
                 }
@@ -377,7 +372,8 @@ public class Tokeniser {
                         c = scanner.next();
                         sb.append(c);
                     }
-                    if (isStruct && scanner.peek() == ' ') {
+                    peek = scanner.peek();
+                    if (isStruct && !Character.isLetter(peek) && !Character.isDigit(peek)) {
                         return new Token(TokenClass.STRUCT, scanner.getLine(),scanner.getColumn());
                     }
                 }
@@ -399,7 +395,8 @@ public class Tokeniser {
                         break;
                     }
                 }
-                if (isWhile && scanner.peek() == ' ') {
+                peek = scanner.peek();
+                if (isWhile && !Character.isLetter(peek) && !Character.isDigit(peek)) {
                     return new Token(TokenClass.WHILE, scanner.getLine(),scanner.getColumn());
                 }
                 c = scanner.next();
@@ -424,7 +421,8 @@ public class Tokeniser {
                     c = scanner.next();
                     sb.append(c);
                 }
-                if (isVoid && scanner.peek() == ' ') {
+                peek = scanner.peek();
+                if (isVoid && !Character.isLetter(peek) && !Character.isDigit(peek)) {
                     return new Token(TokenClass.VOID, scanner.getLine(),scanner.getColumn());
                 }
             }
@@ -443,6 +441,22 @@ public class Tokeniser {
                     return new Token(TokenClass.IDENTIFIER, sb.toString(), scanner.getLine(), scanner.getColumn());
                 }
                 // We are still Lexing the token.
+                c = scanner.next();
+                sb.append(c);
+            }
+        }
+
+        // Recognise INT_LITERAL token.
+        if (Character.isDigit(c)) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(c);
+            char peek;
+            while (true) {
+                peek = scanner.peek();
+                // Check that next char is a digit.
+                if (!Character.isDigit(peek)) {
+                    return new Token(TokenClass.INT_LITERAL, sb.toString(), scanner.getLine(),scanner.getColumn());
+                }
                 c = scanner.next();
                 sb.append(c);
             }
