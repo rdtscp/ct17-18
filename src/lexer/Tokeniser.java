@@ -218,7 +218,7 @@ public class Tokeniser {
         }
 
         // Recognise IDENTIFIER/keywords/types token.
-        if (Character.isLetter(c)) {
+        if (Character.isLetter(c) || c == '_') {
             /* Alphabetically go throuh possible keywords/types before assuming IDENTIFIER. */
             // Create a StringBuilder in case of IDENTIFIER.
             StringBuilder sb = new StringBuilder();
