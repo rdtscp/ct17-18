@@ -54,6 +54,45 @@ public class Tokeniser {
         // get the next character
         char c = scanner.next();
 
+        // Parse DIV token taking into account comments.
+        if (c == '/') {
+            char peek = scanner.peek();
+            // We have a regular line comment.
+            if (peek == '/') {
+                // Move into the comment content.
+                scanner.next();
+                // Loop until we find the end of the comment.
+                while (true) {
+                    c    = scanner.next();
+                    peek = scanner.peek();
+                    // Newline has character code 10.
+                    if ((int)c == 10) {
+                        break;
+                    }
+                }
+            }
+            // We have a block comment.
+            else if (peek == '*') {
+                // Move into the comment content.
+                scanner.next();
+                // Loop until we find the end of the comment.
+                while (true) {
+                    peek = scanner.peek();
+                    if (peek == '*') {
+                        scanner.next();
+                        peek = scanner.peek();
+                        if (peek == '/') {
+                            c = scanner.next();
+                            c = scanner.next();
+                            break;     // If */ then stop scanning.
+                        }
+                    }
+                    scanner.next();
+                }
+            }
+            else return new Token(TokenClass.DIV, scanner.getLine(),scanner.getColumn());
+        }
+
         // Skip white spaces
         if (Character.isWhitespace(c))
             return next();
@@ -73,7 +112,8 @@ public class Tokeniser {
         if (c == '%') return new Token(TokenClass.REM, scanner.getLine(),scanner.getColumn());
         if (c == '.') return new Token(TokenClass.DOT, scanner.getLine(),scanner.getColumn());
         
-        // Parse DIV token taking into account comments.
+        
+
 
         // Recognise ASSIGN/EQ tokens.
         if (c == '=') {
