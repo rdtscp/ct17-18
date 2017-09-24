@@ -207,6 +207,12 @@ public class Tokeniser {
                     c = scanner.next();
                     sb.append(c);
                 }
+                // If hit new-line before STRING_LITERAL terminator, we have invalid token.
+                // Newline has character code 10.
+                else if ((int)c == 10) {
+                    error(c, scanner.getLine(), scanner.getColumn());
+                    return new Token(TokenClass.INVALID, scanner.getLine(), scanner.getColumn());
+                }
                 // End of string.
                 else if (c == '"') {
                     break;
@@ -474,17 +480,17 @@ public class Tokeniser {
             char peek = scanner.peek();
             // Check for escape character: '\t' | '\b' | '\n' | '\r' | '\f' | '\'' | '\"' | '\\'
             if (c == '\\') {
-                StringBuilder sb = new StringBuilder();
-                sb.append('\\'); // Append the escape char.
+                char value = '\\';
                 // Our valid set of escaped characters.
                 if (peek == 't' || peek == 'b' || peek == 'n' || peek == 'r' || peek == 'f' || peek == '\'' || peek == '"' || peek == '\\') {
                     c = scanner.next();
+                    value += c;
                     peek = scanner.peek();
                     // Next character must be a closing single quote to be a valid CHAR_LITERAL.
                     if (peek == '\'') {
-                        sb.append(c);
                         scanner.next();
-                        return new Token(TokenClass.CHAR_LITERAL, sb.toString(), scanner.getLine(),scanner.getColumn());
+                        System.out.println("char: " + value);
+                        return new Token(TokenClass.CHAR_LITERAL, String.valueOf(value), scanner.getLine(),scanner.getColumn());
                     } else {
                         scanner.next();
                         error(c, scanner.getLine(),scanner.getColumn());
