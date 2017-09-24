@@ -87,11 +87,6 @@ public class Tokeniser {
                     scanner.next();
                 }
             }
-            // We can only divide by IDENTIFIERs or INT_LITERALs.
-            else if (!Character.isDigit(peek) && !Character.isLetter(peek) && peek != '_') {
-                error(c, scanner.getLine(),scanner.getColumn());
-                return new Token(TokenClass.INVALID, scanner.getLine(),scanner.getColumn());
-            }
             else return new Token(TokenClass.DIV, scanner.getLine(),scanner.getColumn());
         }
 
