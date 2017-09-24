@@ -480,7 +480,7 @@ public class Tokeniser {
             char peek = scanner.peek();
             // Check for escape character: '\t' | '\b' | '\n' | '\r' | '\f' | '\'' | '\"' | '\\'
             if (c == '\\') {
-                char value = '\\';
+                String value = "\\";
                 // Our valid set of escaped characters.
                 if (peek == 't' || peek == 'b' || peek == 'n' || peek == 'r' || peek == 'f' || peek == '\'' || peek == '"' || peek == '\\') {
                     c = scanner.next();
@@ -489,7 +489,7 @@ public class Tokeniser {
                     // Next character must be a closing single quote to be a valid CHAR_LITERAL.
                     if (peek == '\'') {
                         scanner.next();
-                        System.out.println("char: " + value);
+                        // System.out.println("char: " + value);
                         return new Token(TokenClass.CHAR_LITERAL, String.valueOf(value), scanner.getLine(),scanner.getColumn());
                     } else {
                         scanner.next();
