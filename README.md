@@ -1,9 +1,9 @@
 # Deadlines #
 
-1. [Part 1 (parser)](desc/part1/), Thursday 13 October 2016  at 4pm, weight = 20%
-2. Part 2 (ast builder + semantic analyser), Thursday 27 October 2016  at 4pm, weight = 20%
-3. Part 3 (code generator), Thursday 17 November 2016 at 4pm, weight = 30%
-4. Part 4 (LLVM-based compiler pass), Monday 16 January 2017, 10am, weight = 30%
+1. [Part 1 (parser)](desc/part1/), Thursday 12 October 2017  at 4pm, weight = 20%
+2. Part 2 (ast builder + semantic analyser), Thursday 26 October 2017  at 4pm, weight = 20%
+3. Part 3 (code generator), Thursday 16 November 2017 at 4pm, weight = 30%
+4. Part 4 (LLVM-based compiler pass), Monday 15 January 2018, 10am, weight = 30%
 
 Note that specific instructions for each part can be found above by clicking on the part name.
 
@@ -15,7 +15,7 @@ https://htmlpreview.github.io/?https://bitbucket.org/cdubach/ct-17-18/raw/master
 
 # Marking #
 
-The marking will be done using an automated test suite on a dice machine using Java 7 (1.7 runtime).
+The marking will be done using an automated test suite on a dice machine using Java 8 (1.8 runtime).
 Please note that you are not allowed to modify the `Main.java` file which is the main entry point to the compiler.
 A checksum on the file will be performed to ensure the file has not be tempered with.
 Also make sure that the build script provided remains unchanged so that your project can be built on dice.
