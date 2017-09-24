@@ -276,7 +276,11 @@ public class Tokeniser {
                 if (scanner.peek() == 'f') {
                     c = scanner.next();
                     sb.append(c);
-                    if (scanner.peek() == ' ') return new Token(TokenClass.IF, scanner.getLine(),scanner.getColumn());
+                    char peek = scanner.peek();
+                    if (!Character.isLetter(peek) && !Character.isDigit(peek) && peek != '_') {
+                        return new Token(TokenClass.WHILE, scanner.getLine(),scanner.getColumn());
+                    }
+                    return new Token(TokenClass.IF, scanner.getLine(),scanner.getColumn());
                 }
                 // Check for INT token.
                 else {
@@ -394,9 +398,11 @@ public class Tokeniser {
                         isWhile = false;
                         break;
                     }
+                    c = scanner.next();
+                    sb.append(c);
                 }
                 peek = scanner.peek();
-                if (isWhile && !Character.isLetter(peek) && !Character.isDigit(peek)) {
+                if (isWhile && !Character.isLetter(peek) && !Character.isDigit(peek) && peek != '_') {
                     return new Token(TokenClass.WHILE, scanner.getLine(),scanner.getColumn());
                 }
                 c = scanner.next();
