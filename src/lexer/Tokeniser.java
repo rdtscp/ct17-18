@@ -57,137 +57,38 @@ public class Tokeniser {
             // We have a regular line comment.
             if (peek == '/') {
                 // Move into the comment content.
-                scanner.next();
+                c = scanner.next();
+                int currLine = scanner.getLine();
                 // Loop until we find the end of the comment.
-                while (true) {
-                    c    = scanner.next();
-                    peek = scanner.peek();
-                    // Newline has character code 10.
-                    if ((int)c == 10) {
-                        break;
-                    }
+                while (scanner.getLine() == currLine) {
+                    c = scanner.next();
                 }
             }
             // We have a block comment.
             else if (peek == '*') {
                 // Move into the comment content.
-                scanner.next();
+                c = scanner.next();
                 // Loop until we find the end of the comment.
                 while (true) {
+                    c    = scanner.next();
                     peek = scanner.peek();
-                    if (peek == '*') {
-                        scanner.next();
-                        peek = scanner.peek();
-                        if (peek == '/') {
-                            c = scanner.next();
-                            c = scanner.next();
-                            break;     // If */ then stop scanning.
-                        }
-                    }
-                    scanner.next();
+                    if (c == '*' && peek == '/') { scanner.next(); break; }
                 }
+                c = scanner.next();
             }
             else return new Token(TokenClass.DIV, scanner.getLine(),scanner.getColumn());
         }
 
-        // Skip Whitespace.
-        if (Character.isWhitespace(c)) return next();
-
-        /* Recognise simple tokens. */
-        if (c == '{') return new Token(TokenClass.LBRA, scanner.getLine(),scanner.getColumn());
-        if (c == '}') return new Token(TokenClass.RBRA, scanner.getLine(),scanner.getColumn());
-        if (c == '(') return new Token(TokenClass.LPAR, scanner.getLine(),scanner.getColumn());
-        if (c == ')') return new Token(TokenClass.RPAR, scanner.getLine(),scanner.getColumn());
-        if (c == '[') return new Token(TokenClass.LSBR, scanner.getLine(),scanner.getColumn());
-        if (c == ']') return new Token(TokenClass.RSBR, scanner.getLine(),scanner.getColumn());
-        if (c == ';') return new Token(TokenClass.SC, scanner.getLine(),scanner.getColumn());
-        if (c == ',') return new Token(TokenClass.COMMA, scanner.getLine(),scanner.getColumn());
-        if (c == '+') return new Token(TokenClass.PLUS, scanner.getLine(),scanner.getColumn());
-        if (c == '-') return new Token(TokenClass.MINUS, scanner.getLine(),scanner.getColumn());
-        if (c == '*') return new Token(TokenClass.ASTERIX, scanner.getLine(),scanner.getColumn());
-        if (c == '%') return new Token(TokenClass.REM, scanner.getLine(),scanner.getColumn());
-        if (c == '.') return new Token(TokenClass.DOT, scanner.getLine(),scanner.getColumn());
-        
-        // Recognise ASSIGN/EQ tokens.
-        if (c == '=') {
-            // EQ Token.
-            if (scanner.peek() == '=') {
-                return new Token(TokenClass.EQ, scanner.getLine(), scanner.getColumn());
-            }
-            // ASSIGN Token.
-            else return new Token(TokenClass.ASSIGN, scanner.getLine(),scanner.getColumn());
-        }
-        // Recognise NE token.
-        if (c == '!' && scanner.peek() == '=') {
-            if (scanner.peek() == '=') {
-                scanner.next();
-                return new Token(TokenClass.NE, scanner.getLine(), scanner.getColumn());
-            } else {
-                return new Token(TokenClass.INVALID, scanner.getLine(),scanner.getColumn());
-            }
-        }
-        // Recognise LT/LE tokens.
-        if (c == '<') {
-            if (scanner.peek() == '=') {
-                scanner.next();
-                return new Token(TokenClass.LE, scanner.getLine(), scanner.getColumn());
-            }
-            else return new Token(TokenClass.LT, scanner.getLine(),scanner.getColumn());
-        }
-        // Recognise GT/GE tokens.
-        if (c == '>') {
-            if (scanner.peek() == '=') {
-                scanner.next();
-                return new Token(TokenClass.GE, scanner.getLine(), scanner.getColumn());
-            }
-            return new Token(TokenClass.GT, scanner.getLine(),scanner.getColumn());
-        }
-        // Recognise AND token.
-        if (c == '&') {
-            if (scanner.peek() == '&') {
-                scanner.next();
-                return new Token(TokenClass.AND, scanner.getLine(), scanner.getColumn());
-            }
-            else {
-                error(c, scanner.getLine(),scanner.getColumn());
-                return new Token(TokenClass.INVALID, scanner.getLine(),scanner.getColumn());
-            }
-        }
-        // Recognise OR token.
-        if (c == '|') {
-            if (scanner.peek() == '|') {
-                scanner.next();
-                return new Token(TokenClass.OR, scanner.getLine(), scanner.getColumn());
-            }
-            else {
-                error(c, scanner.getLine(),scanner.getColumn());
-                return new Token(TokenClass.INVALID, scanner.getLine(),scanner.getColumn());
-            }
-        }
-        // Recognise INCLUDE token.
-        if (c == '#') {
-            // The only valid characters that can proceed a '#'' are "include"
-            String expected = "include";
-            char expt_c;
-            for (int i = 0; i < expected.length(); i++) {
-                // Get the current and expected char.
-                c      = scanner.next();
-                expt_c = expected.charAt(i);
-                // If the current character is not expected.
-                if (c != expt_c) {
-                    error(c, scanner.getLine(),scanner.getColumn());
-                    return new Token(TokenClass.INVALID, scanner.getLine(),scanner.getColumn());
-                }
-                
-            }
-            // We have found "#include".
-            return new Token(TokenClass.INCLUDE, scanner.getLine(),scanner.getColumn());
-        }
         // Recognise STRING_LITERAL token. @TODO, multiple lines fix.
         if (c == '"') {
             // We are now expecting any set of characters, terminated by a single ". With care taken for escaped characters.
             StringBuilder sb = new StringBuilder();
+            int currLine = scanner.getLine();
             while (true) {
+                if (scanner.getLine() != currLine) {
+                    error(c, scanner.getLine(), scanner.getColumn());
+                    return new Token(TokenClass.INVALID, scanner.getLine(), scanner.getColumn());
+                }
                 // Try get the current char.
                 try {
                     c = scanner.next();
@@ -467,13 +368,35 @@ public class Tokeniser {
                 peek = scanner.peek();
                 // Check that next char is a digit.
                 if (!Character.isDigit(peek)) {
-                    return new Token(TokenClass.INT_LITERAL, sb.toString(), scanner.getLine(),scanner.getColumn());
+                    if (Character.isLetter(peek) || peek == '_') {
+                        error(c, scanner.getLine(), scanner.getColumn());
+                        return new Token(TokenClass.INVALID, scanner.getLine(), scanner.getColumn());
+                    }
+                    else return new Token(TokenClass.INT_LITERAL, sb.toString(), scanner.getLine(),scanner.getColumn());
                 }
                 c = scanner.next();
                 sb.append(c);
             }
         }
-
+        
+        // Recognise ASSIGN/EQ tokens.
+        if (c == '=') {
+            // EQ Token.
+            if (scanner.peek() == '=') {
+                return new Token(TokenClass.EQ, scanner.getLine(), scanner.getColumn());
+            }
+            // ASSIGN Token.
+            else return new Token(TokenClass.ASSIGN, scanner.getLine(),scanner.getColumn());
+        }
+        // Recognise NE token.
+        if (c == '!') {
+            if (scanner.peek() == '=') {
+                c = scanner.next();
+                return new Token(TokenClass.NE, scanner.getLine(), scanner.getColumn());
+            } else {
+                return new Token(TokenClass.INVALID, scanner.getLine(),scanner.getColumn());
+            }
+        }
         // Recognise CHAR_LITERAL token.
         if (c == '\'') {
             c = scanner.next();
@@ -488,16 +411,15 @@ public class Tokeniser {
                     peek = scanner.peek();
                     // Next character must be a closing single quote to be a valid CHAR_LITERAL.
                     if (peek == '\'') {
-                        scanner.next();
-                        // System.out.println("char: " + value);
+                        c = scanner.next();
                         return new Token(TokenClass.CHAR_LITERAL, String.valueOf(value), scanner.getLine(),scanner.getColumn());
                     } else {
-                        scanner.next();
+                        c = scanner.next();
                         error(c, scanner.getLine(),scanner.getColumn());
                         return new Token(TokenClass.INVALID, scanner.getLine(),scanner.getColumn());
                     }
                 } else {
-                    scanner.next();
+                    c = scanner.next();
                     error(c, scanner.getLine(),scanner.getColumn());
                     return new Token(TokenClass.INVALID, scanner.getLine(),scanner.getColumn());
                 }
@@ -506,17 +428,90 @@ public class Tokeniser {
             else {
                 // Check the CHAR_LITERAL is closed correctly.
                 if (peek == '\'') {
-                    scanner.next();
+                    c = scanner.next();
                     return new Token(TokenClass.CHAR_LITERAL, String.valueOf(c), scanner.getLine(),scanner.getColumn());
                 } else {
-                    scanner.next();
+                    c = scanner.next();
                     error(c, scanner.getLine(),scanner.getColumn());
                     return new Token(TokenClass.INVALID, scanner.getLine(),scanner.getColumn());
                 }
             }
         }
+        // Recognise LT/LE tokens.
+        if (c == '<') {
+            if (scanner.peek() == '=') {
+                c = scanner.next();
+                return new Token(TokenClass.LE, scanner.getLine(), scanner.getColumn());
+            }
+            else return new Token(TokenClass.LT, scanner.getLine(),scanner.getColumn());
+        }
+        // Recognise GT/GE tokens.
+        if (c == '>') {
+            if (scanner.peek() == '=') {
+                c = scanner.next();
+                return new Token(TokenClass.GE, scanner.getLine(), scanner.getColumn());
+            }
+            return new Token(TokenClass.GT, scanner.getLine(),scanner.getColumn());
+        }
+        // Recognise AND token.
+        if (c == '&') {
+            if (scanner.peek() == '&') {
+                c = scanner.next();
+                return new Token(TokenClass.AND, scanner.getLine(), scanner.getColumn());
+            }
+            else {
+                error(c, scanner.getLine(),scanner.getColumn());
+                return new Token(TokenClass.INVALID, scanner.getLine(),scanner.getColumn());
+            }
+        }
+        // Recognise OR token.
+        if (c == '|') {
+            if (scanner.peek() == '|') {
+                c = scanner.next();
+                return new Token(TokenClass.OR, scanner.getLine(), scanner.getColumn());
+            }
+            else {
+                error(c, scanner.getLine(),scanner.getColumn());
+                return new Token(TokenClass.INVALID, scanner.getLine(),scanner.getColumn());
+            }
+        }
+        // Recognise INCLUDE token.
+        if (c == '#') {
+            // The only valid characters that can proceed a '#'' are "include"
+            String expected = "include";
+            char expt_c;
+            for (int i = 0; i < expected.length(); i++) {
+                // Get the current and expected char.
+                c      = scanner.next();
+                expt_c = expected.charAt(i);
+                // If the current character is not expected.
+                if (c != expt_c) {
+                    error(c, scanner.getLine(),scanner.getColumn());
+                    return new Token(TokenClass.INVALID, scanner.getLine(),scanner.getColumn());
+                }
+                
+            }
+            // We have found "#include".
+            return new Token(TokenClass.INCLUDE, scanner.getLine(),scanner.getColumn());
+        }
 
+        /* Recognise simple tokens. */
+        if (c == '{') return new Token(TokenClass.LBRA, scanner.getLine(),scanner.getColumn());
+        if (c == '}') return new Token(TokenClass.RBRA, scanner.getLine(),scanner.getColumn());
+        if (c == '(') return new Token(TokenClass.LPAR, scanner.getLine(),scanner.getColumn());
+        if (c == ')') return new Token(TokenClass.RPAR, scanner.getLine(),scanner.getColumn());
+        if (c == '[') return new Token(TokenClass.LSBR, scanner.getLine(),scanner.getColumn());
+        if (c == ']') return new Token(TokenClass.RSBR, scanner.getLine(),scanner.getColumn());
+        if (c == ';') return new Token(TokenClass.SC, scanner.getLine(),scanner.getColumn());
+        if (c == ',') return new Token(TokenClass.COMMA, scanner.getLine(),scanner.getColumn());
+        if (c == '+') return new Token(TokenClass.PLUS, scanner.getLine(),scanner.getColumn());
+        if (c == '-') return new Token(TokenClass.MINUS, scanner.getLine(),scanner.getColumn());
+        if (c == '*') { System.out.println(scanner.getLine() + " " + scanner.getColumn()); return new Token(TokenClass.ASTERIX, scanner.getLine(),scanner.getColumn()); }
+        if (c == '%') return new Token(TokenClass.REM, scanner.getLine(),scanner.getColumn());
+        if (c == '.') return new Token(TokenClass.DOT, scanner.getLine(),scanner.getColumn());
 
+        // Skip Whitespace.
+        if (Character.isWhitespace(c)) return next();
 
         // if we reach this point, it means we did not recognise a valid token
         error(c, scanner.getLine(),scanner.getColumn());
