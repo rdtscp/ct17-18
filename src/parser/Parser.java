@@ -138,15 +138,83 @@ public class Parser {
     }
 
     private void parseStructDecls() {
-        // to be completed ...
+        if(accept(TokenClass.STRUCT)) {
+            nextToken();
+            expect(TokenClass.IDENTIFIER);
+            expect(TokenClass.LBRA);
+            parseVarDecls();
+            expect(TokenClass.RBRA);
+            expect(TokenClass.SC);
+        }
     }
 
     private void parseVarDecls() {
-        // to be completed ...
+        // Var declarations can begin with TYPE: [int, char, void]
+        if (accept(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
+            nextToken();
+            if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
+        }
+        // Can also begin with STRUCT IDENT
+        else if (accept(TokenClass.STRUCT)) {
+            nextToken();
+            expect(TokenClass.IDENTIFIER);
+        }
+        // Current token isn't a valid token, so return.
+        else {
+            return;
+        }
+        // Expect an IDENTIFIER.
+        expect(TokenClass.IDENTIFIER);
+        // Could possibly have an array declaration.
+        if (accept(TokenClass.LSBR)) {
+            nextToken();
+            expect(TokenClass.INT_LITERAL);
+            expect(TokenClass.RSBR);
+        }
+        expect(TokenClass.SC);
+        // If we have reached here, try parse more var declarations.
+        parseVarDecls();
     }
 
     private void parseFunDecls() {
         // to be completed ...
+        // Function declarations can begin with TYPE: [int, char, void]
+        if (accept(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
+            nextToken();
+            if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
+        }
+        // Can also begin with STRUCT IDENT
+        else if (accept(TokenClass.STRUCT)) {
+            nextToken();
+            expect(TokenClass.IDENTIFIER);
+        }
+        // Current token isn't a valid token, so return.
+        else {
+            return;
+        }
+        // Expect an IDENTIFIER.
+        expect(TokenClass.IDENTIFIER);
+        expect(TokenClass.LPAR);
+        parseParams();
+        expect(TokenClass.RPAR);
+        parseBlock();
+        // If we have reached here, we might have more functions to parse.
+        parseFunDecls();
+    }
+
+    private void parseParams() {
+        // @TODO
+    }
+
+    private void parseBlock() {
+        expect(TokenClass.LBRA);
+        parseVarDecls();
+        parseStatements();
+        expect(TokenClass.RBRA);
+    }
+
+    private void parseStatements() {
+        // @TODO
     }
 
     // to be completed ...        
