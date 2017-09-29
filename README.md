@@ -75,6 +75,7 @@ You should grant the following users *write* access:
 
 * Christophe Dubach (username: cdubach)
 * Federico Pizzuti (username: fedepiz)
+* Adam Harries (username: AdamHarries)
 
 Next, you will have to clone the forked repository to your local machine. In order to clone the repository you should launch a terminal and type:
 ```
