@@ -123,8 +123,8 @@ public class Parser {
     private void parseProgram() {
         parseIncludes();
         parseStructDecls();
-        while (parseVarDecls()) { /* Keep parsing varDecls */ } 
-        parseFunDecls();
+        while (parseVarDecls()) { /* Keep parsing varDecls */ }
+        while (parseFunDecls()) { /* Keep parsing funDecls */ }
         expect(TokenClass.EOF);
     }
 
@@ -187,56 +187,44 @@ public class Parser {
         return true;
     }
 
-    private void parseFunDecls() {
-        // Function declarations can begin with TYPE: [int, char, void]
-        if (accept(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
-            nextToken();
-            if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
-        }
-        // Can also begin with STRUCT IDENT
-        else if (accept(TokenClass.STRUCT)) {
-            nextToken();
+    /* Returns TRUE or FALSE if a func declaration existed. */
+    private boolean parseFunDecls() {
+        // Function declarations can begin with TYPE: [ INT, CHAR, VOID, STRUCT ]
+        if (accept(TokenClass.STRUCT)) {
+            expect(TokenClass.STRUCT);
             expect(TokenClass.IDENTIFIER);
+        }
+        else if (accept(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
+            expect(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID);
         }
         // Current token isn't a valid token, so return.
         else {
-            return;
+            return false;
         }
+        // Can optionally have an asterix.
+        if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
         // Expect an IDENTIFIER.
         expect(TokenClass.IDENTIFIER);
         expect(TokenClass.LPAR);
         parseParams();
         expect(TokenClass.RPAR);
         parseBlock();
-        // If we have reached here, we might have more functions to parse.
-        parseFunDecls();
-    }
-
-    private void parseType() {
-        if (accept(TokenClass.STRUCT)) {
-            expect(TokenClass.STRUCT);
-            expect(TokenClass.IDENTIFIER);
-        }
-        else {
-            expect(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID);
-        }
-        if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
-        expect(TokenClass.IDENTIFIER);
+        // If we have reached here, we have parsed a func decl succesfully.
+        return true;
     }
 
     private void parseParams() {
         // Params must start with a type declaration such as:
-        // [ INT, CHAR, VOID ]
-        if (accept(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
-            nextToken();
-            if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
-        }
-        // Can also begin with STRUCT IDENT
-        else if (accept(TokenClass.STRUCT)) {
-            nextToken();
+        // [ INT, CHAR, VOID, STRUCT ], or be empty
+        if (accept(TokenClass.STRUCT)) {
+            expect(TokenClass.STRUCT);
             expect(TokenClass.IDENTIFIER);
         }
-        // Current token isn't a valid token, so return.
+        else if (accept(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
+            expect(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID);
+            if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
+        }
+        // There are no params here.
         else {
             return;
         }
@@ -244,13 +232,14 @@ public class Parser {
 
     private void parseBlock() {
         expect(TokenClass.LBRA);
-        parseVarDecls();
-        parseStatements();
+        while(parseVarDecls())   { /* Keep parsing varDecls   */ }
+        while(parseStatements()) { /* Keep parsing statements */ }
         expect(TokenClass.RBRA);
     }
 
-    private void parseStatements() {
-        // @TODO
+    /* Returns TRUE or FALSE if a statement existed. */
+    private boolean parseStatements() {
+        return true;
     }
 
 }
