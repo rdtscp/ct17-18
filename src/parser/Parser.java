@@ -110,8 +110,8 @@ public class Parser {
     }
 
     /*
-    * Returns true if the current token is equals to any of the expected ones.
-    */
+     * Returns true if the current token is equals to any of the expected ones.
+     */
     private boolean accept(TokenClass... expected) {
         boolean result = false;
         for (TokenClass e : expected)
@@ -123,12 +123,11 @@ public class Parser {
     private void parseProgram() {
         parseIncludes();
         parseStructDecls();
-        parseVarDecls();
+        while (parseVarDecls()) { /* Keep parsing varDecls */ } 
         parseFunDecls();
         expect(TokenClass.EOF);
     }
 
-    // includes are ignored, so does not need to return an AST node
     private void parseIncludes() {
 	    if (accept(TokenClass.INCLUDE)) {
             nextToken();
@@ -139,30 +138,42 @@ public class Parser {
 
     private void parseStructDecls() {
         if(accept(TokenClass.STRUCT)) {
-            nextToken();
+            expect(TokenClass.STRUCT);
             expect(TokenClass.IDENTIFIER);
             expect(TokenClass.LBRA);
-            parseVarDecls();
+            // Try parse varDecls, we need at least one, so if it returns
+            // false, we must increment our errors.
+            if(!parseVarDecls()) { System.out.println("STRUCT Declaration did not have any variable declarations."); error++; }
+            else { while(parseVarDecls()) { /* Keep parsing varDecls */ } }
             expect(TokenClass.RBRA);
             expect(TokenClass.SC);
         }
     }
 
-    private void parseVarDecls() {
+    /* Returns TRUE or FALSE if a var declaration existed. */
+    private boolean parseVarDecls() {
+        // If we are about to see a fun decl, return immediately.
+        // onto parseFunDecls();
+        if (lookAhead(2).tokenClass == TokenClass.LPAR){
+            return false;
+        }
+        // Else we are still parsing varDecls
         // Var declarations can begin with TYPE: [int, char, void]
         if (accept(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
-            nextToken();
+            expect(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID);
+            // We can have a single asterix optionally.
             if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
         }
         // Can also begin with STRUCT IDENT
         else if (accept(TokenClass.STRUCT)) {
-            nextToken();
+            expect(TokenClass.STRUCT);
             expect(TokenClass.IDENTIFIER);
         }
-        // Current token isn't a valid token, so return.
+        // Current token isn't a valid start of a varDecl, so return false.
         else {
-            return;
+            return false;
         }
+        // If we have reached here, we have parsed the type.
         // Expect an IDENTIFIER.
         expect(TokenClass.IDENTIFIER);
         // Could possibly have an array declaration.
@@ -172,12 +183,11 @@ public class Parser {
             expect(TokenClass.RSBR);
         }
         expect(TokenClass.SC);
-        // If we have reached here, try parse more var declarations.
-        parseVarDecls();
+        // We have finished parsing this varDecl, return true.
+        return true;
     }
 
     private void parseFunDecls() {
-        // to be completed ...
         // Function declarations can begin with TYPE: [int, char, void]
         if (accept(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
             nextToken();
@@ -202,8 +212,34 @@ public class Parser {
         parseFunDecls();
     }
 
+    private void parseType() {
+        if (accept(TokenClass.STRUCT)) {
+            expect(TokenClass.STRUCT);
+            expect(TokenClass.IDENTIFIER);
+        }
+        else {
+            expect(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID);
+        }
+        if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
+        expect(TokenClass.IDENTIFIER);
+    }
+
     private void parseParams() {
-        // @TODO
+        // Params must start with a type declaration such as:
+        // [ INT, CHAR, VOID ]
+        if (accept(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
+            nextToken();
+            if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
+        }
+        // Can also begin with STRUCT IDENT
+        else if (accept(TokenClass.STRUCT)) {
+            nextToken();
+            expect(TokenClass.IDENTIFIER);
+        }
+        // Current token isn't a valid token, so return.
+        else {
+            return;
+        }
     }
 
     private void parseBlock() {
@@ -217,5 +253,4 @@ public class Parser {
         // @TODO
     }
 
-    // to be completed ...        
 }
