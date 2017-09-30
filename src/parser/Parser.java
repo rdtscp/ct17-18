@@ -141,8 +141,8 @@ public class Parser {
             expect(TokenClass.STRUCT);
             expect(TokenClass.IDENTIFIER);
             expect(TokenClass.LBRA);
-            // Try parse varDecls, we need at least one, so if it returns
-            // false, we must increment our errors.
+            // Try parse varDecls, we need at least one, so if it
+            // returns false, we must increment our errors.
             if(!parseVarDecls()) { System.out.println("STRUCT Declaration did not have any variable declarations."); error++; }
             else { while(parseVarDecls()) { /* Keep parsing varDecls */ } }
             expect(TokenClass.RBRA);
@@ -159,26 +159,24 @@ public class Parser {
         }
         // Else we are still parsing varDecls
         // Var declarations can begin with TYPE: [int, char, void]
-        if (accept(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
-            expect(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID);
-            // We can have a single asterix optionally.
-            if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
-        }
-        // Can also begin with STRUCT IDENT
-        else if (accept(TokenClass.STRUCT)) {
+        if (accept(TokenClass.STRUCT)) {
             expect(TokenClass.STRUCT);
             expect(TokenClass.IDENTIFIER);
+        }
+        else if (accept(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
+            expect(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID);
         }
         // Current token isn't a valid start of a varDecl, so return false.
         else {
             return false;
         }
-        // If we have reached here, we have parsed the type.
+        // Can have an optional ASTERIX.
+        if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
         // Expect an IDENTIFIER.
         expect(TokenClass.IDENTIFIER);
         // Could possibly have an array declaration.
         if (accept(TokenClass.LSBR)) {
-            nextToken();
+            expect(TokenClass.LSBR);
             expect(TokenClass.INT_LITERAL);
             expect(TokenClass.RSBR);
         }
@@ -201,7 +199,7 @@ public class Parser {
         else {
             return false;
         }
-        // Can optionally have an asterix.
+        // Can have an optional ASTERIX.
         if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
         // Expect an IDENTIFIER.
         expect(TokenClass.IDENTIFIER);
@@ -239,7 +237,120 @@ public class Parser {
 
     /* Returns TRUE or FALSE if a statement existed. */
     private boolean parseStatements() {
-        return true;
+        // Check for: exp = exp;
+        if (lookAhead(1).tokenClass == TokenClass.EQ) {
+            if (!parseExpression()) { System.out.println("Expected an expression."); error++; }
+            expect(TokenClass.EQ);
+            if (!parseExpression()) { System.out.println("Assignment expression did not assign any expression."); error++; }
+            expect(TokenClass.SC);
+            return true;
+        }
+        // Check for: exp;
+        else if (lookAhead(1).tokenClass == TokenClass.SC) {
+            if (!parseExpression()) { System.out.println("Expected an expression."); error++; }
+            expect(TokenClass.SC);
+            return true;
+        }
+        // Check for: while( exp ) stmt
+        else if (accept(TokenClass.WHILE)) {
+            expect(TokenClass.WHILE);
+            expect(TokenClass.LBRA);
+            if (!parseExpression()) { System.out.println("WHILE statement did not contain any conditional expression."); error++; }
+            while(parseExpression()) { /* Keep parsing expressions. */ }
+            expect(TokenClass.RBRA);
+            parseStatements();
+            return true;
+        }
+        // Check for: if( exp ) stmt [else stmt]
+        else if (accept(TokenClass.IF)) {
+            expect(TokenClass.IF);
+            expect(TokenClass.LBRA);
+            if (!parseExpression()) { System.out.println("WHILE statement did not contain any conditional expression."); error++; }
+            while(parseExpression()) { /* Keep parsing expressions. */ }
+            expect(TokenClass.RBRA);
+            parseStatements();
+            // Can have a possible ELSE statement.
+            if (accept(TokenClass.LSBR)) {
+                expect(TokenClass.LSBR);
+                parseStatements();
+            }
+            return true;
+        }
+        // Check for: return [exp];
+        else if (accept(TokenClass.RETURN)) {
+            expect(TokenClass.RETURN);
+            parseExpression();
+            expect(TokenClass.SC);
+            return true;
+        }
+        else {
+            return false;
+        }
     }
 
+    /* Returns TRUE or FALSE if an expression existed. */
+    private boolean parseExpression() {
+        // Check for: CHAR_LITERAL
+        if (accept(TokenClass.CHAR_LITERAL)) {
+            expect(TokenClass.CHAR_LITERAL);
+            return true;
+        }
+        // Check for: STRING_LITERAL
+        else if (accept(TokenClass.STRING_LITERAL)) {
+            expect(TokenClass.STRING_LITERAL);
+            return true;
+        }
+        // Check for: * exp
+        else if (accept(TokenClass.ASTERIX)) {
+            expect(TokenClass.ASTERIX);
+            if (!parseExpression()) { System.out.println("Expected an expression proceeding a *"); error++; return false; }
+            else return true;
+        }
+        // Check for: sizeof( exp )
+        else if (accept(TokenClass.SIZEOF)) {
+            expect(TokenClass.SIZEOF);
+            expect(TokenClass.LBRA);
+            // Expect a type.
+            if (accept(TokenClass.STRUCT)) {
+                expect(TokenClass.STRUCT);
+                expect(TokenClass.IDENTIFIER);
+            }
+            else if (accept(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
+                expect(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID);
+            }
+            // Can have an optional ASTERIX.
+            if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
+            expect(TokenClass.RBRA);
+            return true;
+        }
+        // Check for: (exp) OR (type)exp
+        else if (accept(TokenClass.LBRA)) {
+            expect(TokenClass.LBRA);
+            // Check for: (exp)
+            if (parseExpression()) {
+                expect(TokenClass.RBRA);
+                return true;
+            }
+            // Check for: (type)exp
+            else {
+                // Expect a type.
+                if (accept(TokenClass.STRUCT)) {
+                    expect(TokenClass.STRUCT);
+                    expect(TokenClass.IDENTIFIER);
+                }
+                else if (accept(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
+                    expect(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID);
+                }
+                else {
+                    return false;
+                }
+                // Can have an optional ASTERIX.
+                if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
+                return true;
+            }
+        }
+        else {
+            return false;
+        }
+    }
 }
