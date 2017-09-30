@@ -349,7 +349,6 @@ public class Parser {
                 }
                 expect(TokenClass.RPAR);
             }
-            expect(TokenClass.SC);
         }
         // Check for: ["-"] (IDENT | INT_LITERAL)
         else if (accept(TokenClass.INT_LITERAL)) {
