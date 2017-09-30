@@ -349,6 +349,36 @@ public class Parser {
                 return true;
             }
         }
+        // Check for: [-] (IDENT | INT_LITERAL)
+        else if (lookAhead(1).tokenClass == TokenClass.LBRA) {
+            // Optional MINUS token.
+            if (accept(TokenClass.MINUS)) expect(TokenClass.MINUS);
+            expect(TokenClass.LBRA);
+            expect(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL);
+            expect(TokenClass.RBRA);
+            return true;
+        }
+        // Check for: IDENT([exp (, exp)*]) OR IDENT
+        else if (accept(TokenClass.IDENTIFIER)) {
+            // We are about to see the former case.
+            if (accept(TokenClass.LBRA)) {
+                expect(TokenClass.LBRA);
+                // Accept optional arguments.
+                if (parseExpression()) {
+                    // While there are more arguments.
+                    while (accept(TokenClass.COMMA)) {
+                        expect(TokenClass.COMMA);
+                        if (!parseExpression()) { System.out.println("Expected an expression in function arguments."); error++; return false; }
+                    }
+                }
+                expect(TokenClass.RBRA);
+                return true;
+            }
+            else {
+                return true;
+            }
+        }
+        // @TODO Check for: exp[exp] AND exp.IDENT AND exp OP exp
         else {
             return false;
         }
