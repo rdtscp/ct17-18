@@ -15,4 +15,8 @@ void main() {
     func_call();
 
     b = func_call();
+
+    while (a) {
+        bc = bc + 1;
+    }
 }

@@ -20,14 +20,12 @@ void main() {
  
   c = 0;
   while (c < n) {
-    if ( c <= 1 )
-      next = c;
-    else
-      {
-	next = first + second;
-	first = second;
-	second = next;
-      }
+    if ( c <= 1 ) next = c;
+    else {
+      next = first + second;
+      first = second;
+      second = next;
+    }
     print_i(next);
     print_s((char*)" ");
     c = c+1;
