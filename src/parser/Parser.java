@@ -277,7 +277,7 @@ public class Parser {
         else {
             // If nextToken is in [ CHAR_LITERAL, STRING_LITERAL, ASTERIX, SIZEOF, LPAR, IDENTIFIER, INT_LITERAL, MINUS ]
             //                    ^ (List of exp starting Tokens)
-            if (accept(TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.ASTERIX, TokenClass.SIZEOF, TokenClass.LPAR,TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.MINUS)) {
+            if (accept(TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.ASTERIX, TokenClass.SIZEOF, TokenClass.LPAR, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.MINUS)) {
                 parseExps(true);
                 if (accept(TokenClass.ASSIGN)) {
                     expect(TokenClass.ASSIGN);
@@ -310,6 +310,7 @@ public class Parser {
     //      -> exp "[" exp "]"
     //      -> exp "." IDENT
     private void parseExps(boolean required) {
+        boolean found = true;
         // Check for: CHAR_LITERAL
         if (accept(TokenClass.CHAR_LITERAL)) {
             expect(TokenClass.CHAR_LITERAL);
@@ -369,6 +370,9 @@ public class Parser {
             expect(TokenClass.MINUS);
             expect(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL);
         }
+        else {
+            found = false;
+        }
         
         // exp  -> exp (">" | "<" | ">=" | "<=" | "!=" | "==" | "+" | "-" | "/" | "*" | "%" | "||" | "&&") exp
         //      -> exp "[" exp "]"
@@ -389,6 +393,11 @@ public class Parser {
         else if (accept(TokenClass.DOT)) {
             expect(TokenClass.DOT);
             expect(TokenClass.IDENTIFIER);
+        }
+        else {
+            if (!found && required) {
+                error(TokenClass.INVALID);
+            }
         }
     }
 }
