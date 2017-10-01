@@ -307,7 +307,7 @@ public class Parser {
     //      -> exp "." IDENT
     private void parseExps(boolean required) {
         Token curr = token;
-        System.out.println(" --- Parsing exp with token: " + curr);
+        System.out.println(" --- Parsing exp with token: " + curr + " at pos: " + curr.position);
         // Check for: CHAR_LITERAL
         if (accept(TokenClass.CHAR_LITERAL)) {
             expect(TokenClass.CHAR_LITERAL);
@@ -329,11 +329,18 @@ public class Parser {
             expect(TokenClass.RPAR);
         }
         // Check for: "(" exp ")" AND "(" type ")" exp
-        else if (accept(TokenClass.LBRA)) {
+        else if (accept(TokenClass.LPAR)) {
             expect(TokenClass.LPAR);
-            // @TODO exp OR type
-            expect(TokenClass.RPAR);
-            // @TODO exp
+            // Check if this is a type
+            if (accept(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR , TokenClass.VOID)) {
+                parseType(true);
+                expect(TokenClass.RPAR);
+                parseExps(true);
+            }
+            else {
+                parseExps(true);
+                expect(TokenClass.RPAR);
+            }
         }
         // Check for: IDENT AND IDENT "(" [ exp ("," exp)* ] ")"
         else if (accept(TokenClass.IDENTIFIER)) {
@@ -349,6 +356,7 @@ public class Parser {
                 }
                 expect(TokenClass.RPAR);
             }
+            System.out.println("Finished parsing ident");
         }
         // Check for: ["-"] (IDENT | INT_LITERAL)
         else if (accept(TokenClass.INT_LITERAL)) {
