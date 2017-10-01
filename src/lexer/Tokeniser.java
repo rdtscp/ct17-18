@@ -173,7 +173,7 @@ public class Tokeniser {
                     sb.append(c);
                 }
                 peek = scanner.peek();
-                if (isElse && !Character.isLetter(peek) && !Character.isDigit(peek)) {
+                if (isElse && (peek == ' ' || peek == '{' || peek == '\n')) {
                     return new Token(TokenClass.ELSE, scanner.getLine(),scanner.getColumn());
                 }
             }
@@ -309,7 +309,7 @@ public class Tokeniser {
                     sb.append(c);
                 }
                 peek = scanner.peek();
-                if (isWhile && !Character.isLetter(peek) && !Character.isDigit(peek) && peek != '_') {
+                if (isWhile && (peek == ' ' || peek == '(')) {
                     return new Token(TokenClass.WHILE, scanner.getLine(),scanner.getColumn());
                 }
                 c = scanner.next();
@@ -507,7 +507,7 @@ public class Tokeniser {
         if (c == ',') return new Token(TokenClass.COMMA, scanner.getLine(),scanner.getColumn());
         if (c == '+') return new Token(TokenClass.PLUS, scanner.getLine(),scanner.getColumn());
         if (c == '-') return new Token(TokenClass.MINUS, scanner.getLine(),scanner.getColumn());
-        if (c == '*') { System.out.println(scanner.getLine() + " " + scanner.getColumn()); return new Token(TokenClass.ASTERIX, scanner.getLine(),scanner.getColumn()); }
+        if (c == '*') return new Token(TokenClass.ASTERIX, scanner.getLine(),scanner.getColumn());
         if (c == '%') return new Token(TokenClass.REM, scanner.getLine(),scanner.getColumn());
         if (c == '.') return new Token(TokenClass.DOT, scanner.getLine(),scanner.getColumn());
 
