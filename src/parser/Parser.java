@@ -224,6 +224,7 @@ public class Parser {
             expect(TokenClass.IDENTIFIER);
             // Now see if there are multiple params.
             while (accept(TokenClass.COMMA)) {
+                expect(TokenClass.COMMA);
                 parseType(true);
                 expect(TokenClass.IDENTIFIER);
             }
@@ -241,6 +242,7 @@ public class Parser {
             expect(TokenClass.RETURN);
             parseExps(false);
             expect(TokenClass.SC);
+            parseStmts(false);
         }
         // Check for: "while" "(" exp ")" stmt
         else if (accept(TokenClass.WHILE)) {
@@ -249,6 +251,7 @@ public class Parser {
             parseExps(true);
             expect(TokenClass.RPAR);
             parseStmts(true);
+            parseStmts(false);
         }
         // Check for: "if" "(" exp ")" stmt ["else" stmt]
         else if (accept(TokenClass.IF)) {
@@ -261,6 +264,7 @@ public class Parser {
                 expect(TokenClass.ELSE);
                 parseStmts(true);
             }
+            parseStmts(false);
         }
         // Check for: "{" (vardecl)* (stmt)* "}"
         else if (accept(TokenClass.LBRA)) {
@@ -306,8 +310,6 @@ public class Parser {
     //      -> exp "[" exp "]"
     //      -> exp "." IDENT
     private void parseExps(boolean required) {
-        Token curr = token;
-        System.out.println(" --- Parsing exp with token: " + curr + " at pos: " + curr.position);
         // Check for: CHAR_LITERAL
         if (accept(TokenClass.CHAR_LITERAL)) {
             expect(TokenClass.CHAR_LITERAL);
@@ -348,15 +350,15 @@ public class Parser {
             if (accept(TokenClass.LPAR)) {
                 expect(TokenClass.LPAR);
                 // Check for no arguments.
-                if (accept(TokenClass.RPAR)) { expect(TokenClass.RPAR); return; }
-                parseExps(true);
-                while (accept(TokenClass.COMMA)) {
-                    expect(TokenClass.COMMA);
-                    parseExps(true);
+                if (!accept(TokenClass.RPAR)) {
+                    parseExps(false);
+                    while (accept(TokenClass.COMMA)) {
+                        expect(TokenClass.COMMA);
+                        parseExps(true);
+                    }   
                 }
                 expect(TokenClass.RPAR);
             }
-            System.out.println("Finished parsing ident");
         }
         // Check for: ["-"] (IDENT | INT_LITERAL)
         else if (accept(TokenClass.INT_LITERAL)) {
@@ -367,44 +369,26 @@ public class Parser {
             expect(TokenClass.MINUS);
             expect(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL);
         }
-        // Check for recursive exp.
-        //      -> exp (">" | "<" | ">=" | "<=" | "!=" | "==" | "+" | "-" | "/" | "*" | "%" | "||" | "&&") exp
+        
+        // exp  -> exp (">" | "<" | ">=" | "<=" | "!=" | "==" | "+" | "-" | "/" | "*" | "%" | "||" | "&&") exp
         //      -> exp "[" exp "]"
         //      -> exp "." IDENT
-        else {
-            // If nextToken is in [ CHAR_LITERAL, STRING_LITERAL, ASTERIX, SIZEOF, LPAR, IDENTIFIER, INT_LITERAL, MINUS ]
-            //                    ^ (List of exp starting Tokens)
-            if (accept(TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.ASTERIX, TokenClass.SIZEOF, TokenClass.LPAR, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.MINUS)) {
-                parseExps(true);
-                // Check for: exp "[" exp "]"
-                if (accept(TokenClass.LSBR)) {
-                    expect(TokenClass.LSBR);
-                    parseExps(true);
-                    expect(TokenClass.RSBR);
-                }
-                // Check for: exp "." IDENT
-                else if (accept(TokenClass.DOT)) {
-                    expect(TokenClass.DOT);
-                    expect(TokenClass.IDENTIFIER);
-                }
-                // Check for: exp (">" | "<" | ">=" | "<=" | "!=" | "==" | "+" | "-" | "/" | "*" | "%" | "||" | "&&") exp
-                else if (accept(TokenClass.GT, TokenClass.LT, TokenClass.GE, TokenClass.LE, TokenClass.NE, TokenClass.EQ, TokenClass.PLUS, TokenClass.MINUS, TokenClass.DIV, TokenClass.ASTERIX, TokenClass.REM, TokenClass.OR, TokenClass.AND)) {
-                    expect(TokenClass.GT, TokenClass.LT, TokenClass.GE, TokenClass.LE, TokenClass.NE, TokenClass.EQ, TokenClass.PLUS, TokenClass.MINUS, TokenClass.DIV, TokenClass.ASTERIX, TokenClass.REM, TokenClass.OR, TokenClass.AND);
-                    parseExps(true);
-                }
-                // No valid exp found.
-                else {
-                    if (required) {
-                        error(token.tokenClass);
-                    }
-                }
-            }
-            // No valid start to an exp found.
-            else {
-                if (required) {
-                    error(token.tokenClass);
-                }
-            }
+        // Now check for the tokens in any of the above cases.
+        // Check for: exp (">" | "<" | ">=" | "<=" | "!=" | "==" | "+" | "-" | "/" | "*" | "%" | "||" | "&&") exp
+        if (accept(TokenClass.GT, TokenClass.LT, TokenClass.GE, TokenClass.LE, TokenClass.NE, TokenClass.EQ, TokenClass.PLUS, TokenClass.MINUS, TokenClass.DIV, TokenClass.ASTERIX, TokenClass.REM, TokenClass.OR, TokenClass.AND)) {
+            expect(TokenClass.GT, TokenClass.LT, TokenClass.GE, TokenClass.LE, TokenClass.NE, TokenClass.EQ, TokenClass.PLUS, TokenClass.MINUS, TokenClass.DIV, TokenClass.ASTERIX, TokenClass.REM, TokenClass.OR, TokenClass.AND);
+            parseExps(true);
+        }
+        // Check for:  exp "[" exp "]"
+        else if (accept(TokenClass.LSBR)) {
+            expect(TokenClass.LSBR);
+            parseExps(true);
+            expect(TokenClass.RSBR);
+        }
+        // Check for: exp "." IDENT
+        else if (accept(TokenClass.DOT)) {
+            expect(TokenClass.DOT);
+            expect(TokenClass.IDENTIFIER);
         }
     }
 }
