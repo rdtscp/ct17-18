@@ -184,10 +184,10 @@ public class Tokeniser {
                     c = scanner.next();
                     sb.append(c);
                     char peek = scanner.peek();
-                    if (!Character.isLetter(peek) && !Character.isDigit(peek) && peek != '_') {
-                        return new Token(TokenClass.WHILE, scanner.getLine(),scanner.getColumn());
+                    // If the char following IF is valid for an IF statement, return the token.
+                    if (peek == ' ' || peek == '(') {
+                        return new Token(TokenClass.IF, scanner.getLine(),scanner.getColumn());
                     }
-                    return new Token(TokenClass.IF, scanner.getLine(),scanner.getColumn());
                 }
                 // Check for INT token.
                 else {
@@ -383,6 +383,7 @@ public class Tokeniser {
         if (c == '=') {
             // EQ Token.
             if (scanner.peek() == '=') {
+                scanner.next();
                 return new Token(TokenClass.EQ, scanner.getLine(), scanner.getColumn());
             }
             // ASSIGN Token.
