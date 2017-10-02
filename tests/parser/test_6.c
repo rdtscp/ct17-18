@@ -12,4 +12,7 @@ void main() {
     else if (z) {
         baz();
     }
+    else {
+        foo();
+    }
 }
