@@ -100,6 +100,7 @@ public class Parser {
         for (TokenClass e : expected) {
             if (e == token.tokenClass) {
                 Token cur = token;
+                // System.out.println(cur);
                 nextToken();
                 return cur;
             }
@@ -131,7 +132,7 @@ public class Parser {
     // include -> "#include" STRING_LITERAL
     private void parseIncludes() {
 	    if (accept(TokenClass.INCLUDE)) {
-            nextToken();
+            expect(TokenClass.INCLUDE);
             expect(TokenClass.STRING_LITERAL);
             parseIncludes();
         }
@@ -272,28 +273,27 @@ public class Parser {
             parseVarDecls(false);
             parseStmts(false);
             expect(TokenClass.RBRA);
+            parseStmts(false);
         }
         // Check for: exp ["=" exp] ";"
-        else {
-            // If nextToken is in [ CHAR_LITERAL, STRING_LITERAL, ASTERIX, SIZEOF, LPAR, IDENTIFIER, INT_LITERAL, MINUS ]
-            //                    ^ (List of exp starting Tokens)
-            if (accept(TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.ASTERIX, TokenClass.SIZEOF, TokenClass.LPAR, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.MINUS)) {
+        // If nextToken is in [ CHAR_LITERAL, STRING_LITERAL, ASTERIX, SIZEOF, LPAR, IDENTIFIER, INT_LITERAL, MINUS ]
+        //                    ^ (List of exp starting Tokens)
+        else if (accept(TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.ASTERIX, TokenClass.SIZEOF, TokenClass.LPAR, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.MINUS)) {
+            parseExps(true);
+            if (accept(TokenClass.ASSIGN)) {
+                expect(TokenClass.ASSIGN);
                 parseExps(true);
-                if (accept(TokenClass.ASSIGN)) {
-                    expect(TokenClass.ASSIGN);
-                    parseExps(true);
-                }
-                expect(TokenClass.SC);
-                parseStmts(false);
             }
-            // If we don't require a stmt, and therefore don't require an exp.
-            else if (!required) {
-                return;
-            }
-            // If we do require a stmt, and therefore an exp, throw error since we haven't found one.
-            else {
-                error(TokenClass.INVALID);
-            }
+            expect(TokenClass.SC);
+            parseStmts(false);
+        }
+        // If we don't require a stmt.
+        else if (!required) {
+            return;
+        }
+        // If we do require a stmt, and therefore an exp, throw error since we haven't found one.
+        else {
+            error(TokenClass.INVALID);
         }
     }
 
@@ -314,20 +314,29 @@ public class Parser {
         // Check for: CHAR_LITERAL
         if (accept(TokenClass.CHAR_LITERAL)) {
             expect(TokenClass.CHAR_LITERAL);
+            parseExps(false);
         }
         // Check for: STRING_LITERAL
         else if (accept(TokenClass.STRING_LITERAL)) {
             expect(TokenClass.STRING_LITERAL);
+            parseExps(false);
         }
         // Check for: ["-"] (IDENT | INT_LITERAL)
         else if (accept(TokenClass.MINUS)) {
             expect(TokenClass.MINUS);
-            expect(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL);
+            if (accept(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL)) {
+                expect(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL);
+            }
+            else {
+                parseExps(true);
+            }
+            parseExps(false);
         }
         // Check for: "*" exp
         else if (accept(TokenClass.ASTERIX)) {
             expect(TokenClass.ASTERIX);
             parseExps(true);
+            parseExps(false);
         }
         // Check for: "sizeof" "(" type ")"
         else if (accept(TokenClass.SIZEOF)) {
@@ -335,6 +344,7 @@ public class Parser {
             expect(TokenClass.LPAR);
             parseType(true);
             expect(TokenClass.RPAR);
+            parseExps(false);
         }
         // Check for: "(" exp ")" AND "(" type ")" exp
         else if (accept(TokenClass.LPAR)) {
@@ -349,6 +359,7 @@ public class Parser {
                 parseExps(true);                     
                 expect(TokenClass.RPAR);
             }
+            parseExps(false);
         }
         // Check for: IDENT AND IDENT "(" [ exp ("," exp)* ] ")"
         else if (accept(TokenClass.IDENTIFIER)) {
@@ -365,10 +376,12 @@ public class Parser {
                 }
                 expect(TokenClass.RPAR);
             }
+            parseExps(false);
         }
         // Check for: ["-"] (IDENT | INT_LITERAL)
         else if (accept(TokenClass.INT_LITERAL)) {
             expect(TokenClass.INT_LITERAL);
+            parseExps(false);
         }
         else {
             found = false;
@@ -382,6 +395,7 @@ public class Parser {
         if (accept(TokenClass.GT, TokenClass.LT, TokenClass.GE, TokenClass.LE, TokenClass.NE, TokenClass.EQ, TokenClass.PLUS, TokenClass.MINUS, TokenClass.DIV, TokenClass.ASTERIX, TokenClass.REM, TokenClass.OR, TokenClass.AND)) {
             expect(TokenClass.GT, TokenClass.LT, TokenClass.GE, TokenClass.LE, TokenClass.NE, TokenClass.EQ, TokenClass.PLUS, TokenClass.MINUS, TokenClass.DIV, TokenClass.ASTERIX, TokenClass.REM, TokenClass.OR, TokenClass.AND);            
             parseExps(true);
+            parseExps(false);
         }
         // Check for:  exp "[" exp "]"
         else if (accept(TokenClass.LSBR)) {
@@ -394,6 +408,7 @@ public class Parser {
         else if (accept(TokenClass.DOT)) {
             expect(TokenClass.DOT);
             expect(TokenClass.IDENTIFIER);
+            parseExps(false);
         }
         else {
             if (!found && required) {
