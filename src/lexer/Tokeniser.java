@@ -412,8 +412,9 @@ public class Tokeniser {
                     peek = scanner.peek();
                     // Next character must be a closing single quote to be a valid CHAR_LITERAL.
                     if (peek == '\'') {
+                        char val = c;
                         c = scanner.next();
-                        return new Token(TokenClass.CHAR_LITERAL, String.valueOf(value), scanner.getLine(),scanner.getColumn());
+                        return new Token(TokenClass.CHAR_LITERAL, String.valueOf(val), scanner.getLine(),scanner.getColumn());
                     } else {
                         c = scanner.next();
                         error(c, scanner.getLine(),scanner.getColumn());
@@ -429,8 +430,9 @@ public class Tokeniser {
             else {
                 // Check the CHAR_LITERAL is closed correctly.
                 if (peek == '\'') {
+                    char val = c;
                     c = scanner.next();
-                    return new Token(TokenClass.CHAR_LITERAL, String.valueOf(c), scanner.getLine(),scanner.getColumn());
+                    return new Token(TokenClass.CHAR_LITERAL, String.valueOf(val), scanner.getLine(),scanner.getColumn());
                 } else {
                     c = scanner.next();
                     error(c, scanner.getLine(),scanner.getColumn());
