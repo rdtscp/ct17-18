@@ -65,7 +65,7 @@ void main(int foo, char bar) {
     }
     else {
         else_a();
-        if ((char)x || (int)y && (void)x && ) {
+        if ((char)x || (int)y && (void)x) {
             //work
         }
     }
