@@ -1,0 +1,50 @@
+# #  comment
+# () grouping
+# [] optional
+# *  zero or more
+# +  one or more
+# |  alternative
+
+/*********************\
+  Conflicting Grammer
+\*********************/
+
+
+
+
+program -> (include)* (stctdec)* (vardecl)* (fundecl)* EOF
+
+include -> INCLUDE STRING_LITERAL
+
+stctdec -> stctype LBRA (vardecl)+ RBRA SC
+
+vardecl -> type IDENT SC
+        -> type IDENT LSBR INT_LITERAL RSBR SC
+
+fundecl -> type IDENT LPAR params RPAR LBRA (vardecl)* (stmt)* RBRA
+
+type    -> ( INT | CHAR | VOID | stctype) [ASTERIX]
+stctype -> STRUCT IDENT
+
+params  -> [ type IDENT (COMMA type IDENT)* ]
+
+stmt    -> LBRA (vardecl)* (stmt)* RBRA
+        -> WHILE LPAR exp RPAR stmt
+        -> IF LPAR exp RPAR stmt [ELSE stmt]
+        -> RETURN [exp] SC
+        -> exp ASSIGN exp SC
+        -> exp SC
+
+exp     -> LPAR ( type RPAR exp | exp RPAR ) [postexp] 
+        -> CHAR_LITERAL [postexp] 
+        -> STRING_LITERAL [postexp]
+        -> IDENT [postexp] 
+        -> IDENT LPAR [ exp (COMMA exp)* ] RPAR [postexp] 
+        -> INT_LITERAL [postexp] 
+        -> MINUS (IDENT|INT_LITERL) [postexp] 
+        -> ASTERIX exp [postexp] 
+        -> SIZEOF LPAR type RPAR [postexp]
+
+postexp -> (LSBR exp RSBR | DOT IDENT | op exp) [postexp]
+
+op      -> ( MINUS | ASTERIX | GT | LT | GE | LE | NE | EQ | PLUS | DIV | REM | OR | AND )
