@@ -5,12 +5,6 @@
 # +  one or more
 # |  alternative
 
-/*********************\
-  Conflicting Grammer
-\*********************/
-
-
-
 
 program -> (include)* (stctdec)* (vardecl)* (fundecl)* EOF
 
