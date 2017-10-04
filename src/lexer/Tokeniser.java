@@ -85,10 +85,6 @@ public class Tokeniser {
             StringBuilder sb = new StringBuilder();
             int currLine = scanner.getLine();
             while (true) {
-                if (scanner.getLine() != currLine) {
-                    error(c, scanner.getLine(), scanner.getColumn());
-                    return new Token(TokenClass.INVALID, scanner.getLine(), scanner.getColumn());
-                }
                 // Try get the current char.
                 try {
                     c = scanner.next();
@@ -102,17 +98,16 @@ public class Tokeniser {
                     System.exit(-1);
                     return null;
                 }
+                // If hit new-line before STRING_LITERAL terminator, we have invalid token.
+                if (scanner.getLine() != currLine) {
+                    error(c, scanner.getLine(), scanner.getColumn());
+                    return new Token(TokenClass.INVALID, scanner.getLine(), scanner.getColumn());
+                }
                 // Check if we are about to see an escaped character.
                 if (c == '\\') {
                     sb.append(c);
                     c = scanner.next();
                     sb.append(c);
-                }
-                // If hit new-line before STRING_LITERAL terminator, we have invalid token.
-                // Newline has character code 10.
-                else if ((int)c == 10) {
-                    error(c, scanner.getLine(), scanner.getColumn());
-                    return new Token(TokenClass.INVALID, scanner.getLine(), scanner.getColumn());
                 }
                 // End of string.
                 else if (c == '"') {
@@ -185,7 +180,7 @@ public class Tokeniser {
                     sb.append(c);
                     char peek = scanner.peek();
                     // If the char following IF is valid for an IF statement, return the token.
-                    if (peek == ' ' || peek == '(') {
+                    if (peek == ' ' || peek == '(' || peek == '\n') {
                         return new Token(TokenClass.IF, scanner.getLine(),scanner.getColumn());
                     }
                 }
@@ -209,7 +204,7 @@ public class Tokeniser {
                         sb.append(c);
                     }
                     peek = scanner.peek();
-                    if (isInt && !Character.isLetter(peek) && !Character.isDigit(peek)) {
+                    if (isInt && peek == ' ') {
                         return new Token(TokenClass.INT, scanner.getLine(),scanner.getColumn());
                     }
                 }
@@ -234,7 +229,7 @@ public class Tokeniser {
                     sb.append(c);
                 }
                 peek = scanner.peek();
-                if (isReturn && !Character.isLetter(peek) && !Character.isDigit(peek)) {
+                if (isReturn && (peek == ' ' || peek == '(')) {
                     return new Token(TokenClass.RETURN, scanner.getLine(),scanner.getColumn());
                 }
             }
@@ -260,7 +255,7 @@ public class Tokeniser {
                         sb.append(c);
                     }
                     peek = scanner.peek();
-                    if (isSizeof && !Character.isLetter(peek) && !Character.isDigit(peek)) {
+                    if (isSizeof && (peek == ' ' || peek == '(')) {
                         return new Token(TokenClass.SIZEOF, scanner.getLine(),scanner.getColumn());
                     }
                 }
@@ -284,7 +279,7 @@ public class Tokeniser {
                         sb.append(c);
                     }
                     peek = scanner.peek();
-                    if (isStruct && !Character.isLetter(peek) && !Character.isDigit(peek)) {
+                    if (isStruct && peek == ' ') {
                         return new Token(TokenClass.STRUCT, scanner.getLine(),scanner.getColumn());
                     }
                 }
