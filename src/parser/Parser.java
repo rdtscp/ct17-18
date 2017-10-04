@@ -152,7 +152,6 @@ public class Parser {
             expect(TokenClass.LBRA);
             expectVarDecl();
             parseVarDecls();
-            System.out.println(" ---  Finished parsing struct decl");
             expect(TokenClass.RBRA);
             expect(TokenClass.SC);
             parseStructDecls();
@@ -250,8 +249,16 @@ public class Parser {
     // params  -> [ type IDENT (COMMA type IDENT)* ]
     private void expectParams() {
         // Check for vardecl && fundecl.
-        if (!(lookAhead(2).tokenClass == TokenClass.RPAR || lookAhead(2).tokenClass == TokenClass.COMMA)) {
-            return;
+        TokenClass twoAhead   = lookAhead(2).tokenClass;
+        TokenClass threeAhead = lookAhead(3).tokenClass;
+        if (twoAhead != TokenClass.RPAR) {
+            if (twoAhead != TokenClass.COMMA) {
+                if (threeAhead != TokenClass.RPAR) {
+                    if (threeAhead != TokenClass.COMMA) {
+                        return;
+                    }
+                }
+            }
         }
         if (accept(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
             if(TokenClass.STRUCT == expect(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID).tokenClass) {
@@ -329,7 +336,6 @@ public class Parser {
     //         -> exp ASSIGN exp SC
     //         -> exp SC
     private void parseStmts() {
-        System.out.println(" --- Expecting a stmt @ token: " + token);        
         if (accept(TokenClass.LBRA)) {
             expect(TokenClass.LBRA);
             parseVarDecls();
@@ -367,7 +373,6 @@ public class Parser {
             parseStmts();
         }
         else if (accept(TokenClass.LPAR, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.MINUS, TokenClass.ASTERIX, TokenClass.SIZEOF)) {
-            System.out.println("@@@@@ Parsing the broken EXP");
             expectExp();
             if (accept(TokenClass.ASSIGN)) {
                 expect(TokenClass.ASSIGN);
@@ -389,7 +394,6 @@ public class Parser {
     //         -> ASTERIX exp [postexp]
     //         -> SIZEOF LPAR type [postexp]
     private void expectExp() {
-        System.out.println(" +++ Expecting an exp @ token: " + token);
         if (accept(TokenClass.LPAR)) {
             expect(TokenClass.LPAR);
             // If we are about to see (type RPAR exp)
