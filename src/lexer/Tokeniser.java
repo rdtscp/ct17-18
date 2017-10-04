@@ -144,7 +144,7 @@ public class Tokeniser {
                     sb.append(c);
                 }
                 peek = scanner.peek();
-                if (isChar && !Character.isLetter(peek) && !Character.isDigit(peek)){
+                if (isChar && (!Character.isLetter(peek)) && (!Character.isDigit(peek)) && (peek != '_')){
                     return new Token(TokenClass.CHAR, scanner.getLine(),scanner.getColumn());
                 }
             }
@@ -168,7 +168,7 @@ public class Tokeniser {
                     sb.append(c);
                 }
                 peek = scanner.peek();
-                if (isElse && (peek == ' ' || peek == '{' || peek == '\n')) {
+                if (isElse && (!Character.isLetter(peek)) && (!Character.isDigit(peek)) && (peek != '_')) {
                     return new Token(TokenClass.ELSE, scanner.getLine(),scanner.getColumn());
                 }
             }
@@ -180,7 +180,7 @@ public class Tokeniser {
                     sb.append(c);
                     char peek = scanner.peek();
                     // If the char following IF is valid for an IF statement, return the token.
-                    if (peek == ' ' || peek == '(' || peek == '\n') {
+                    if ((!Character.isLetter(peek)) && (!Character.isDigit(peek)) && (peek != '_')) {
                         return new Token(TokenClass.IF, scanner.getLine(),scanner.getColumn());
                     }
                 }
@@ -204,7 +204,7 @@ public class Tokeniser {
                         sb.append(c);
                     }
                     peek = scanner.peek();
-                    if (isInt && peek == ' ') {
+                    if (isInt && (!Character.isLetter(peek)) && (!Character.isDigit(peek)) && (peek != '_')) {
                         return new Token(TokenClass.INT, scanner.getLine(),scanner.getColumn());
                     }
                 }
@@ -229,7 +229,7 @@ public class Tokeniser {
                     sb.append(c);
                 }
                 peek = scanner.peek();
-                if (isReturn && (peek == ' ' || peek == '(')) {
+                if (isReturn && (!Character.isLetter(peek)) && (!Character.isDigit(peek)) && (peek != '_')) {
                     return new Token(TokenClass.RETURN, scanner.getLine(),scanner.getColumn());
                 }
             }
@@ -255,7 +255,7 @@ public class Tokeniser {
                         sb.append(c);
                     }
                     peek = scanner.peek();
-                    if (isSizeof && (peek == ' ' || peek == '(')) {
+                    if (isSizeof && (!Character.isLetter(peek)) && (!Character.isDigit(peek)) && (peek != '_')) {
                         return new Token(TokenClass.SIZEOF, scanner.getLine(),scanner.getColumn());
                     }
                 }
@@ -279,7 +279,7 @@ public class Tokeniser {
                         sb.append(c);
                     }
                     peek = scanner.peek();
-                    if (isStruct && peek == ' ') {
+                    if (isStruct && (!Character.isLetter(peek)) && (!Character.isDigit(peek)) && (peek != '_')) {
                         return new Token(TokenClass.STRUCT, scanner.getLine(),scanner.getColumn());
                     }
                 }
@@ -304,7 +304,7 @@ public class Tokeniser {
                     sb.append(c);
                 }
                 peek = scanner.peek();
-                if (isWhile && (peek == ' ' || peek == '(')) {
+                if (isWhile && (!Character.isLetter(peek)) && (!Character.isDigit(peek)) && (peek != '_')) {
                     return new Token(TokenClass.WHILE, scanner.getLine(),scanner.getColumn());
                 }
                 c = scanner.next();
@@ -330,7 +330,7 @@ public class Tokeniser {
                     sb.append(c);
                 }
                 peek = scanner.peek();
-                if (isVoid && !Character.isLetter(peek) && !Character.isDigit(peek)) {
+                if (isVoid && (!Character.isLetter(peek)) && (!Character.isDigit(peek)) && (peek != '_')) {
                     return new Token(TokenClass.VOID, scanner.getLine(),scanner.getColumn());
                 }
             }
