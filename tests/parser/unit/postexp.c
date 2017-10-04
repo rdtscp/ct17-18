@@ -1,0 +1,30 @@
+void main ( ) {
+    x [ x ] ;
+    x [ x ] = x [ x ] ;
+    x . x ;
+    x . x = x . x ;
+    x - x ;
+    x - x = x - x ;
+    x * x ;
+    x * x = x * x ;
+    x > x ;
+    x > x = x > x ;
+    x < x ;
+    x < x = x < x ;
+    x >= x ;
+    x >= x = x >= x ;
+    x <= x ;
+    x <= x = x <= x ;
+    x != x ;
+    x != x = x != x ;
+    x == x ;
+    x == x = x == x ;
+    x + x ;
+    x + x = x + x ;
+    x / x ;
+    x / x = x / x ;
+    x % x ;
+    x % x = x % x ;
+    x || x ;
+    x || x = x || x ;
+}
