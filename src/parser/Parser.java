@@ -142,12 +142,17 @@ public class Parser {
     // Parses (structdecl)*
     // structdecl -> structtype LBRA (vardecl)+ RBRA SC
     private void parseStructDecls() {
+        // Check for struct being used as a vardecl.
+        if (lookAhead(2).tokenClass != TokenClass.LBRA) {
+            return;
+        }
         if (accept(TokenClass.STRUCT)) {
             expect(TokenClass.STRUCT);
             expect(TokenClass.IDENTIFIER);
             expect(TokenClass.LBRA);
             expectVarDecl();
             parseVarDecls();
+            System.out.println(" ---  Finished parsing struct decl");
             expect(TokenClass.RBRA);
             expect(TokenClass.SC);
             parseStructDecls();
@@ -160,6 +165,11 @@ public class Parser {
     private void expectVarDecl() {
         expectType();
         expect(TokenClass.IDENTIFIER);
+        if (accept(TokenClass.LSBR)) {
+            expect(TokenClass.LSBR);
+            expect(TokenClass.INT_LITERAL);
+            expect(TokenClass.RSBR);
+        }
         expect(TokenClass.SC);
     }
 
@@ -167,9 +177,17 @@ public class Parser {
     // vardecl -> type IDENT SC
     //         -> type IDENT LSBR INT_LITERAL RSBR SC
     private void parseVarDecls() {
-        // Check for fundecl && params.
-        if (!(lookAhead(2).tokenClass == TokenClass.SC || lookAhead(2).tokenClass == TokenClass.LSBR)) {
-            return;
+        // Check if this will be an invalid vardecl.
+        TokenClass twoAhead   = lookAhead(2).tokenClass;
+        TokenClass threeAhead = lookAhead(3).tokenClass;
+        if (twoAhead != TokenClass.SC) {
+            if (twoAhead != TokenClass.LSBR) {
+                if (threeAhead != TokenClass.SC) {
+                    if (threeAhead != TokenClass.LSBR) {
+                        return;
+                    }
+                }
+            }
         }
         if (accept(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
             if(TokenClass.STRUCT == expect(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID).tokenClass) {
@@ -192,9 +210,13 @@ public class Parser {
     // Parses: (fundecl)*
     // fundecl -> type IDENT LPAR params RPAR LBRA (vardecl)* (stmt)* RBRA
     private void parseFunDecls() {
-        // Check for vardecl && params.
-        if (lookAhead(2).tokenClass != TokenClass.LPAR) {
-            return;
+        // Check if this will be an invalid fundecl.
+        TokenClass twoAhead   = lookAhead(2).tokenClass;
+        TokenClass threeAhead = lookAhead(3).tokenClass;
+        if (twoAhead != TokenClass.LPAR) {
+            if (threeAhead != TokenClass.LPAR) {
+                return;
+            }
         }
         if (accept(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
             if(TokenClass.STRUCT == expect(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID).tokenClass) {
