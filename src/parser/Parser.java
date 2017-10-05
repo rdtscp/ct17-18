@@ -100,7 +100,7 @@ public class Parser {
         for (TokenClass e : expected) {
             if (e == token.tokenClass) {
                 Token cur = token;
-                System.out.println("     " + cur);
+                // System.out.println(cur);
                 nextToken();
                 return cur;
             }
@@ -124,377 +124,296 @@ public class Parser {
     private void parseProgram() {
         parseIncludes();
         parseStructDecls();
-        parseVarDecls();
-        parseFunDecls();
+        parseVarDecls(false);
+        parseFunDecls(false);
         expect(TokenClass.EOF);
     }
 
-    // Parses (include)*
-    // include -> INCLUDE STRING_LITERAL
+    // include -> "#include" STRING_LITERAL
     private void parseIncludes() {
-        if (accept(TokenClass.INCLUDE)) {
+	    if (accept(TokenClass.INCLUDE)) {
             expect(TokenClass.INCLUDE);
             expect(TokenClass.STRING_LITERAL);
             parseIncludes();
         }
     }
 
-    // Parses (structdecl)*
-    // structdecl -> structtype LBRA (vardecl)+ RBRA SC
+    // structdecl -> structtype "{" (vardecl)+ "}" ";" 
     private void parseStructDecls() {
-        // Check for struct being used as a vardecl.
-        if (lookAhead(2).tokenClass != TokenClass.LBRA) {
-            return;
-        }
-        if (accept(TokenClass.STRUCT)) {
+        if(accept(TokenClass.STRUCT)) {
             expect(TokenClass.STRUCT);
             expect(TokenClass.IDENTIFIER);
             expect(TokenClass.LBRA);
-            expectVarDecl();
-            parseVarDecls();
+            parseVarDecls(true);
             expect(TokenClass.RBRA);
             expect(TokenClass.SC);
-            parseStructDecls();
         }
     }
 
-    // Expects a vardecl
-    // vardecl -> type IDENT SC
-    //         -> type IDENT LSBR INT_LITERAL RSBR SC
-    private void expectVarDecl() {
-        expectType();
-        expect(TokenClass.IDENTIFIER);
-        if (accept(TokenClass.LSBR)) {
-            expect(TokenClass.LSBR);
-            expect(TokenClass.INT_LITERAL);
-            expect(TokenClass.RSBR);
+    // vardecl -> type IDENT ";" | type IDENT "[" INT_LITERAL "]" ";"
+    private void parseVarDecls(boolean required) {
+        // Check for function declaration.
+        if (lookAhead(2).tokenClass == TokenClass.LPAR) {
+            if (required) error(TokenClass.INVALID);
+            return;
         }
-        expect(TokenClass.SC);
-    }
-
-    // Parses: (vardecl)*
-    // vardecl -> type IDENT SC
-    //         -> type IDENT LSBR INT_LITERAL RSBR SC
-    private void parseVarDecls() {
-        // Check if this will be an invalid vardecl.
-        TokenClass twoAhead   = lookAhead(2).tokenClass;
-        TokenClass threeAhead = lookAhead(3).tokenClass;
-        if (twoAhead != TokenClass.SC) {
-            if (twoAhead != TokenClass.LSBR) {
-                if (threeAhead != TokenClass.SC) {
-                    if (threeAhead != TokenClass.LSBR) {
-                        return;
-                    }
-                }
-            }
-        }
-        if (accept(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
-            if(TokenClass.STRUCT == expect(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID).tokenClass) {
-                expect(TokenClass.IDENTIFIER);
-            }
-            if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
+        if (accept(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR , TokenClass.VOID)) {
+            parseType(required);
             expect(TokenClass.IDENTIFIER);
-            // Check for array declaration.
+            // Check for: Array declaration.
             if (accept(TokenClass.LSBR)) {
                 expect(TokenClass.LSBR);
                 expect(TokenClass.INT_LITERAL);
                 expect(TokenClass.RSBR);
             }
             expect(TokenClass.SC);
-            // Try to parse more vardecl
-            parseVarDecls();
-        }
-    }
-
-    // Parses: (fundecl)*
-    // fundecl -> type IDENT LPAR params RPAR LBRA (vardecl)* (stmt)* RBRA
-    private void parseFunDecls() {
-        // Check if this will be an invalid fundecl.
-        TokenClass twoAhead   = lookAhead(2).tokenClass;
-        TokenClass threeAhead = lookAhead(3).tokenClass;
-        if (twoAhead != TokenClass.LPAR) {
-            if (threeAhead != TokenClass.LPAR) {
-                return;
-            }
-        }
-        if (accept(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
-            if(TokenClass.STRUCT == expect(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID).tokenClass) {
-                expect(TokenClass.IDENTIFIER);
-            }
-            if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
-            expect(TokenClass.IDENTIFIER);
-            expect(TokenClass.LPAR);
-            expectParams();
-            expect(TokenClass.RPAR);
-            expect(TokenClass.LBRA);
-            parseVarDecls();
-            parseStmts();
-            expect(TokenClass.RBRA);
-            // Try to parse more fundecl
-            parseFunDecls();
-        }
-    }
-
-
-    // Expects a type
-    // type    -> ( INT | CHAR | VOID | structtype) [ASTERIX]
-    private void expectType() {
-        if(TokenClass.STRUCT == expect(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID).tokenClass) {
-            expect(TokenClass.IDENTIFIER);
-        }
-        if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
-    }
-
-    // Expects params
-    // params  -> [ type IDENT (COMMA type IDENT)* ]
-    private void expectParams() {
-        // Check for vardecl && fundecl.
-        TokenClass twoAhead   = lookAhead(2).tokenClass;
-        TokenClass threeAhead = lookAhead(3).tokenClass;
-        if (twoAhead != TokenClass.RPAR) {
-            if (twoAhead != TokenClass.COMMA) {
-                if (threeAhead != TokenClass.RPAR) {
-                    if (threeAhead != TokenClass.COMMA) {
-                        return;
-                    }
-                }
-            }
-        }
-        if (accept(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
-            if(TokenClass.STRUCT == expect(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID).tokenClass) {
-                expect(TokenClass.IDENTIFIER);
-            }
-            if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
-            expect(TokenClass.IDENTIFIER);
-            while (accept(TokenClass.COMMA)) {
-                expect(TokenClass.COMMA);
-                expectType();
-                expect(TokenClass.IDENTIFIER);
-            }
-        }
-    }
-
-    // Expects stmt
-    // stmt    -> LBRA (vardecl)* (stmt)* RBRA
-    //         -> WHILE LPAR exp RPAR stmt
-    //         -> IF LPAR exp RPAR stmt [ELSE stmt]
-    //         -> RETURN [exp] SC
-    //         -> exp ASSIGN exp SC
-    //         -> exp SC
-    private void expectStmt() {
-        if (accept(TokenClass.LBRA)) {
-            expect(TokenClass.LBRA);
-            parseVarDecls();
-            parseStmts();
-            expect(TokenClass.RBRA);
-        }
-        else if (accept(TokenClass.WHILE)) {
-            expect(TokenClass.WHILE);
-            expect(TokenClass.LPAR);
-            expectExp();
-            expect(TokenClass.RPAR);
-            expectStmt();
-        }
-        else if (accept(TokenClass.IF)) {
-            expect(TokenClass.IF);
-            expect(TokenClass.LPAR);
-            expectExp();
-            expect(TokenClass.RPAR);
-            expectStmt();
-            if (accept(TokenClass.ELSE)) {
-                expect(TokenClass.ELSE);
-                expectStmt();
-            }
-        }
-        else if (accept(TokenClass.RETURN)) {
-            expect(TokenClass.RETURN);
-            // If we can accept any of the starting Tokens of an exp
-            if (accept(TokenClass.LPAR, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.MINUS, TokenClass.ASTERIX, TokenClass.SIZEOF)) {
-                expectExp();
-            }
-            expect(TokenClass.SC);
-        }
-        else if (accept(TokenClass.LPAR, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.MINUS, TokenClass.ASTERIX, TokenClass.SIZEOF)) {
-            expectExp();
-            if (accept(TokenClass.ASSIGN)) {
-                expect(TokenClass.ASSIGN);
-                expectExp();
-            }
-            expect(TokenClass.SC);
+    
+            parseVarDecls(false);
         }
         else {
-            System.out.println("Error: Expected a stmt");
-            error(TokenClass.LBRA, TokenClass.WHILE, TokenClass.IF, TokenClass.RETURN, TokenClass.LPAR, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.MINUS, TokenClass.IDENTIFIER, TokenClass.ASTERIX, TokenClass.SIZEOF);
+            if (required) error(TokenClass.INVALID);
         }
     }
 
-    // Parses: (stmt)*
-    // stmt    -> LBRA (vardecl)* (stmt)* RBRA
-    //         -> WHILE LPAR exp RPAR stmt
-    //         -> IF LPAR exp RPAR stmt [ELSE stmt]
-    //         -> RETURN [exp] SC
-    //         -> exp ASSIGN exp SC
-    //         -> exp SC
-    private void parseStmts() {
-        if (accept(TokenClass.LBRA)) {
+    // fundecl -> type IDENT "(" params ")" block
+    private void parseFunDecls(boolean required) {
+        if (accept(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR , TokenClass.VOID)) {
+            parseType(required);
+            expect(TokenClass.IDENTIFIER);
+            expect(TokenClass.LPAR);
+            parseParams();
+            expect(TokenClass.RPAR);
+            // Parse block
             expect(TokenClass.LBRA);
-            parseVarDecls();
-            parseStmts();
+            parseVarDecls(false);
+            parseStmts(false);
             expect(TokenClass.RBRA);
-            parseStmts();
+    
+            parseFunDecls(false);
         }
+        else {
+            if (required) error(TokenClass.INVALID);
+        }
+    }
+
+    // type -> ("int" | "char" | "void" | structtype) ["*"]
+    private void parseType(boolean required) {
+        // Check for: structtype
+        if (accept(TokenClass.STRUCT)) {
+            expect(TokenClass.STRUCT);
+            expect(TokenClass.IDENTIFIER);
+            // Can have an optional ASTERIX.
+            if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
+        }
+        // Check for: int/char/void
+        else if (accept(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
+            expect(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID);
+            // Can have an optional ASTERIX.
+            if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
+        }
+        // Current token isn't a valid type.
+        else {
+            if (required) error(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID);
+        }
+    }
+    
+    // params -> [ type IDENT ("," type IDENT)* ]
+    private void parseParams() {
+        // If we see closing parenthesis; there are no params.
+        if (!accept(TokenClass.RPAR)) {
+            parseType(true);
+            expect(TokenClass.IDENTIFIER);
+            // Now see if there are multiple params.
+            while (accept(TokenClass.COMMA)) {
+                expect(TokenClass.COMMA);
+                parseType(true);
+                expect(TokenClass.IDENTIFIER);
+            }
+        }
+    }
+
+    // stmt -> "return" [exp] ";"
+    //      -> "while" "(" exp ")" stmt
+    //      -> "if" "(" exp ")" stmt ["else" stmt]
+    //      -> "{" (vardecl)* (stmt)* "}"
+    //      -> exp ["=" exp] ";"
+    private void parseStmts(boolean required) {
+        // Check for: "return" [exp] ";"
+        if (accept(TokenClass.RETURN)) {
+            expect(TokenClass.RETURN);
+            parseExps(false);
+            expect(TokenClass.SC);
+            parseStmts(false);
+        }
+        // Check for: "while" "(" exp ")" stmt
         else if (accept(TokenClass.WHILE)) {
             expect(TokenClass.WHILE);
             expect(TokenClass.LPAR);
-            expectExp();
+            parseExps(true);
             expect(TokenClass.RPAR);
-            expectStmt();
-            parseStmts();
+            parseStmts(true);
+            parseStmts(false);
         }
+        // Check for: "if" "(" exp ")" stmt ["else" stmt]
         else if (accept(TokenClass.IF)) {
             expect(TokenClass.IF);
             expect(TokenClass.LPAR);
-            expectExp();
-            expect(TokenClass.RPAR);
-            expectStmt();
+            parseExps(true);         
+            expect(TokenClass.RPAR);           
+            parseStmts(true);
             if (accept(TokenClass.ELSE)) {
                 expect(TokenClass.ELSE);
-                expectStmt();
+                parseStmts(true);
             }
-            parseStmts();
+            parseStmts(false);
         }
-        else if (accept(TokenClass.RETURN)) {
-            expect(TokenClass.RETURN);
-            // If we can accept any of the starting Tokens of an exp
-            if (accept(TokenClass.LPAR, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.MINUS, TokenClass.ASTERIX, TokenClass.SIZEOF)) {
-                expectExp();
-            }
-            expect(TokenClass.SC);
-            parseStmts();
+        // Check for: "{" (vardecl)* (stmt)* "}"
+        else if (accept(TokenClass.LBRA)) {
+            expect(TokenClass.LBRA);
+            parseVarDecls(false);
+            parseStmts(false);
+            expect(TokenClass.RBRA);
+            parseStmts(false);
         }
-        else if (accept(TokenClass.LPAR, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.MINUS, TokenClass.ASTERIX, TokenClass.SIZEOF)) {
-            expectExp();
+        // Check for: exp ["=" exp] ";"
+        // If nextToken is in [ CHAR_LITERAL, STRING_LITERAL, ASTERIX, SIZEOF, LPAR, IDENTIFIER, INT_LITERAL, MINUS ]
+        //                    ^ (List of exp starting Tokens)
+        else if (accept(TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.ASTERIX, TokenClass.SIZEOF, TokenClass.LPAR, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.MINUS)) {
+            parseExps(true);
             if (accept(TokenClass.ASSIGN)) {
                 expect(TokenClass.ASSIGN);
-                expectExp();
+                parseExps(true);
             }
             expect(TokenClass.SC);
-            parseStmts();
+            parseStmts(false);
+        }
+        // If we don't require a stmt.
+        else if (!required) {
+            return;
+        }
+        // If we do require a stmt, and therefore an exp, throw error since we haven't found one.
+        else {
+            error(TokenClass.INVALID);
         }
     }
 
-    // Expects exp
-    // exp     -> LPAR ( type RPAR exp | exp RPAR ) [postexp] 
-    //         -> CHAR_LITERAL [postexp]
-    //         -> STRING_LITERAL [postexp]
-    //         -> IDENT [postexp] 
-    //         -> IDENT LPAR [ exp (COMMA exp)* ] RPAR [postexp]
-    //         -> INT_LITERAL [postexp] 
-    //         -> MINUS (IDENT|INT_LITERL) [postexp]
-    //         -> ASTERIX exp [postexp]
-    //         -> SIZEOF LPAR type [postexp]
-    private void expectExp() {
-        if (accept(TokenClass.LPAR)) {
-            expect(TokenClass.LPAR);
-            // If we are about to see (type RPAR exp)
-            if (accept(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
-                if(TokenClass.STRUCT == expect(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID).tokenClass) {
-                    expect(TokenClass.IDENTIFIER);
-                }
-                if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
-                expect(TokenClass.RPAR);
-                expectExp();
-            }
-            // Else we expect to see  (exp RPAR)
-            else {
-                expectExp();
-                expect(TokenClass.RPAR);
-            }
-
-            parsePostExp();
-        }
-        else if (accept(TokenClass.CHAR_LITERAL)) {
+    // exp  -> CHAR_LITERAL
+    //      -> STRING_LITERAL
+    //      -> "*" exp
+    //      -> "sizeof" "(" type ")"
+    //      -> "(" exp ")"
+    //      -> "(" type ")" exp
+    //      -> IDENT
+    //      -> IDENT "(" [ exp ("," exp)* ] ")"
+    //      -> ["-"] (IDENT | INT_LITERAL)
+    //      -> exp (">" | "<" | ">=" | "<=" | "!=" | "==" | "+" | "-" | "/" | "*" | "%" | "||" | "&&") exp
+    //      -> exp "[" exp "]"
+    //      -> exp "." IDENT
+    private void parseExps(boolean required) {
+        boolean found = true;
+        // Check for: CHAR_LITERAL
+        if (accept(TokenClass.CHAR_LITERAL)) {
             expect(TokenClass.CHAR_LITERAL);
-
-            parsePostExp();
+            parseExps(false);
         }
+        // Check for: STRING_LITERAL
         else if (accept(TokenClass.STRING_LITERAL)) {
             expect(TokenClass.STRING_LITERAL);
-
-            parsePostExp();
+            parseExps(false);
         }
+        // Check for: ["-"] (IDENT | INT_LITERAL)
+        else if (accept(TokenClass.MINUS)) {
+            expect(TokenClass.MINUS);
+            if (accept(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL)) {
+                expect(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL);
+            }
+            else {
+                parseExps(true);
+            }
+            parseExps(false);
+        }
+        // Check for: "*" exp
+        else if (accept(TokenClass.ASTERIX)) {
+            expect(TokenClass.ASTERIX);
+            parseExps(true);
+            parseExps(false);
+        }
+        // Check for: "sizeof" "(" type ")"
+        else if (accept(TokenClass.SIZEOF)) {
+            expect(TokenClass.SIZEOF);
+            expect(TokenClass.LPAR);
+            parseType(true);
+            expect(TokenClass.RPAR);
+            parseExps(false);
+        }
+        // Check for: "(" exp ")" AND "(" type ")" exp
+        else if (accept(TokenClass.LPAR)) {
+            expect(TokenClass.LPAR);
+            // Check if this is a type
+            if (accept(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR , TokenClass.VOID)) {
+                parseType(true);                    
+                expect(TokenClass.RPAR);          
+                parseExps(true);
+            }
+            else {
+                parseExps(true);                     
+                expect(TokenClass.RPAR);
+            }
+            parseExps(false);
+        }
+        // Check for: IDENT AND IDENT "(" [ exp ("," exp)* ] ")"
         else if (accept(TokenClass.IDENTIFIER)) {
             expect(TokenClass.IDENTIFIER);
             if (accept(TokenClass.LPAR)) {
                 expect(TokenClass.LPAR);
+                // Check for no arguments.
                 if (!accept(TokenClass.RPAR)) {
-                    expectExp();
+                    parseExps(false);
                     while (accept(TokenClass.COMMA)) {
                         expect(TokenClass.COMMA);
-                        expectExp();
-                    }
+                        parseExps(true);
+                    }   
                 }
                 expect(TokenClass.RPAR);
             }
-
-            parsePostExp();
+            parseExps(false);
         }
+        // Check for: ["-"] (IDENT | INT_LITERAL)
         else if (accept(TokenClass.INT_LITERAL)) {
             expect(TokenClass.INT_LITERAL);
-
-            parsePostExp();
-        }
-        else if (accept(TokenClass.MINUS)) {
-            expect(TokenClass.MINUS);
-            expect(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL);
-
-            parsePostExp();
-        }
-        else if (accept(TokenClass.ASTERIX)) {
-            expect(TokenClass.ASTERIX);
-            expectExp();
-
-            parsePostExp();
-        }
-        else if (accept(TokenClass.SIZEOF)) {
-            expect(TokenClass.SIZEOF);
-            expect(TokenClass.LPAR);
-            expectType();
-            expect(TokenClass.RPAR);
-
-            parsePostExp();
+            parseExps(false);
         }
         else {
-            System.out.println("Error: Expected an exp");
-            error(TokenClass.LPAR, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.MINUS, TokenClass.IDENTIFIER, TokenClass.ASTERIX, TokenClass.SIZEOF);
+            found = false;
         }
-    }
-
-    // Parses postexp
-    // postexp -> (LSBR exp RSBR | DOT IDENT | op exp) [postexp]
-    //
-    // op      -> ( MINUS | ASTERIX | GT | LT | GE | LE | NE | EQ | PLUS | DIV | REM | OR | AND )
-    private void parsePostExp() {
-        // Check for postexp
-        // Check if we are about to see LSBR
-        if (accept(TokenClass.LSBR)) {
+        
+        // exp  -> exp (">" | "<" | ">=" | "<=" | "!=" | "==" | "+" | "-" | "/" | "*" | "%" | "||" | "&&") exp
+        //      -> exp "[" exp "]"
+        //      -> exp "." IDENT
+        // Now check for the tokens in any of the above cases.
+        // Check for: exp (">" | "<" | ">=" | "<=" | "!=" | "==" | "+" | "-" | "/" | "*" | "%" | "||" | "&&") exp
+        if (accept(TokenClass.GT, TokenClass.LT, TokenClass.GE, TokenClass.LE, TokenClass.NE, TokenClass.EQ, TokenClass.PLUS, TokenClass.MINUS, TokenClass.DIV, TokenClass.ASTERIX, TokenClass.REM, TokenClass.OR, TokenClass.AND)) {
+            expect(TokenClass.GT, TokenClass.LT, TokenClass.GE, TokenClass.LE, TokenClass.NE, TokenClass.EQ, TokenClass.PLUS, TokenClass.MINUS, TokenClass.DIV, TokenClass.ASTERIX, TokenClass.REM, TokenClass.OR, TokenClass.AND);            
+            parseExps(true);
+            parseExps(false);
+        }
+        // Check for:  exp "[" exp "]"
+        else if (accept(TokenClass.LSBR)) {
             expect(TokenClass.LSBR);
-            expectExp();
+            parseExps(true);
             expect(TokenClass.RSBR);
-            parsePostExp();
+            parseExps(false);
         }
-        // Check if we are about to see DOT
+        // Check for: exp "." IDENT
         else if (accept(TokenClass.DOT)) {
             expect(TokenClass.DOT);
             expect(TokenClass.IDENTIFIER);
-            parsePostExp();
+            parseExps(false);
         }
-        // Check if we are about to see an op
-        else if (accept(TokenClass.GT, TokenClass.LT, TokenClass.GE, TokenClass.LE, TokenClass.NE, TokenClass.EQ, TokenClass.PLUS, TokenClass.MINUS, TokenClass.DIV, TokenClass.ASTERIX, TokenClass.REM, TokenClass.OR, TokenClass.AND)) {
-            expect(TokenClass.GT, TokenClass.LT, TokenClass.GE, TokenClass.LE, TokenClass.NE, TokenClass.EQ, TokenClass.PLUS, TokenClass.MINUS, TokenClass.DIV, TokenClass.ASTERIX, TokenClass.REM, TokenClass.OR, TokenClass.AND);
-            expectExp();
-            parsePostExp();
+        else {
+            if (!found && required) {
+                error(TokenClass.INVALID);
+            }
         }
     }
-
 }
