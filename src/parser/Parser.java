@@ -100,7 +100,7 @@ public class Parser {
         for (TokenClass e : expected) {
             if (e == token.tokenClass) {
                 Token cur = token;
-                System.out.println("     " + cur);
+                // System.out.println("     " + cur);
                 nextToken();
                 return cur;
             }
@@ -144,16 +144,10 @@ public class Parser {
     private void parseStructDecls() {
         // Check for struct being used as a vardecl.
         TokenClass twoAhead;
-        try {
-            twoAhead = lookAhead(2).tokenClass;
-            if (twoAhead != TokenClass.LBRA) {
-                return;
-            }
+        twoAhead = lookAhead(2).tokenClass;
+        if (twoAhead != TokenClass.LBRA) {
+            return;
         }
-        catch (Exception e) {
-            error(token.tokenClass);
-        }
-        
         if (accept(TokenClass.STRUCT)) {
             expect(TokenClass.STRUCT);
             expect(TokenClass.IDENTIFIER);
@@ -162,7 +156,6 @@ public class Parser {
             parseVarDecls();
             expect(TokenClass.RBRA);
             expect(TokenClass.SC);
-            System.out.println("HERE");
             parseStructDecls();
         }
     }
@@ -188,11 +181,16 @@ public class Parser {
         // Check if this will be an invalid vardecl.
         TokenClass twoAhead   = lookAhead(2).tokenClass;
         TokenClass threeAhead = lookAhead(3).tokenClass;
+        TokenClass fourAhead =  lookAhead(4).tokenClass;
         if (twoAhead != TokenClass.SC) {
             if (twoAhead != TokenClass.LSBR) {
                 if (threeAhead != TokenClass.SC) {
                     if (threeAhead != TokenClass.LSBR) {
-                        return;
+                        if (fourAhead != TokenClass.SC) {
+                            if (fourAhead != TokenClass.LSBR) {
+                            return;
+                            }
+                        }
                     }
                 }
             }
@@ -221,9 +219,12 @@ public class Parser {
         // Check if this will be an invalid fundecl.
         TokenClass twoAhead   = lookAhead(2).tokenClass;
         TokenClass threeAhead = lookAhead(3).tokenClass;
+        TokenClass fourAhead  = lookAhead(4).tokenClass;
         if (twoAhead != TokenClass.LPAR) {
             if (threeAhead != TokenClass.LPAR) {
-                return;
+                if (fourAhead != TokenClass.LPAR) {
+                    return;
+                }
             }
         }
         if (accept(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
@@ -257,7 +258,6 @@ public class Parser {
         else {
             error(token.tokenClass);
         }
-        
         if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
     }
 
