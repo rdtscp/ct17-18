@@ -143,14 +143,7 @@ public class Parser {
     // structdecl -> structtype LBRA (vardecl)+ RBRA SC
     private void parseStructDecls() {
         // Check for struct being used as a vardecl.
-        TokenClass twoAhead;
-        try {
-            twoAhead = lookAhead(2).tokenClass;
-        }
-        catch (Exception e) {
-            error(TokenClass.INVALID);
-            return;
-        }
+        TokenClass twoAhead = lookAhead(2).tokenClass;
         if (twoAhead != TokenClass.LBRA) {
             return;
         }
