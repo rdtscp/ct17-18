@@ -196,9 +196,14 @@ public class Parser {
             }
         }
         if (accept(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
-            if(TokenClass.STRUCT == expect(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID).tokenClass) {
+            if (accept(TokenClass.STRUCT)) {
+                expect(TokenClass.STRUCT);
                 expect(TokenClass.IDENTIFIER);
             }
+            else if(accept(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
+                expect(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID);
+            }
+
             if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
             expect(TokenClass.IDENTIFIER);
             // Check for array declaration.
@@ -228,8 +233,12 @@ public class Parser {
             }
         }
         if (accept(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
-            if(TokenClass.STRUCT == expect(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID).tokenClass) {
+            if (accept(TokenClass.STRUCT)) {
+                expect(TokenClass.STRUCT);
                 expect(TokenClass.IDENTIFIER);
+            }
+            else if (accept(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
+                expect(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID);
             }
             if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
             expect(TokenClass.IDENTIFIER);
@@ -253,6 +262,7 @@ public class Parser {
             expect(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID);
         }
         else if (accept(TokenClass.STRUCT)) {
+            expect(TokenClass.STRUCT);
             expect(TokenClass.IDENTIFIER);
         }
         else {
@@ -277,9 +287,14 @@ public class Parser {
             }
         }
         if (accept(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
-            if(TokenClass.STRUCT == expect(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID).tokenClass) {
+            if (accept(TokenClass.STRUCT)) {
+                expect(TokenClass.STRUCT);
                 expect(TokenClass.IDENTIFIER);
             }
+            else if (accept(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
+                expect(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID);
+            }
+
             if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
             expect(TokenClass.IDENTIFIER);
             while (accept(TokenClass.COMMA)) {
@@ -414,9 +429,14 @@ public class Parser {
             expect(TokenClass.LPAR);
             // If we are about to see (type RPAR exp)
             if (accept(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
-                if(TokenClass.STRUCT == expect(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID).tokenClass) {
-                    expect(TokenClass.IDENTIFIER);
+                if (accept(TokenClass.STRUCT)) {
+                    expect(TokenClass.STRUCT);
+                    expect(TokenClass.IDENTIFIER);                    
                 }
+                else if (accept(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
+                    expect(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID);
+                }
+
                 if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
                 expect(TokenClass.RPAR);
                 expectExp();
