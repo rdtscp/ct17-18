@@ -143,10 +143,17 @@ public class Parser {
     // structdecl -> structtype LBRA (vardecl)+ RBRA SC
     private void parseStructDecls() {
         // Check for struct being used as a vardecl.
-        TokenClass twoAhead = lookAhead(2).tokenClass;
-        if (twoAhead != TokenClass.LBRA) {
-            return;
+        TokenClass twoAhead;
+        try {
+            twoAhead = lookAhead(2).tokenClass;
+            if (twoAhead != TokenClass.LBRA) {
+                return;
+            }
         }
+        catch (Exception e) {
+            error(token.tokenClass);
+        }
+        
         if (accept(TokenClass.STRUCT)) {
             expect(TokenClass.STRUCT);
             expect(TokenClass.IDENTIFIER);
@@ -241,9 +248,16 @@ public class Parser {
     // Expects a type
     // type    -> ( INT | CHAR | VOID | structtype) [ASTERIX]
     private void expectType() {
-        if(TokenClass.STRUCT == expect(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID).tokenClass) {
+        if (accept(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
+            expect(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID);
+        }
+        else if (accept(TokenClass.STRUCT)) {
             expect(TokenClass.IDENTIFIER);
         }
+        else {
+            error(token.tokenClass);
+        }
+        
         if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
     }
 
