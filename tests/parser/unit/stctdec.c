@@ -12,4 +12,8 @@ struct foo* foo(){}
 int main(){
     int foo;
     foo = 42;
+
+    sizeof(struct foo*);
+
 }
+

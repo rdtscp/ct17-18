@@ -363,11 +363,7 @@ public class Tokeniser {
                 peek = scanner.peek();
                 // Check that next char is a digit.
                 if (!Character.isDigit(peek)) {
-                    if (Character.isLetter(peek) || peek == '_') {
-                        error(c, scanner.getLine(), scanner.getColumn());
-                        return new Token(TokenClass.INVALID, scanner.getLine(), scanner.getColumn());
-                    }
-                    else return new Token(TokenClass.INT_LITERAL, sb.toString(), scanner.getLine(),scanner.getColumn());
+                    return new Token(TokenClass.INT_LITERAL, sb.toString(), scanner.getLine(),scanner.getColumn());
                 }
                 c = scanner.next();
                 sb.append(c);

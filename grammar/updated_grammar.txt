@@ -35,7 +35,7 @@ exp     -> LPAR ( type RPAR exp | exp RPAR ) [postexp]
         -> IDENT [postexp] 
         -> IDENT LPAR [ exp (COMMA exp)* ] RPAR [postexp] 
         -> INT_LITERAL [postexp] 
-        -> MINUS (IDENT|INT_LITERL) [postexp] 
+        -> MINUS (IDENT|INT_LITERAL) [postexp] 
         -> ASTERIX exp [postexp] 
         -> SIZEOF LPAR type RPAR [postexp]
 
