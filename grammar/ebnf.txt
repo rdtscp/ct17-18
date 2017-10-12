@@ -32,7 +32,8 @@ stmt       ::= block
 block      ::= "{" (vardecl)* (stmt)* "}"
 
 exp        ::= "(" exp ")"
-             | ["-"] (IDENT | INT_LITERAL)
+             | (IDENT | INT_LITERAL)
+             | "-" exp
              | CHAR_LITERAL
              | STRING_LITERAL
              | exp (">" | "<" | ">=" | "<=" | "!=" | "==" | "+" | "-" | "/" | "*" | "%" | "||" | "&&") exp  # binary operators
