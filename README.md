@@ -41,7 +41,7 @@ We will rely on bitbucket and it is mandatory to use it for this coursework.
 Bitbucket is an online repository that can be used with the git control revision system.
 
 Your first task should be to setup a bitbucket account using your university email address.
-You should then send register your bitbucket id with your university id using this [Google form](https://goo.gl/forms/PVAh0bmCZOqICZU92) so that we can run the automated test suite on your repository.
+You should then send register your bitbucket id with your university id using this [Google form](https://docs.google.com/forms/d/1z2EthflazoU2bvfnJlrCWB_-AqB4ZxIgsJW-8SWiXyM) so that we can run the automated test suite on your repository.
 Details on how to fork the ct-17-18 repository are given below.
 Important: do not share your code and repository with anyone and keep your source code secret.
 If we identify that two students have identical portion of code, both will be considered to have cheated.
@@ -75,6 +75,7 @@ You should grant the following users *write* access:
 
 * Christophe Dubach (username: cdubach)
 * Federico Pizzuti (username: fedepiz)
+* Adam Harries (username: AdamHarries)
 
 Next, you will have to clone the forked repository to your local machine. In order to clone the repository you should launch a terminal and type:
 ```
