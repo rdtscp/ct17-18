@@ -56,7 +56,7 @@ You should not have to modify these (unless otherwise stated in the file).
 Your next job will consists in extending the AST printer class provided to handle your newly added AST node classes.
 As seen during the course, the AST printer uses the visitor design pattern.
 
-It is highly recommendaed to follow the following format when printing the AST.
+It is important to respect the following format when printing the AST to ensure that your output can be validated by our automatic marking system.
 Using EBNF syntax, the output should be of the form: `AST_NODE_CLASS_NAME '(' [SUB_TREE (',' SUB_TREE)*] ')'`
 
 ### Examples:
@@ -70,6 +70,7 @@ Using EBNF syntax, the output should be of the form: `AST_NODE_CLASS_NAME '(' [S
 * `struct node_t { int field1; char field2; };` should result in `StructTypeDecl(node_t,VarDecl(INT,field1),VarDecl(CHAR,field2))`
 * `struct node_t n;` should result in `VarDecl(StructType(node_t), n)`
 
+Note that you are free to add white spaces in your output format; spaces, newlines and tabulations will be ignore by our comparison tool.
 
 See the file [fibonacci.c-ast-dump](./fibonacci.c-ast-dump) for an example output of `java -cp bin Main -ast tests/fibonacci.c fibonacci.c-ast-dump`.
 
