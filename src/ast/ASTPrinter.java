@@ -14,7 +14,7 @@ public class ASTPrinter implements ASTVisitor<Void> {
     public Void visitBlock(Block b) {
         writer.print("Block(");
         // to complete
-        writer.print("(");
+        writer.print(")");
         return null;
     }
 
