@@ -36,7 +36,6 @@ public class ASTPrinter implements ASTVisitor<Void> {
     public Void visitProgram(Program p) {
         writer.print("Program(");
         String delimiter = "";
-        System.out.println("Number of structdecls: " + p.structTypeDecls.size());
         for (StructTypeDecl std : p.structTypeDecls) {
             writer.print(delimiter);
             delimiter = ",";
