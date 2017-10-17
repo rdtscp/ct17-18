@@ -1,9 +1,11 @@
 package parser;
 
+import ast.BaseType;
 import ast.FunDecl;
 import ast.Program;
 import ast.StructTypeDecl;
 import ast.VarDecl;
+import ast.Type;
 import lexer.Token;
 import lexer.Tokeniser;
 import lexer.Token.TokenClass;
@@ -149,21 +151,33 @@ public class Parser {
     // Parses (structdecl)*
     // structdecl -> structtype LBRA (vardecl)+ RBRA SC
     private List<StructTypeDecl> parseStructDecls() {
-        List<StructTypeDecl> output = new ArrayList<StructTypeDecl>();
+        ArrayList<StructTypeDecl> output = new ArrayList<StructTypeDecl>();
         // Check for struct being used as a vardecl.
-        TokenClass twoAhead;
-        twoAhead = lookAhead(2).tokenClass;
-        if (twoAhead != TokenClass.LBRA) {
-            return output;
-        }
+        TokenClass twoAhead; twoAhead = lookAhead(2).tokenClass;
+        if (twoAhead != TokenClass.LBRA) return output;
+
+        // Parse the struct.
         if (accept(TokenClass.STRUCT)) {
             expect(TokenClass.STRUCT);
-            expect(TokenClass.IDENTIFIER);
+            
+            String structName;
+            ArrayList<VarDecl> varDecls = new ArrayList<VarDecl>();
+
+            // Get the name of this struct.
+            structName = expect(TokenClass.IDENTIFIER).data;
             expect(TokenClass.LBRA);
-            expectVarDecl();
-            parseVarDecls();
+
+            // Add all VarDecl's to our varDecl List.
+            varDecls.add(expectVarDecl());
+            varDecls.addAll(parseVarDecls());
+            
             expect(TokenClass.RBRA);
             expect(TokenClass.SC);
+
+            // Add this StructDecl to our output.
+            output.add(new StructTypeDecl(structName, varDecls));
+
+            // Try to parse more StructDecl's to add to our output.
             output.addAll(parseStructDecls());
         }
         return output;
@@ -172,23 +186,27 @@ public class Parser {
     // Expects a vardecl
     // vardecl -> type IDENT SC
     //         -> type IDENT LSBR INT_LITERAL RSBR SC
-    private List<VarDecl> expectVarDecl() {
-        expectType();
-        expect(TokenClass.IDENTIFIER);
+    private VarDecl expectVarDecl() {
+        Type type;
+        String varName;
+        type = expectType();
+        varName = expect(TokenClass.IDENTIFIER).data;
         if (accept(TokenClass.LSBR)) {
             expect(TokenClass.LSBR);
             expect(TokenClass.INT_LITERAL);
             expect(TokenClass.RSBR);
         }
         expect(TokenClass.SC);
-        return null;
+        return new VarDecl(type, varName);
     }
 
     // Parses: (vardecl)*
     // vardecl -> type IDENT SC
     //         -> type IDENT LSBR INT_LITERAL RSBR SC
     private List<VarDecl> parseVarDecls() {
+        // Declare the output.
         List<VarDecl> output = new ArrayList<VarDecl>();
+
         // Check if this will be an invalid vardecl.
         TokenClass twoAhead   = lookAhead(2).tokenClass;
         TokenClass threeAhead = lookAhead(3).tokenClass;
@@ -216,7 +234,12 @@ public class Parser {
             }
 
             if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
-            expect(TokenClass.IDENTIFIER);
+            String varName = expect(TokenClass.IDENTIFIER).data;
+
+            BaseType type;
+            type = BaseType.CHAR;
+            output.add(new VarDecl(type, varName));
+
             // Check for array declaration.
             if (accept(TokenClass.LSBR)) {
                 expect(TokenClass.LSBR);
@@ -271,9 +294,20 @@ public class Parser {
 
     // Expects a type
     // type    -> ( INT | CHAR | VOID | structtype) [ASTERIX]
-    private void expectType() {
+    private Type expectType() {
+        Type output = null;
         if (accept(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
-            expect(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID);
+            TokenClass typeToken = expect(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID).tokenClass;
+            switch (typeToken) {
+                case INT:
+                    output = BaseType.INT;
+                    break;
+                case CHAR:
+                    output = BaseType.CHAR;
+                    break;
+                default:
+                    break;
+            }
         }
         else if (accept(TokenClass.STRUCT)) {
             expect(TokenClass.STRUCT);
@@ -282,7 +316,10 @@ public class Parser {
         else {
             error(token.tokenClass);
         }
-        if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
+        if (accept(TokenClass.ASTERIX)) {
+            expect(TokenClass.ASTERIX);
+        }
+        return output;
     }
 
     // Expects params
