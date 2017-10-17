@@ -10,6 +10,7 @@ import lexer.Token.TokenClass;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Queue;
 
 
@@ -148,11 +149,12 @@ public class Parser {
     // Parses (structdecl)*
     // structdecl -> structtype LBRA (vardecl)+ RBRA SC
     private List<StructTypeDecl> parseStructDecls() {
+        List<StructTypeDecl> output = new ArrayList<StructTypeDecl>();
         // Check for struct being used as a vardecl.
         TokenClass twoAhead;
         twoAhead = lookAhead(2).tokenClass;
         if (twoAhead != TokenClass.LBRA) {
-            return null;
+            return output;
         }
         if (accept(TokenClass.STRUCT)) {
             expect(TokenClass.STRUCT);
@@ -162,8 +164,9 @@ public class Parser {
             parseVarDecls();
             expect(TokenClass.RBRA);
             expect(TokenClass.SC);
-            parseStructDecls();
+            output.addAll(parseStructDecls());
         }
+        return output;
     }
 
     // Expects a vardecl
@@ -178,12 +181,14 @@ public class Parser {
             expect(TokenClass.RSBR);
         }
         expect(TokenClass.SC);
+        return null;
     }
 
     // Parses: (vardecl)*
     // vardecl -> type IDENT SC
     //         -> type IDENT LSBR INT_LITERAL RSBR SC
     private List<VarDecl> parseVarDecls() {
+        List<VarDecl> output = new ArrayList<VarDecl>();
         // Check if this will be an invalid vardecl.
         TokenClass twoAhead   = lookAhead(2).tokenClass;
         TokenClass threeAhead = lookAhead(3).tokenClass;
@@ -194,7 +199,7 @@ public class Parser {
                     if (threeAhead != TokenClass.LSBR) {
                         if (fourAhead != TokenClass.SC) {
                             if (fourAhead != TokenClass.LSBR) {
-                            return null;
+                                return output;
                             }
                         }
                     }
@@ -220,13 +225,15 @@ public class Parser {
             }
             expect(TokenClass.SC);
             // Try to parse more vardecl
-            parseVarDecls();
+            output.addAll(parseVarDecls());
         }
+        return output;
     }
 
     // Parses: (fundecl)*
     // fundecl -> type IDENT LPAR params RPAR LBRA (vardecl)* (stmt)* RBRA
     private List<FunDecl> parseFunDecls() {
+        List<FunDecl> output = new ArrayList<FunDecl>();
         // Check if this will be an invalid fundecl.
         TokenClass twoAhead   = lookAhead(2).tokenClass;
         TokenClass threeAhead = lookAhead(3).tokenClass;
@@ -234,7 +241,7 @@ public class Parser {
         if (twoAhead != TokenClass.LPAR) {
             if (threeAhead != TokenClass.LPAR) {
                 if (fourAhead != TokenClass.LPAR) {
-                    return null;
+                    return output;
                 }
             }
         }
@@ -256,8 +263,9 @@ public class Parser {
             parseStmts();
             expect(TokenClass.RBRA);
             // Try to parse more fundecl
-            parseFunDecls();
+            output.addAll(parseFunDecls());
         }
+        return output;
     }
 
 
