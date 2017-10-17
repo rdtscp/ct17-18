@@ -36,6 +36,7 @@ public class ASTPrinter implements ASTVisitor<Void> {
     public Void visitProgram(Program p) {
         writer.print("Program(");
         String delimiter = "";
+        System.out.println("Number of structdecls: " + p.structTypeDecls.size());
         for (StructTypeDecl std : p.structTypeDecls) {
             writer.print(delimiter);
             delimiter = ",";
@@ -52,7 +53,8 @@ public class ASTPrinter implements ASTVisitor<Void> {
             fd.accept(this);
         }
         writer.print(")");
-	    writer.flush();
+        writer.print("\n");
+        writer.flush();
         return null;
     }
 
@@ -75,13 +77,21 @@ public class ASTPrinter implements ASTVisitor<Void> {
 
     @Override
     public Void visitBaseType(BaseType bt) {
-        // to complete ...
+        writer.print(bt);
         return null;
     }
 
     @Override
     public Void visitStructTypeDecl(StructTypeDecl st) {
-        // to complete ...
+        writer.print("StructTypeDecl(");
+        writer.print(st.structName + ",");
+        String delimiter = "";
+        for (VarDecl vd : st.varDecls) {
+            writer.print(delimiter);
+            delimiter = ",";
+            vd.accept(this);
+        }     
+        writer.print(")");
         return null;
     }
 
