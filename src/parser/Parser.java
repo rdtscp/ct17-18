@@ -115,7 +115,7 @@ public class Parser {
         }
 
         error(expected);
-        return null;
+        return token;
     }
 
     /*
@@ -151,19 +151,20 @@ public class Parser {
     // Parses (structdecl)*
     // structdecl -> structtype LBRA (vardecl)+ RBRA SC
     private List<StructTypeDecl> parseStructDecls() {
+        // Declare the output.
         ArrayList<StructTypeDecl> output = new ArrayList<StructTypeDecl>();
+
         // Check for struct being used as a vardecl.
-        TokenClass twoAhead; twoAhead = lookAhead(2).tokenClass;
-        if (twoAhead != TokenClass.LBRA) return output;
+        if (lookAhead(2).tokenClass != TokenClass.LBRA) return output;
 
         // Parse the struct.
         if (accept(TokenClass.STRUCT)) {
-            expect(TokenClass.STRUCT);
-            
-            String structName;
-            ArrayList<VarDecl> varDecls = new ArrayList<VarDecl>();
 
-            // Get the name of this struct.
+            // Define the struct info.
+            ArrayList<VarDecl> varDecls = new ArrayList<VarDecl>();
+            String structName;
+
+            expect(TokenClass.STRUCT);
             structName = expect(TokenClass.IDENTIFIER).data;
             expect(TokenClass.LBRA);
 
@@ -206,6 +207,8 @@ public class Parser {
     private List<VarDecl> parseVarDecls() {
         // Declare the output.
         List<VarDecl> output = new ArrayList<VarDecl>();
+        String varName;
+        Type type;
 
         // Check if this will be an invalid vardecl.
         TokenClass twoAhead   = lookAhead(2).tokenClass;
@@ -234,10 +237,8 @@ public class Parser {
             }
 
             if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
-            String varName = expect(TokenClass.IDENTIFIER).data;
-
-            BaseType type;
-            type = BaseType.CHAR;
+            varName = expect(TokenClass.IDENTIFIER).data;
+            type    = BaseType.CHAR;
             output.add(new VarDecl(type, varName));
 
             // Check for array declaration.
