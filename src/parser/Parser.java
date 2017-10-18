@@ -5,6 +5,8 @@ import ast.FunDecl;
 import ast.Program;
 import ast.StructTypeDecl;
 import ast.StructType;
+import ast.ArrayType;
+import ast.PointerType;
 import ast.VarDecl;
 import ast.Type;
 import lexer.Token;
@@ -245,7 +247,7 @@ public class Parser {
                 }
                 expect(TokenClass.SC);
 
-                output.add(new VarDecl(new StructType(structType, varName), varName));
+                output.add(new VarDecl(new StructType(structType), varName));
             }
             else if(accept(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
                 String varName;
@@ -253,14 +255,20 @@ public class Parser {
 
                 type = tokenToType(expect(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID).tokenClass);
 
+                if (accept(TokenClass.ASTERIX)) {
+                    expect(TokenClass.ASTERIX);
+                    type = new PointerType(type);
+                }
+
                 if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
                 varName = expect(TokenClass.IDENTIFIER).data;
 
                 // Check for array declaration.
                 if (accept(TokenClass.LSBR)) {
                     expect(TokenClass.LSBR);
-                    expect(TokenClass.INT_LITERAL);
+                    String arraySize = expect(TokenClass.INT_LITERAL).data;
                     expect(TokenClass.RSBR);
+                    type = new ArrayType(type, arraySize);
                 }
                 expect(TokenClass.SC);
 
@@ -609,7 +617,7 @@ public class Parser {
                        HELPERS
     \*****************************************/
 
-
+    /* Converts a TokenClass enum to a BaseType enum */
     private Type tokenToType(TokenClass input) {
         Type output;
         switch (input) {
@@ -618,6 +626,9 @@ public class Parser {
                 break;
             case CHAR:
                 output = BaseType.CHAR;
+                break;
+            case VOID:
+                output = BaseType.VOID;
                 break;
             default:
                 output = null;
