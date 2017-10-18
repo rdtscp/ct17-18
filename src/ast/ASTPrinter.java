@@ -103,6 +103,16 @@ public class ASTPrinter implements ASTVisitor<Void> {
 
     @Override
     public Void visitPointerType(PointerType pt) {
+        writer.print("PointerType(");
+        writer.print(pt.type + ")");
+        return null;
+    }
+
+    @Override
+    public Void visitArrayType(ArrayType at) {
+        writer.print("ArrayType(");
+        at.arrayType.accept(this);
+        writer.print("," + at.size + ")");
         return null;
     }
 
