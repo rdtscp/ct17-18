@@ -10,6 +10,7 @@ public interface ASTVisitor<T> {
     public T visitVarExpr(VarExpr v);
     public T visitStructType(StructType st);
     public T visitPointerType(PointerType pt);
+    public T visitArrayType(ArrayType at);
 
     // to complete ... (should have one visit method for each concrete AST node class)
 }
