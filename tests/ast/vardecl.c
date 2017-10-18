@@ -1,11 +1,19 @@
-struct foo {
-    int structint1;
-    char structchar1;
-};
-struct foo2 {
-    int structint2;
-    char structchar2;
-};
+// struct foo {
+//     int x;
+//     char y;
+// };
 
-int intvar;
-char intvar2;
+// int x;
+// char y;
+
+// struct foo * fooptr;
+// int * xptr;
+// char * yptr;
+
+// int *x[5];
+// char * x[5];
+// struct foo * fooarr[5];
+
+void main(int arg1, char arg2, struct foo arg3) {
+    
+}
