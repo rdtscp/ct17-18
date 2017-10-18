@@ -27,7 +27,7 @@ public class ASTPrinter implements ASTVisitor<Void> {
             vd.accept(this);
             writer.print(",");
         }
-        fd.block.accept(this);
+        // fd.block.accept(this);
         writer.print(")");
         return null;
     }
@@ -104,7 +104,8 @@ public class ASTPrinter implements ASTVisitor<Void> {
     @Override
     public Void visitPointerType(PointerType pt) {
         writer.print("PointerType(");
-        writer.print(pt.type + ")");
+        pt.type.accept(this);
+        writer.print(")");
         return null;
     }
 
