@@ -4,6 +4,7 @@ import ast.BaseType;
 import ast.FunDecl;
 import ast.Program;
 import ast.StructTypeDecl;
+import ast.StructType;
 import ast.VarDecl;
 import ast.Type;
 import lexer.Token;
@@ -108,7 +109,6 @@ public class Parser {
         for (TokenClass e : expected) {
             if (e == token.tokenClass) {
                 Token cur = token;
-                // System.out.println("     " + cur);
                 nextToken();
                 return cur;
             }
@@ -207,8 +207,6 @@ public class Parser {
     private List<VarDecl> parseVarDecls() {
         // Declare the output.
         List<VarDecl> output = new ArrayList<VarDecl>();
-        String varName;
-        Type type;
 
         // Check if this will be an invalid vardecl.
         TokenClass twoAhead   = lookAhead(2).tokenClass;
@@ -229,25 +227,46 @@ public class Parser {
         }
         if (accept(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
             if (accept(TokenClass.STRUCT)) {
+                String structType;
+                String varName;
+                Type type;
+
                 expect(TokenClass.STRUCT);
-                expect(TokenClass.IDENTIFIER);
+                structType = expect(TokenClass.IDENTIFIER).data;
+                // Check if this is a pointer.
+                if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
+                varName = expect(TokenClass.IDENTIFIER).data;
+
+                // Check for array declaration.
+                if (accept(TokenClass.LSBR)) {
+                    expect(TokenClass.LSBR);
+                    expect(TokenClass.INT_LITERAL);
+                    expect(TokenClass.RSBR);
+                }
+                expect(TokenClass.SC);
+
+                output.add(new VarDecl(new StructType(structType, varName), varName));
             }
             else if(accept(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
-                expect(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID);
-            }
+                String varName;
+                Type type;
 
-            if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
-            varName = expect(TokenClass.IDENTIFIER).data;
-            type    = BaseType.CHAR;
-            output.add(new VarDecl(type, varName));
+                type = tokenToType(expect(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID).tokenClass);
 
-            // Check for array declaration.
-            if (accept(TokenClass.LSBR)) {
-                expect(TokenClass.LSBR);
-                expect(TokenClass.INT_LITERAL);
-                expect(TokenClass.RSBR);
+                if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
+                varName = expect(TokenClass.IDENTIFIER).data;
+
+                // Check for array declaration.
+                if (accept(TokenClass.LSBR)) {
+                    expect(TokenClass.LSBR);
+                    expect(TokenClass.INT_LITERAL);
+                    expect(TokenClass.RSBR);
+                }
+                expect(TokenClass.SC);
+
+                output.add(new VarDecl(type, varName));
             }
-            expect(TokenClass.SC);
+            
             // Try to parse more vardecl
             output.addAll(parseVarDecls());
         }
@@ -583,6 +602,28 @@ public class Parser {
             expectExp();
             parsePostExp();
         }
+    }
+
+
+    /*****************************************\
+                       HELPERS
+    \*****************************************/
+
+
+    private Type tokenToType(TokenClass input) {
+        Type output;
+        switch (input) {
+            case INT:
+                output = BaseType.INT;
+                break;
+            case CHAR:
+                output = BaseType.CHAR;
+                break;
+            default:
+                output = null;
+                break;
+        }
+        return output;
     }
 
 }
