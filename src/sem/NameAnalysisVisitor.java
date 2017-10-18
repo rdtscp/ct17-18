@@ -47,6 +47,54 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 		return null;
 	}
 
+	@Override
+	public Void visitStructType(StructType st) {
+		// To be completed...
+		return null;
+	}
+
+	@Override
+	public Void visitPointerType(PointerType pt) {
+		// To be completed...
+		return null;
+	}
+
+	@Override
+	public Void visitArrayType(ArrayType at) {
+		// To be completed...
+		return null;
+	}
+
+	@Override
+	public Void visitWhile(While w) {
+		// To be completed...
+		return null;
+	}
+
+	@Override
+	public Void visitIf(If i) {
+		// To be completed...
+		return null;
+	}
+
+	@Override
+	public Void visitAssign(Assign a) {
+		// To be completed...
+		return null;
+	}
+
+	@Override
+	public Void visitReturn(Return r) {
+		// To be completed...
+		return null;
+	}
+
+	@Override
+	public Void visitExprStmt(ExprStmt es) {
+		// To be completed...
+		return null;
+	}
+
 	// To be completed...
 
 

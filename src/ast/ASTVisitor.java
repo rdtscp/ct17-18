@@ -11,6 +11,11 @@ public interface ASTVisitor<T> {
     public T visitStructType(StructType st);
     public T visitPointerType(PointerType pt);
     public T visitArrayType(ArrayType at);
+    public T visitWhile(While w);
+    public T visitIf(If i);
+    public T visitAssign(Assign a);
+    public T visitReturn(Return r);
+    public T visitExprStmt(ExprStmt es);
 
     // to complete ... (should have one visit method for each concrete AST node class)
 }
