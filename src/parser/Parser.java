@@ -231,36 +231,17 @@ public class Parser {
             if (accept(TokenClass.STRUCT)) {
                 String structType;
                 String varName;
-                Type type;
+                Type varType;
 
                 expect(TokenClass.STRUCT);
                 structType = expect(TokenClass.IDENTIFIER).data;
+                varType = new StructType(structType);
+
                 // Check if this is a pointer.
-                if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
-                varName = expect(TokenClass.IDENTIFIER).data;
-
-                // Check for array declaration.
-                if (accept(TokenClass.LSBR)) {
-                    expect(TokenClass.LSBR);
-                    expect(TokenClass.INT_LITERAL);
-                    expect(TokenClass.RSBR);
-                }
-                expect(TokenClass.SC);
-
-                output.add(new VarDecl(new StructType(structType), varName));
-            }
-            else if(accept(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
-                String varName;
-                Type type;
-
-                type = tokenToType(expect(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID).tokenClass);
-
                 if (accept(TokenClass.ASTERIX)) {
                     expect(TokenClass.ASTERIX);
-                    type = new PointerType(type);
+                    varType = new PointerType(varType);
                 }
-
-                if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
                 varName = expect(TokenClass.IDENTIFIER).data;
 
                 // Check for array declaration.
@@ -268,11 +249,39 @@ public class Parser {
                     expect(TokenClass.LSBR);
                     String arraySize = expect(TokenClass.INT_LITERAL).data;
                     expect(TokenClass.RSBR);
-                    type = new ArrayType(type, arraySize);
+                    varType = new ArrayType(varType, arraySize);
                 }
                 expect(TokenClass.SC);
 
-                output.add(new VarDecl(type, varName));
+                output.add(new VarDecl(varType, varName));
+            }
+            else if(accept(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
+                String varName;
+                Type varType;
+
+                varType = tokenToType(expect(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID).tokenClass);
+
+                if (accept(TokenClass.ASTERIX)) {
+                    expect(TokenClass.ASTERIX);
+                    varType = new PointerType(varType);
+                }
+
+                if (accept(TokenClass.ASTERIX)) {
+                    expect(TokenClass.ASTERIX);
+                    varType = new PointerType(varType);
+                }
+                varName = expect(TokenClass.IDENTIFIER).data;
+
+                // Check for array declaration.
+                if (accept(TokenClass.LSBR)) {
+                    expect(TokenClass.LSBR);
+                    String arraySize = expect(TokenClass.INT_LITERAL).data;
+                    expect(TokenClass.RSBR);
+                    varType = new ArrayType(varType, arraySize);
+                }
+                expect(TokenClass.SC);
+
+                output.add(new VarDecl(varType, varName));
             }
             
             // Try to parse more vardecl
@@ -285,6 +294,7 @@ public class Parser {
     // fundecl -> type IDENT LPAR params RPAR LBRA (vardecl)* (stmt)* RBRA
     private List<FunDecl> parseFunDecls() {
         List<FunDecl> output = new ArrayList<FunDecl>();
+
         // Check if this will be an invalid fundecl.
         TokenClass twoAhead   = lookAhead(2).tokenClass;
         TokenClass threeAhead = lookAhead(3).tokenClass;
@@ -297,22 +307,51 @@ public class Parser {
             }
         }
         if (accept(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
+            Type funType;
+            String funName;
+            List<VarDecl> funArgs;
+
             if (accept(TokenClass.STRUCT)) {
+                String structType;
+
                 expect(TokenClass.STRUCT);
-                expect(TokenClass.IDENTIFIER);
+                structType = expect(TokenClass.IDENTIFIER).data;
+                funType = new StructType(structType);
+                if (accept(TokenClass.ASTERIX)) {
+                    expect(TokenClass.ASTERIX);
+                    funType = new PointerType(funType);
+                }
+
+                funName = expect(TokenClass.IDENTIFIER).data;
+                expect(TokenClass.LPAR);
+                funArgs = expectParams();
+                expect(TokenClass.RPAR);
+                expect(TokenClass.LBRA);
+                parseVarDecls();
+                parseStmts();
+                expect(TokenClass.RBRA);
+                
+                output.add(new FunDecl(funType, funName, funArgs, null));
             }
             else if (accept(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
-                expect(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID);
+                funType = tokenToType(expect(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID).tokenClass);
+                if (accept(TokenClass.ASTERIX)) {
+                    expect(TokenClass.ASTERIX);
+                    funType = new PointerType(funType);
+                }
+
+                funName = expect(TokenClass.IDENTIFIER).data;
+                expect(TokenClass.LPAR);
+                funArgs = expectParams();
+                expect(TokenClass.RPAR);
+                expect(TokenClass.LBRA);
+                parseVarDecls();
+                parseStmts();
+                expect(TokenClass.RBRA);
+                
+                output.add(new FunDecl(funType, funName, funArgs, null));
             }
-            if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
-            expect(TokenClass.IDENTIFIER);
-            expect(TokenClass.LPAR);
-            expectParams();
-            expect(TokenClass.RPAR);
-            expect(TokenClass.LBRA);
-            parseVarDecls();
-            parseStmts();
-            expect(TokenClass.RBRA);
+            
             // Try to parse more fundecl
             output.addAll(parseFunDecls());
         }
@@ -325,34 +364,30 @@ public class Parser {
     private Type expectType() {
         Type output = null;
         if (accept(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
-            TokenClass typeToken = expect(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID).tokenClass;
-            switch (typeToken) {
-                case INT:
-                    output = BaseType.INT;
-                    break;
-                case CHAR:
-                    output = BaseType.CHAR;
-                    break;
-                default:
-                    break;
+            output = tokenToType(expect(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID).tokenClass);
+            if (accept(TokenClass.ASTERIX)) {
+                expect(TokenClass.ASTERIX);
+                output = new PointerType(output);
             }
         }
         else if (accept(TokenClass.STRUCT)) {
             expect(TokenClass.STRUCT);
-            expect(TokenClass.IDENTIFIER);
+            output = new StructType(expect(TokenClass.IDENTIFIER).data);
+            if (accept(TokenClass.ASTERIX)) {
+                expect(TokenClass.ASTERIX);
+                output = new PointerType(output);
+            }
         }
         else {
             error(token.tokenClass);
-        }
-        if (accept(TokenClass.ASTERIX)) {
-            expect(TokenClass.ASTERIX);
         }
         return output;
     }
 
     // Expects params
     // params  -> [ type IDENT (COMMA type IDENT)* ]
-    private void expectParams() {
+    private List<VarDecl> expectParams() {
+        ArrayList<VarDecl> output = new ArrayList<VarDecl>();
         // Check for vardecl && fundecl.
         TokenClass twoAhead   = lookAhead(2).tokenClass;
         TokenClass threeAhead = lookAhead(3).tokenClass;
@@ -360,28 +395,51 @@ public class Parser {
             if (twoAhead != TokenClass.COMMA) {
                 if (threeAhead != TokenClass.RPAR) {
                     if (threeAhead != TokenClass.COMMA) {
-                        return;
+                        return output;
                     }
                 }
             }
         }
         if (accept(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
             if (accept(TokenClass.STRUCT)) {
-                expect(TokenClass.STRUCT);
-                expect(TokenClass.IDENTIFIER);
-            }
-            else if (accept(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
-                expect(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID);
-            }
+                String structType;
+                Type paramType;
+                String paramName;
 
-            if (accept(TokenClass.ASTERIX)) expect(TokenClass.ASTERIX);
-            expect(TokenClass.IDENTIFIER);
+                expect(TokenClass.STRUCT);
+                structType = expect(TokenClass.IDENTIFIER).data;
+                paramType = new StructType(structType);
+
+                if (accept(TokenClass.ASTERIX)) {
+                    expect(TokenClass.ASTERIX);
+                    paramType = new PointerType(paramType);
+                }
+                paramName = expect(TokenClass.IDENTIFIER).data;
+
+                output.add(new VarDecl(paramType, paramName));
+            }
+            else if (accept(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
+                Type paramType;
+                String paramName;
+
+                paramType = tokenToType(expect(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID).tokenClass);
+                paramName = expect(TokenClass.IDENTIFIER).data;
+
+                output.add(new VarDecl(paramType, paramName));                
+            }
+            
             while (accept(TokenClass.COMMA)) {
+                Type paramType;
+                String paramName;
+
                 expect(TokenClass.COMMA);
-                expectType();
-                expect(TokenClass.IDENTIFIER);
+                paramType = expectType();
+                paramName = expect(TokenClass.IDENTIFIER).data;
+
+                output.add(new VarDecl(paramType, paramName));                
             }
         }
+        return output;
     }
 
     // Expects stmt
