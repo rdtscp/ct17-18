@@ -8,6 +8,7 @@ public interface ASTVisitor<T> {
     public T visitProgram(Program p);
     public T visitVarDecl(VarDecl vd);
     public T visitVarExpr(VarExpr v);
+    public T visitStructType(StructType st);
 
     // to complete ... (should have one visit method for each concrete AST node class)
 }
