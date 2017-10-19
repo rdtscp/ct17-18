@@ -595,6 +595,7 @@ public class Parser {
                 Expr expr2 = expectExp();
                 expect(TokenClass.SC);
                 Assign assign = new Assign(expr1, expr2);
+                output.add(assign);
                 output.addAll(parseStmts());
             }
             // ExprStmt
