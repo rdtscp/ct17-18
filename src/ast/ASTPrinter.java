@@ -122,7 +122,7 @@ public class ASTPrinter implements ASTVisitor<Void> {
             }
         }
         if (numStmts > 0) {
-            writer.print(",");
+            if (numVarDecls > 0) writer.print(",");
             for (int i=0; i < numStmts; i++) {
                 b.stmts.get(i).accept(this);
                 if (i != numVarDecls - 1) writer.print(",");
@@ -182,7 +182,98 @@ public class ASTPrinter implements ASTVisitor<Void> {
         es.expr.accept(this);
         writer.print(")");
 		return null;
-	}
+    }
+    
+    @Override
+    public Void visitIntLiteral(IntLiteral il) {
+        writer.print("IntLiteral(" + il.val + ")");
+        return null;
+    }
+
+    @Override
+    public Void visitStrLiteral(StrLiteral sl) {
+        writer.print("StrLiteral(" + sl.val + ")");
+        return null;
+    }
+
+    @Override
+    public Void visitChrLiteral(ChrLiteral cl) {
+        writer.print("ChrLiteral(" + cl.val + ")");
+        return null;
+    }
+
+    @Override
+    public Void visitArrayAccessExpr(ArrayAccessExpr aae) {
+        writer.print("ArrayAccessExpr(");
+        aae.array.accept(this);
+        writer.print(",");
+        aae.index.accept(this);
+        writer.print(")");
+        return null;
+    }
+
+    @Override
+    public Void visitBinOp(BinOp bo) {
+        writer.print("BinOp(");
+        bo.expr1.accept(this);
+        writer.print("," + bo.op + ",");
+        bo.expr2.accept(this);
+        writer.print(")");
+        return null;
+    }
+
+    @Override
+    public Void visitFieldAccessExpr(FieldAccessExpr fae) {
+        writer.print("FieldAccessExpr(");
+        fae.struct.accept(this);
+        writer.print("," + fae.field + ")");
+        return null;
+    }
+
+    @Override
+    public Void visitFunCallExpr(FunCallExpr fce) {
+        writer.print("FunCallExpr(" + fce.name + ",");
+        int numExprs = fce.exprs.size();
+        if (numExprs > 0) {
+            for (int i=0; i < numExprs; i++) {
+                fce.exprs.get(i).accept(this);
+                if (i != numExprs - 1) writer.print(",");
+            }
+        }
+        writer.print(")");
+        return null;
+    }
+
+    @Override
+    public Void visitSizeOfExpr(SizeOfExpr soe) {
+        writer.print("SizeOfExpr(");
+        soe.type.accept(this);
+        writer.print(")");
+        return null;
+    }
+
+    @Override
+    public Void visitTypecastExpr(TypecastExpr te) {
+        writer.print("TypecaseExpr(");
+        te.type.accept(this);
+        writer.print(",");
+        te.expr.accept(this);
+        writer.print(")");
+        return null;
+    }
+
+    @Override
+    public Void visitValueAtExpr(ValueAtExpr vae) {
+        writer.print("ValueAtExpr(");
+        vae.expr.accept(this);
+        writer.print(")");
+        return null;
+    }
+
+    @Override
+    public Void visitOp(Op o) {
+        return null;
+    }
 
     // to complete ...
     

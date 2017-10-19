@@ -95,6 +95,61 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		return null;
 	}
 
+	@Override
+    public Type visitIntLiteral(IntLiteral il) {
+        return null;
+    }
+
+    @Override
+    public Type visitStrLiteral(StrLiteral sl) {
+        return null;
+    }
+
+    @Override
+    public Type visitChrLiteral(ChrLiteral cl) {
+        return null;
+    }
+
+    @Override
+    public Type visitArrayAccessExpr(ArrayAccessExpr aae) {
+        return null;
+    }
+
+    @Override
+    public Type visitBinOp(BinOp bo) {
+        return null;
+    }
+
+    @Override
+    public Type visitFieldAccessExpr(FieldAccessExpr fae) {
+        return null;
+    }
+
+    @Override
+    public Type visitFunCallExpr(FunCallExpr fce) {
+        return null;
+    }
+
+    @Override
+    public Type visitSizeOfExpr(SizeOfExpr soe) {
+        return null;
+    }
+
+    @Override
+    public Type visitTypecastExpr(TypecastExpr te) {
+        return null;
+    }
+
+    @Override
+    public Type visitValueAtExpr(ValueAtExpr vae) {
+        return null;
+    }
+
+    @Override
+    public Type visitOp(Op o) {
+        return null;
+    }
+
 	// To be completed...
 
 

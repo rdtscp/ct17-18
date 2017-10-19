@@ -95,6 +95,61 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 		return null;
 	}
 
+	@Override
+    public Void visitIntLiteral(IntLiteral il) {
+        return null;
+    }
+
+    @Override
+    public Void visitStrLiteral(StrLiteral sl) {
+        return null;
+    }
+
+    @Override
+    public Void visitChrLiteral(ChrLiteral cl) {
+        return null;
+    }
+
+    @Override
+    public Void visitArrayAccessExpr(ArrayAccessExpr aae) {
+        return null;
+    }
+
+    @Override
+    public Void visitBinOp(BinOp bo) {
+        return null;
+    }
+
+    @Override
+    public Void visitFieldAccessExpr(FieldAccessExpr fae) {
+        return null;
+    }
+
+    @Override
+    public Void visitFunCallExpr(FunCallExpr fce) {
+        return null;
+    }
+
+    @Override
+    public Void visitSizeOfExpr(SizeOfExpr soe) {
+        return null;
+    }
+
+    @Override
+    public Void visitTypecastExpr(TypecastExpr te) {
+        return null;
+    }
+
+    @Override
+    public Void visitValueAtExpr(ValueAtExpr vae) {
+        return null;
+    }
+
+    @Override
+    public Void visitOp(Op o) {
+        return null;
+    }
+
 	// To be completed...
 
 
