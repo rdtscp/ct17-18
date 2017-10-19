@@ -164,10 +164,9 @@ public class Parser {
 
             // Define the struct info.
             ArrayList<VarDecl> varDecls = new ArrayList<VarDecl>();
-            String structName;
 
             expect(TokenClass.STRUCT);
-            structName = expect(TokenClass.IDENTIFIER).data;
+            String structName = expect(TokenClass.IDENTIFIER).data;
             expect(TokenClass.LBRA);
 
             // Add all VarDecl's to our varDecl List.
@@ -178,7 +177,7 @@ public class Parser {
             expect(TokenClass.SC);
 
             // Add this StructDecl to our output.
-            output.add(new StructTypeDecl(structName, varDecls));
+            output.add(new StructTypeDecl(new StructType(structName), varDecls));
 
             // Try to parse more StructDecl's to add to our output.
             output.addAll(parseStructDecls());
@@ -619,8 +618,34 @@ public class Parser {
     //         -> ASTERIX exp [postexp]
     //         -> SIZEOF LPAR type [postexp]
     private Expr expectExp() {
+        // FunCallExpr || VarExpr
+        if (accept(TokenClass.IDENTIFIER)) {
+            String name = expect(TokenClass.IDENTIFIER).data;
+            // FunCallExpr
+            if (accept(TokenClass.LPAR)) {
+                expect(TokenClass.LPAR);
+                ArrayList<Expr> params = new ArrayList<Expr>();
+                if (!accept(TokenClass.RPAR)) {
+                    Expr param = expectExp();
+                    params.add(param);
+                    while (accept(TokenClass.COMMA)) {
+                        expect(TokenClass.COMMA);
+                        Expr nextParam = expectExp();
+                        params.add(nextParam);
+                    }
+                }
+                expect(TokenClass.RPAR);
+                FunCallExpr funCallExpr = new FunCallExpr(name, params);
+                return parsePostExp(funCallExpr);
+            }
+            // VarExpr
+            else {
+                VarExpr varExpr = new VarExpr(name);
+                return parsePostExp(varExpr);
+            }
+        }
         // TypecastExpr || ?
-        if (accept(TokenClass.LPAR)) {
+        else if (accept(TokenClass.LPAR)) {
             expect(TokenClass.LPAR);
             // TypecastExpr
             if (accept(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
@@ -649,32 +674,6 @@ public class Parser {
             String str = expect(TokenClass.STRING_LITERAL).data;
             StrLiteral strLit = new StrLiteral(str);
             return parsePostExp(strLit);
-        }
-        // FunCallExpr || VarExpr
-        else if (accept(TokenClass.IDENTIFIER)) {
-            String name = expect(TokenClass.IDENTIFIER).data;
-            // FunCallExpr
-            if (accept(TokenClass.LPAR)) {
-                expect(TokenClass.LPAR);
-                ArrayList<Expr> params = new ArrayList<Expr>();
-                if (!accept(TokenClass.RPAR)) {
-                    Expr param = expectExp();
-                    params.add(param);
-                    while (accept(TokenClass.COMMA)) {
-                        expect(TokenClass.COMMA);
-                        Expr nextParam = expectExp();
-                        params.add(nextParam);
-                    }
-                }
-                expect(TokenClass.RPAR);
-                FunCallExpr funCallExpr = new FunCallExpr(name, params);
-                return parsePostExp(funCallExpr);
-            }
-            // VarExpr
-            else {
-                VarExpr varExpr = new VarExpr(name);
-                return parsePostExp(varExpr);
-            }
         }
         // IntLiteral
         else if (accept(TokenClass.INT_LITERAL)) {
