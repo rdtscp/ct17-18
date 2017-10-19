@@ -331,7 +331,6 @@ public class Parser {
                 expect(TokenClass.LBRA);
 
                 blockVars = parseVarDecls();
-                System.out.println("blockVars size: " + blockVars.size());
                 blockStmts = parseStmts();
                 funBlock = new Block(blockVars, blockStmts);
 
@@ -528,7 +527,6 @@ public class Parser {
     //         -> exp ASSIGN exp SC
     //         -> exp SC
     private List<Stmt> parseStmts() {
-        System.out.println("Parsing stmts on token " + token);
         ArrayList<Stmt> output = new ArrayList<Stmt>();
         // Block
         if (accept(TokenClass.LBRA)) {
