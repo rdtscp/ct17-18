@@ -317,7 +317,6 @@ public class Parser {
 
             if (accept(TokenClass.STRUCT)) {
                 String structType;
-
                 expect(TokenClass.STRUCT);
                 structType = expect(TokenClass.IDENTIFIER).data;
                 funType = new StructType(structType);
@@ -325,7 +324,6 @@ public class Parser {
                     expect(TokenClass.ASTERIX);
                     funType = new PointerType(funType);
                 }
-
                 funName = expect(TokenClass.IDENTIFIER).data;
                 expect(TokenClass.LPAR);
                 funArgs = expectParams();
@@ -334,8 +332,8 @@ public class Parser {
 
                 blockVars = parseVarDecls();
                 System.out.println("blockVars size: " + blockVars.size());
-                parseStmts();
-                funBlock = new Block(blockVars, new ArrayList<Stmt>());
+                blockStmts = parseStmts();
+                funBlock = new Block(blockVars, blockStmts);
 
                 expect(TokenClass.RBRA);
                 
@@ -355,9 +353,8 @@ public class Parser {
                 expect(TokenClass.LBRA);
 
                 blockVars = parseVarDecls();
-                System.out.println("blockVars size: " + blockVars.size());
-                parseStmts();
-                funBlock = new Block(blockVars, new ArrayList<Stmt>());
+                blockStmts = parseStmts();
+                funBlock = new Block(blockVars, blockStmts);
 
                 expect(TokenClass.RBRA);
                 
@@ -381,6 +378,7 @@ public class Parser {
                 expect(TokenClass.ASTERIX);
                 return new PointerType(output);
             }
+            return output;
         }
         else if (accept(TokenClass.STRUCT)) {
             expect(TokenClass.STRUCT);
@@ -389,6 +387,7 @@ public class Parser {
                 expect(TokenClass.ASTERIX);
                 return new PointerType(output);
             }
+            return output;
         }
         else {
             error(token.tokenClass);
@@ -451,6 +450,7 @@ public class Parser {
     //         -> exp ASSIGN exp SC
     //         -> exp SC
     private Stmt expectStmt() {
+        // Block
         if (accept(TokenClass.LBRA)) {
             expect(TokenClass.LBRA);
             List<VarDecl> blockVars  = parseVarDecls();
@@ -459,6 +459,7 @@ public class Parser {
 
             return new Block(blockVars, blockStmts);
         }
+        // While
         else if (accept(TokenClass.WHILE)) {
             expect(TokenClass.WHILE);
             expect(TokenClass.LPAR);
@@ -468,6 +469,7 @@ public class Parser {
 
             return new While(expr, stmt);
         }
+        // If
         else if (accept(TokenClass.IF)) {
             expect(TokenClass.IF);
             expect(TokenClass.LPAR);
@@ -483,6 +485,7 @@ public class Parser {
                 return new If(expr, stmt1, null);
             }
         }
+        // Return
         else if (accept(TokenClass.RETURN)) {
             Expr expr = null;
             expect(TokenClass.RETURN);
@@ -493,19 +496,23 @@ public class Parser {
             expect(TokenClass.SC);
             return new Return(expr);
         }
+        // Assign || ExprStmt
         else if (accept(TokenClass.LPAR, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.MINUS, TokenClass.ASTERIX, TokenClass.SIZEOF)) {
             Expr expr1 = expectExp();
+            // Assign
             if (accept(TokenClass.ASSIGN)) {
                 expect(TokenClass.ASSIGN);
                 Expr expr2 = expectExp();
                 expect(TokenClass.SC);
                 return new Assign(expr1, expr2);
             }
+            // ExprStmt
             else {
                 expect(TokenClass.SC);
                 return new ExprStmt(expr1);
             } 
         }
+        // Error; no Stmt.
         else {
             System.out.println("Error: Expected a stmt");
             error(TokenClass.LBRA, TokenClass.WHILE, TokenClass.IF, TokenClass.RETURN, TokenClass.LPAR, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.MINUS, TokenClass.IDENTIFIER, TokenClass.ASTERIX, TokenClass.SIZEOF);
@@ -521,7 +528,9 @@ public class Parser {
     //         -> exp ASSIGN exp SC
     //         -> exp SC
     private List<Stmt> parseStmts() {
+        System.out.println("Parsing stmts on token " + token);
         ArrayList<Stmt> output = new ArrayList<Stmt>();
+        // Block
         if (accept(TokenClass.LBRA)) {
             ArrayList<VarDecl> blockVars = new ArrayList<VarDecl>();
             ArrayList<Stmt> blockStmts   = new ArrayList<Stmt>();
@@ -534,6 +543,7 @@ public class Parser {
             output.add(new Block(blockVars, blockStmts));
             output.addAll(parseStmts());
         }
+        // While
         else if (accept(TokenClass.WHILE)) {
             Expr expr;
             Stmt stmt;
@@ -547,23 +557,24 @@ public class Parser {
             output.add(new While(expr, stmt));
             output.addAll(parseStmts());
         }
+        // If
         else if (accept(TokenClass.IF)) {
-            Expr expr;
-            Stmt stmt1;
-            Stmt stmt2 = null;
-
             expect(TokenClass.IF);
             expect(TokenClass.LPAR);
-            expr = expectExp();
+            Expr expr = expectExp();
             expect(TokenClass.RPAR);
-            stmt1 = expectStmt();
+            Stmt stmt1 = expectStmt();
             if (accept(TokenClass.ELSE)) {
                 expect(TokenClass.ELSE);
-                stmt2 = expectStmt();
+                Stmt stmt2 = expectStmt();
+                output.add(new If(expr, stmt1, stmt2));
             }
-            output.add(new If(expr, stmt1, stmt2));
-            parseStmts();
+            else {
+                output.add(new If(expr, stmt1, null));
+            }
+            output.addAll(parseStmts());
         }
+        // Return
         else if (accept(TokenClass.RETURN)) {
             Expr expr = null;
 
@@ -577,16 +588,23 @@ public class Parser {
             output.add(new Return(expr));
             output.addAll(parseStmts());
         }
+        // Assign || ExprStmt
         else if (accept(TokenClass.LPAR, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.MINUS, TokenClass.ASTERIX, TokenClass.SIZEOF)) {
-            Expr expr = null;
-
-            expr = expectExp();
+            Expr expr1 = expectExp();
+            // Assign
             if (accept(TokenClass.ASSIGN)) {
                 expect(TokenClass.ASSIGN);
-                expectExp();
+                Expr expr2 = expectExp();
+                expect(TokenClass.SC);
+                Assign assign = new Assign(expr1, expr2);
+                output.addAll(parseStmts());
             }
-            expect(TokenClass.SC);
-            parseStmts();
+            // ExprStmt
+            else {
+                expect(TokenClass.SC);
+                output.add(new ExprStmt(expr1));
+                output.addAll(parseStmts());
+            }
         }
         return output;
     }
@@ -611,20 +629,19 @@ public class Parser {
                 expect(TokenClass.RPAR);
                 Expr expr = expectExp();
                 parsePostExp(expr);
-                return new TypecaseExpr(type, expr);
+                return new TypecastExpr(type, expr);
             }
             // Else we expect to see  (exp RPAR)
             else {
                 Expr expr = expectExp();
                 expect(TokenClass.RPAR);
-                parsePostExp(expr);
-                // @TODO Return smth
+                return parsePostExp(expr);
             }
         }
         // ChrLiteral
         else if (accept(TokenClass.CHAR_LITERAL)) {
             String chr = expect(TokenClass.CHAR_LITERAL).data;
-            ChrLiteral chrLit = new ChrLiteral((char)chr);
+            ChrLiteral chrLit = new ChrLiteral(chr.charAt(0));
             parsePostExp(chrLit);
             return chrLit;
         }
@@ -632,7 +649,7 @@ public class Parser {
         else if (accept(TokenClass.STRING_LITERAL)) {
             String str = expect(TokenClass.STRING_LITERAL).data;
             StrLiteral strLit = new StrLiteral(str);
-            parsePostExp(strLit);
+            return parsePostExp(strLit);
         }
         // FunCallExpr || VarExpr
         else if (accept(TokenClass.IDENTIFIER)) {
@@ -646,45 +663,50 @@ public class Parser {
                     params.add(param);
                     while (accept(TokenClass.COMMA)) {
                         expect(TokenClass.COMMA);
-                        Expr param = expectExp();
-                        params.add(param);
+                        Expr nextParam = expectExp();
+                        params.add(nextParam);
                     }
                 }
                 expect(TokenClass.RPAR);
                 FunCallExpr funCallExpr = new FunCallExpr(name, params);
-                parsePostExp(funCallExpr);
+                return parsePostExp(funCallExpr);
             }
             // VarExpr
             else {
                 VarExpr varExpr = new VarExpr(name);
-                parsePostExp(varExpr);
+                return parsePostExp(varExpr);
             }
         }
+        // IntLiteral
         else if (accept(TokenClass.INT_LITERAL)) {
             String inte = expect(TokenClass.INT_LITERAL).data;
             IntLiteral intLit = new IntLiteral(inte);
-            parsePostExp(intLit);
+            return parsePostExp(intLit);
         }
+        // Special Case => 0 MINUS Expr
         else if (accept(TokenClass.MINUS)) {
             expect(TokenClass.MINUS);
-            expectExp();
-
-            parsePostExp();
+            Expr expr = expectExp();
+            BinOp binOp = new BinOp(new IntLiteral("0"), Op.SUB, expr);
+            return parsePostExp(binOp);
         }
+        // ValueAtExpr
         else if (accept(TokenClass.ASTERIX)) {
             expect(TokenClass.ASTERIX);
-            expectExp();
-
-            parsePostExp();
+            Expr expr = expectExp();
+            ValueAtExpr valAtExpr = new ValueAtExpr(expr);
+            return parsePostExp(valAtExpr);
         }
+        // SizeOfExpr
         else if (accept(TokenClass.SIZEOF)) {
             expect(TokenClass.SIZEOF);
             expect(TokenClass.LPAR);
-            expectType();
+            Type type = expectType();
             expect(TokenClass.RPAR);
-
-            parsePostExp();
+            SizeOfExpr sizeOfExpr = new SizeOfExpr(type);
+            return parsePostExp(sizeOfExpr);
         }
+        // Error; no Expr.
         else {
             System.out.println("Error: Expected an exp");
             error(TokenClass.LPAR, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.MINUS, TokenClass.IDENTIFIER, TokenClass.ASTERIX, TokenClass.SIZEOF);
@@ -697,28 +719,31 @@ public class Parser {
     //
     // op      -> ( MINUS | ASTERIX | GT | LT | GE | LE | NE | EQ | PLUS | DIV | REM | OR | AND )
     private Expr parsePostExp(Expr lastExpr) {
-        // Check for postexp
-        // Check if we are about to see LSBR
+        // ArrayAccessExp
         if (accept(TokenClass.LSBR)) {
             expect(TokenClass.LSBR);
             Expr expr = expectExp();
             expect(TokenClass.RSBR);
-            parsePostExp(expr);
-            return new ArrayAccessExpr(lastExpr, expr);
+            ArrayAccessExpr arrayAccessExpr = new ArrayAccessExpr(lastExpr, expr);
+            return parsePostExp(arrayAccessExpr);
         }
-        // Check if we are about to see DOT
+        // FieldAccessExp
         else if (accept(TokenClass.DOT)) {
             expect(TokenClass.DOT);
             String name = expect(TokenClass.IDENTIFIER).data;
-            parsePostExp(lastExpr);
-            return new FieldAccessExpr(lastExpr, name);
+            FieldAccessExpr fieldAccessExpr = new FieldAccessExpr(lastExpr, name);
+            return parsePostExp(fieldAccessExpr);
         }
-        // Check if we are about to see an op
+        // BinOp
         else if (accept(TokenClass.GT, TokenClass.LT, TokenClass.GE, TokenClass.LE, TokenClass.NE, TokenClass.EQ, TokenClass.PLUS, TokenClass.MINUS, TokenClass.DIV, TokenClass.ASTERIX, TokenClass.REM, TokenClass.OR, TokenClass.AND)) {
             Op op = tokenToOp(expect(TokenClass.GT, TokenClass.LT, TokenClass.GE, TokenClass.LE, TokenClass.NE, TokenClass.EQ, TokenClass.PLUS, TokenClass.MINUS, TokenClass.DIV, TokenClass.ASTERIX, TokenClass.REM, TokenClass.OR, TokenClass.AND).tokenClass);
             Expr expr = expectExp();
-            parsePostExp(expr);
-            return new BinOp(lastExpr, op, expr);
+            BinOp binOp = new BinOp(lastExpr, op, expr);
+            return parsePostExp(binOp);
+        }
+        // No postexp, return last expr.
+        else {
+            return lastExpr;
         }
     }
 
