@@ -14,6 +14,8 @@
 // char * x[5];
 // struct foo * fooarr[5];
 
-void main(int arg1, char arg2, struct foo arg3) {
-    
+void main() {
+    int x;
+    char y;
+    funcall(arg);
 }
