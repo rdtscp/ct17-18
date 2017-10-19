@@ -125,7 +125,7 @@ public class ASTPrinter implements ASTVisitor<Void> {
             if (numVarDecls > 0) writer.print(",");
             for (int i=0; i < numStmts; i++) {
                 b.stmts.get(i).accept(this);
-                if (i != numVarDecls - 1) writer.print(",");
+                if (i != numStmts - 1) writer.print(",");
             }
         }
         writer.print(")");
