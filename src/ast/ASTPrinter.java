@@ -75,7 +75,8 @@ public class ASTPrinter implements ASTVisitor<Void> {
     @Override
     public Void visitStructTypeDecl(StructTypeDecl st) {
         writer.print("StructTypeDecl(");
-        writer.print(st.structName + ",");
+        st.structName.accept(this);
+        writer.print(",");
         String delimiter = "";
         for (VarDecl vd : st.varDecls) {
             writer.print(delimiter);

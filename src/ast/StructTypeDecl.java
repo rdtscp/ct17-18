@@ -7,10 +7,10 @@ import java.util.ArrayList;
  */
 public class StructTypeDecl implements ASTNode {
 
-    public final String structName;
+    public final StructType structName;
     public final ArrayList<VarDecl> varDecls;
 
-    public StructTypeDecl(String structName, ArrayList<VarDecl> varDecls) {
+    public StructTypeDecl(StructType structName, ArrayList<VarDecl> varDecls) {
         this.structName = structName;
         this.varDecls   = varDecls;
     }
