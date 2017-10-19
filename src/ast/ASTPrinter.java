@@ -19,7 +19,7 @@ public class ASTPrinter implements ASTVisitor<Void> {
             vd.accept(this);
             writer.print(",");
         }
-        // fd.block.accept(this);
+        fd.block.accept(this);
         writer.print(")");
         return null;
     }
@@ -112,7 +112,22 @@ public class ASTPrinter implements ASTVisitor<Void> {
     @Override
     public Void visitBlock(Block b) {
         writer.print("Block(");
-        // to complete
+        int numVarDecls = b.varDecls.size();
+        int numStmts    = b.stmts.size();
+
+        if (numVarDecls > 0) {
+            for (int i=0; i < numVarDecls; i++) {
+                b.varDecls.get(i).accept(this);
+                if (i != numVarDecls - 1) writer.print(",");
+            }
+        }
+        if (numStmts > 0) {
+            writer.print(",");
+            for (int i=0; i < numStmts; i++) {
+                b.stmts.get(i).accept(this);
+                if (i != numVarDecls - 1) writer.print(",");
+            }
+        }
         writer.print(")");
         return null;
     }

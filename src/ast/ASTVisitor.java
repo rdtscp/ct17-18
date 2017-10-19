@@ -16,6 +16,17 @@ public interface ASTVisitor<T> {
     public T visitAssign(Assign a);
     public T visitReturn(Return r);
     public T visitExprStmt(ExprStmt es);
+    public T visitIntLiteral(IntLiteral il);
+    public T visitStrLiteral(StrLiteral sl);
+    public T visitChrLiteral(ChrLiteral cl);
+    public T visitArrayAccessExpr(ArrayAccessExpr aae);
+    public T visitBinOp(BinOp bo);
+    public T visitOp(Op o);
+    public T visitFieldAccessExpr(FieldAccessExpr fae);
+    public T visitFunCallExpr(FunCallExpr fce);
+    public T visitSizeOfExpr(SizeOfExpr soe);
+    public T visitTypecastExpr(TypecastExpr te);
+    public T visitValueAtExpr(ValueAtExpr vae);
 
     // to complete ... (should have one visit method for each concrete AST node class)
 }
