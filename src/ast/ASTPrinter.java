@@ -60,7 +60,7 @@ public class ASTPrinter implements ASTVisitor<Void> {
 
     @Override
     public Void visitVarExpr(VarExpr v) {
-        writer.print("Var(");
+        writer.print("VarExpr(");
         writer.print(v.name);
         writer.print(")");
         return null;
@@ -232,9 +232,10 @@ public class ASTPrinter implements ASTVisitor<Void> {
 
     @Override
     public Void visitFunCallExpr(FunCallExpr fce) {
-        writer.print("FunCallExpr(" + fce.name + ",");
+        writer.print("FunCallExpr(" + fce.name);
         int numExprs = fce.exprs.size();
         if (numExprs > 0) {
+            writer.print(",");
             for (int i=0; i < numExprs; i++) {
                 fce.exprs.get(i).accept(this);
                 if (i != numExprs - 1) writer.print(",");
@@ -254,7 +255,7 @@ public class ASTPrinter implements ASTVisitor<Void> {
 
     @Override
     public Void visitTypecastExpr(TypecastExpr te) {
-        writer.print("TypecaseExpr(");
+        writer.print("TypecastExpr(");
         te.type.accept(this);
         writer.print(",");
         te.expr.accept(this);
