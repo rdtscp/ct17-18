@@ -29,30 +29,17 @@ stmt    -> LBRA (vardecl)* (stmt)* RBRA
         -> exp ASSIGN exp SC
         -> exp SC
 
-exp     -> exp OR exp
-        -> exp2
+exp     -> exp2 (OR exp)*
 
-exp2    -> exp AND exp
-        -> exp3
+exp2    -> exp3 (AND exp)*
 
-exp3    -> exp EQ exp
-        -> exp NE exp
-        -> exp4
+exp3    -> exp4 ((EQ | NE) exp)*
 
-exp4    -> exp LT exp
-        -> exp LE exp
-        -> exp GT exp
-        -> exp GE exp
-        -> exp5
+exp4    -> exp5 ((LT | LE | GT |GE) exp)*
 
-exp5    -> exp PLUS exp
-        -> exp MINUS exp
-        -> exp6
+exp5    -> exp6 ((PLUS | MINUS) exp)*
 
-exp6    -> exp ASTERIX exp
-        -> exp DIV exp
-        -> exp REM exp
-        -> exp7
+exp6    -> exp7 ((ASTERIX | DIV | REM) exp)*
 
 exp7    -> MINUS exp
         -> LPAR type RPAR exp

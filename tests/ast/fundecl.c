@@ -1,4 +1,5 @@
-void main() {
-    a = 1 + 1;
-    return (true && false) && (false && true);
+int main() {
+    b = 1 - (1 - 1);
+
+    return (-1 * (1 -1 -1 + 5%2));
 }
