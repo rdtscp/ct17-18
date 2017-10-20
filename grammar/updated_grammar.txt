@@ -29,21 +29,44 @@ stmt    -> LBRA (vardecl)* (stmt)* RBRA
         -> exp ASSIGN exp SC
         -> exp SC
 
-exp     -> exp AND exp | exp OR exp | exp2
+exp     -> exp AND exp
+        -> exp OR exp
+        -> exp2
 
-exp2    -> exp EQ exp | exp NE exp | exp3
+exp2    -> exp EQ exp
+        -> exp NE exp
+        -> exp3
 
-exp3    -> exp LT exp | exp LE exp | exp GT exp | exp GE exp | exp4
+exp3    -> exp LT exp
+        -> exp LE exp
+        -> exp GT exp
+        -> exp GE exp
+        -> exp4
 
-exp4    -> exp PLUS exp | exp MINUS exp | exp5
+exp4    -> exp PLUS exp
+        -> exp MINUS exp
+        -> exp5
 
-exp5    -> exp ASTERIX exp | exp DIV exp | exp REM exp | exp6
+exp5    -> exp ASTERIX exp
+        -> exp DIV exp
+        -> exp REM exp
+        -> exp6
 
-exp6    -> MINUS exp | LPAR type RPAR exp | ASTERIX exp | SIZEOF LPAR type RPAR | exp7
+exp6    -> MINUS exp
+        -> LPAR type RPAR exp
+        -> ASTERIX exp
+        -> SIZEOF LPAR type RPAR
+        -> exp7
 
-exp7    -> IDENT LPAR [ exp (COMMA exp)* ] RPAR | IDENT LSBR exp RSBR | IDENT DOT IDENT | CHAR_LITERAL
+exp7    -> IDENT [pIdent]
+        -> INT_LITERAL
+        -> CHAR_LITERAL
+        -> STRING_LITERAL
+        -> LPAR exp RPAR
 
-literal -> INT_LITERAL | CHAR_LITERAL | STRING_LITERAL | IDENT
+pIdent  -> LPAR [ exp (COMMA exp)* ] RPAR
+        -> LSBR exp RSBR
+        -> DOT IDENT
 
 /************************************************************\
                           OLD EXP GRAMMAR
