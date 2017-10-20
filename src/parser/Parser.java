@@ -602,11 +602,11 @@ public class Parser {
     private Expr expectExp() {
         // exp2
         if (accept(TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
-            Expr exp = expectExp8();
+            Expr exp = expectExp2();
             // exp2 [OR exp]
             if (accept(TokenClass.OR)) {
                 expect(TokenClass.OR);
-                Expr exp2 = expectExp();
+                Expr exp2 = expectExp2();
                 return new BinOp(exp, Op.OR, exp2);
             }
             // exp2
@@ -626,11 +626,11 @@ public class Parser {
     private Expr expectExp2() {
         // exp2
         if (accept(TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
-            Expr exp = expectExp();
+            Expr exp = expectExp3();
             // exp2 AND exp
             if (accept(TokenClass.AND)) {
                 expect(TokenClass.AND);
-                Expr exp2 = expectExp();
+                Expr exp2 = expectExp3();
                 return new BinOp(exp, Op.AND, exp2);
             }
             // exp2
@@ -650,17 +650,17 @@ public class Parser {
     private Expr expectExp3() {
         // exp | exp4
         if (accept(TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
-            Expr exp = expectExp();
+            Expr exp = expectExp4();
             // exp EQ exp
             if (accept(TokenClass.EQ)) {
                 expect(TokenClass.EQ);
-                Expr exp2 = expectExp();
+                Expr exp2 = expectExp4();
                 return new BinOp(exp, Op.EQ, exp2);
             }
             // exp NE exp
             if (accept(TokenClass.NE)) {
                 expect(TokenClass.NE);
-                Expr exp2 = expectExp();
+                Expr exp2 = expectExp4();
                 return new BinOp(exp, Op.NE, exp2);
             }
             // exp4
@@ -679,29 +679,29 @@ public class Parser {
     //         -> exp5
     private Expr expectExp4() {
         if (accept(TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
-            Expr exp = expectExp();
+            Expr exp = expectExp5();
             //  exp LT exp
             if (accept(TokenClass.LT)) {
                 expect(TokenClass.LT);
-                Expr exp2 = expectExp();
+                Expr exp2 = expectExp5();
                 return new BinOp(exp, Op.EQ, exp2);
             }
             // exp LE exp
             if (accept(TokenClass.NE)) {
                 expect(TokenClass.NE);
-                Expr exp2 = expectExp();
+                Expr exp2 = expectExp5();
                 return new BinOp(exp, Op.NE, exp2);
             }
             // exp GT exp
             if (accept(TokenClass.GT)) {
                 expect(TokenClass.GT);
-                Expr exp2 = expectExp();
+                Expr exp2 = expectExp5();
                 return new BinOp(exp, Op.GT, exp2);
             }
             // exp GT exp
             if (accept(TokenClass.GE)) {
                 expect(TokenClass.GE);
-                Expr exp2 = expectExp();
+                Expr exp2 = expectExp5();
                 return new BinOp(exp, Op.GE, exp2);
             }
             else {
@@ -719,17 +719,17 @@ public class Parser {
     //         -> exp6
     private Expr expectExp5() {
         if (accept(TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
-            Expr exp = expectExp();
+            Expr exp = expectExp6();
             //  exp PLUS exp
             if (accept(TokenClass.PLUS)) {
                 expect(TokenClass.PLUS);
-                Expr exp2 = expectExp();
+                Expr exp2 = expectExp6();
                 return new BinOp(exp, Op.ADD, exp2);
             }
             // exp MINUS exp
             if (accept(TokenClass.MINUS)) {
                 expect(TokenClass.MINUS);
-                Expr exp2 = expectExp();
+                Expr exp2 = expectExp6();
                 return new BinOp(exp, Op.SUB, exp2);
             }
             else {
@@ -747,23 +747,23 @@ public class Parser {
     //         -> exp7
     private Expr expectExp6() {
         if (accept(TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
-            Expr exp = expectExp();
+            Expr exp = expectExp7();
             //  exp ASTERIX exp
             if (accept(TokenClass.ASTERIX)) {
                 expect(TokenClass.ASTERIX);
-                Expr exp2 = expectExp();
+                Expr exp2 = expectExp7();
                 return new BinOp(exp, Op.MUL, exp2);
             }
             // exp DIV exp
             if (accept(TokenClass.DIV)) {
                 expect(TokenClass.DIV);
-                Expr exp2 = expectExp();
+                Expr exp2 = expectExp7();
                 return new BinOp(exp, Op.DIV, exp2);
             }
             // exp REM exp
             if (accept(TokenClass.REM)) {
                 expect(TokenClass.REM);
-                Expr exp2 = expectExp();
+                Expr exp2 = expectExp7();
                 return new BinOp(exp, Op.MOD, exp2);
             }
             else {
@@ -785,7 +785,7 @@ public class Parser {
     private Expr expectExp7() {
         if (accept(TokenClass.MINUS)) {
             expect(TokenClass.MINUS);
-            Expr exp = expectExp();
+            Expr exp = expectExp8();
             return new BinOp(new IntLiteral("0"), Op.SUB, exp);
         }
         else if (accept(TokenClass.LPAR)) {
@@ -794,7 +794,7 @@ public class Parser {
                 expect(TokenClass.LPAR);
                 Type type = expectType();
                 expect(TokenClass.RPAR);
-                Expr exp = expectExp();
+                Expr exp = expectExp8();
                 return new TypecastExpr(type, exp);
             }
             else {
@@ -803,7 +803,7 @@ public class Parser {
         }
         else if (accept(TokenClass.ASTERIX)) {
             expect(TokenClass.ASTERIX);
-            Expr exp = expectExp();
+            Expr exp = expectExp8();
             return new ValueAtExpr(exp);
         }
         else if (accept(TokenClass.SIZEOF)) {
