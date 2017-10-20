@@ -602,10 +602,21 @@ public class Parser {
                WIP Precedence
     \*********************************/
 
-    // exp     -> IDENT LPAR [ exp (COMMA exp)* ] RPAR | IDENT LSBR exp RSBR | IDENT DOT IDENT | exp2
+    // exp     -> LPAR exp RPAR | IDENT LPAR [ exp (COMMA exp)* ] RPAR | IDENT LSBR exp RSBR | IDENT DOT IDENT | exp2
     private Expr expectExp1() {
+        // LPAR exp RPAR
+        if (accept(TokenClass.LPAR)) {
+            TokenClass oneAhead = lookAhead(1).tokenClass;
+            // If we are about to see another exp after.
+            if (oneAhead == TokenClass.LPAR || oneAhead == TokenClass.IDENTIFIER || oneAhead == TokenClass.MINUS || oneAhead == TokenClass.ASTERIX || oneAhead == TokenClass.SIZEOF) {
+                expect(TokenClass.LPAR);
+                Expr expr = expectExpr1();
+                expect(TokenClass.RPAR);
+                return new ExprStmt(expr);
+            }
+        }
         // IDENT LPAR [ exp (COMMA exp)* ] RPAR | IDENT LSBR exp RSBR | IDENT DOT IDENT
-        if (accept(TokenClass.IDENTIFIER)) {
+        else if (accept(TokenClass.IDENTIFIER)) {
             String ident1 = expect(TokenClass.IDENTIFIER).data;
             // IDENT LPAR [ exp (COMMA exp)* ] RPAR
             if (accept(TokenClass.LPAR)) {
@@ -685,31 +696,170 @@ public class Parser {
 
     // exp3    -> exp ASTERIX exp | exp DIV exp | exp REM exp | exp4
     private Expr expectExp3() {
-        return expectExp4();
+        // exp ASTERIX exp | exp DIV exp | exp REM exp | exp4
+        if (accept(TokenClass.IDENTIFIER, TokenClass.MINUS, TokenClass.LPAR, TokenClass.ASTERIX, TokenClass.SIZEOF)) {
+            Expr expr1 = expectExp1();
+            // ASTERIX exp
+            if (accept(TokenClass.ASTERIX)) {
+                expect(TokenClass.ASTERIX);
+                Expr expr2 = expectExp1();
+                return new BinOp(expr1, Op.MUL, expr2);
+            }
+            // DIV exp
+            else if (accept(TokenClass.DIV)) {
+                expect(TokenClass.DIV);
+                Expr expr2 = expectExp1();
+                return new BinOp(expr1, Op.DIV, expr2);
+            }
+            // REM exp
+            else if (accept(TokenClass.REM)) {
+                expect(TokenClass.REM);
+                Expr expr2 = expectExp1();
+                return new BinOp(expr1, Op.MOD, expr2);
+            }
+            // exp4
+            else {
+                return expectExpr4();
+            }
+        }
+        // ERROR
+        else {
+            expect(TokenClass.IDENTIFIER, TokenClass.MINUS, TokenClass.LPAR, TokenClass.ASTERIX, TokenClass.SIZEOF);
+        }
     }
 
     // exp4    -> exp PLUS exp | exp MINUS exp | exp5
     private Expr expectExp4() {
-        return expectExp5();
+        // exp PLUS exp | exp MINUS exp | exp5
+        if (accept(TokenClass.IDENTIFIER, TokenClass.MINUS, TokenClass.LPAR, TokenClass.ASTERIX, TokenClass.SIZEOF)) {
+            Expr expr1 = expectExp1();
+            // PLUS exp
+            if (accept(TokenClass.PLUS)) {
+                expect(TokenClass.PLUS);
+                Expr expr2 = expectExp1();
+                return new BinOp(expr1, Op.ADD, expr2);
+            }
+            // MINUS exp
+            else if (accept(TokenClass.MINUS)) {
+                expect(TokenClass.MINUS);
+                Expr expr2 = expectExp1();
+                return new BinOp(expr1, Op.MINUS, expr2);
+            }
+            // exp5
+            else {
+                return expectExpr5();
+            }
+        }
+        // ERROR
+        else {
+            expect(TokenClass.IDENTIFIER, TokenClass.MINUS, TokenClass.LPAR, TokenClass.ASTERIX, TokenClass.SIZEOF);
+        }
     }
 
     // exp5    -> exp LT exp | exp LE exp | exp GT exp | exp GE exp | exp6
     private Expr expectExp5() {
-        return expectExp6();
+        // exp LT exp | exp LE exp | exp GT exp | exp GE exp | exp6
+        if (accept(TokenClass.IDENTIFIER, TokenClass.MINUS, TokenClass.LPAR, TokenClass.ASTERIX, TokenClass.SIZEOF)) {
+            Expr expr1 = expectExp1();
+            // LT exp
+            if (accept(TokenClass.LT)) {
+                expect(TokenClass.LT);
+                Expr expr2 = expectExp1();
+                return new BinOp(expr1, Op.LT, expr2);
+            }
+            // LE exp
+            else if (accept(TokenClass.LE)) {
+                expect(TokenClass.LE);
+                Expr expr2 = expectExp1();
+                return new BinOp(expr1, Op.LE, expr2);
+            }
+            // GT exp
+            else if (accept(TokenClass.GT)) {
+                expect(TokenClass.GT);
+                Expr expr2 = expectExp1();
+                return new BinOp(expr1, Op.GT, expr2);
+            }
+            // GE exp
+            else if (accept(TokenClass.GE)) {
+                expect(TokenClass.GE);
+                Expr expr2 = expectExp1();
+                return new BinOp(expr1, Op.GE, expr2);
+            }
+            // exp6
+            else {
+                return expectExpr6();
+            }
+        }
+        // ERROR
+        else {
+            expect(TokenClass.IDENTIFIER, TokenClass.MINUS, TokenClass.LPAR, TokenClass.ASTERIX, TokenClass.SIZEOF);
+        }
     }
     // exp6    -> exp EQ exp | exp NE exp | exp7    
     private Expr expectExp6() {
-        return expectExp7();
+        // exp EQ exp | exp NE exp | exp7
+        if (accept(TokenClass.IDENTIFIER, TokenClass.MINUS, TokenClass.LPAR, TokenClass.ASTERIX, TokenClass.SIZEOF)) {
+            Expr expr1 = expectExp1();
+            // EQ exp
+            if (accept(TokenClass.EQ)) {
+                expect(TokenClass.EQ);
+                Expr expr2 = expectExp1();
+                return new BinOp(expr1, Op.EQ, expr2);
+            }
+            // NE exp
+            else if (accept(TokenClass.NE)) {
+                expect(TokenClass.NE);
+                Expr expr2 = expectExp1();
+                return new BinOp(expr1, Op.NE, expr2);
+            }
+            // exp7
+            else {
+                return expectExpr7();
+            }
+        }
+        // ERROR
+        else {
+            expect(TokenClass.IDENTIFIER, TokenClass.MINUS, TokenClass.LPAR, TokenClass.ASTERIX, TokenClass.SIZEOF);
+        }
     }
 
-    // exp7    -> exp AND exp || exp OR exp    
+    // exp7    -> exp AND exp | exp OR exp    
     private Expr expectExp7() {
-        return null;
+        // exp AND exp | exp OR exp | ERROR
+        if (accept(TokenClass.IDENTIFIER, TokenClass.MINUS, TokenClass.LPAR, TokenClass.ASTERIX, TokenClass.SIZEOF)) {
+            Expr expr1 = expectExp1();
+            // AND exp
+            if (accept(TokenClass.AND)) {
+                expect(TokenClass.AND);
+                Expr expr2 = expectExp1();
+                return new BinOp(expr1, Op.AND, expr2);
+            }
+            // OR exp
+            else if (accept(TokenClass.OR)) {
+                expect(TokenClass.OR);
+                Expr expr2 = expectExp1();
+                return new BinOp(expr1, Op.OR, expr2);
+            }
+            // ERROR
+            else {
+                expect(TokenClass.IDENTIFIER, TokenClass.MINUS, TokenClass.LPAR, TokenClass.ASTERIX, TokenClass.SIZEOF);
+            }
+        }
+        // ERROR
+        else {
+            expect(TokenClass.IDENTIFIER, TokenClass.MINUS, TokenClass.LPAR, TokenClass.ASTERIX, TokenClass.SIZEOF);
+        }
     }
 
     /*********************************\
     ==================================
     \*********************************/
+
+    /*********************************\
+                    Legacy
+    \*********************************/
+
+/*
 
     // Expects exp
     // exp     -> LPAR ( type RPAR exp | exp RPAR ) [postexp] 
@@ -848,6 +998,12 @@ public class Parser {
             return lastExpr;
         }
     }
+
+*/
+
+    /*********************************\
+    ==================================
+    \*********************************/
 
 
     /*****************************************\
