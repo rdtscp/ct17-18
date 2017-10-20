@@ -598,149 +598,421 @@ public class Parser {
         return output;
     }
 
-    // private Expr expectExp() {
-    //     return null;
-    // }
-
-
-
-    // Expects exp
-    // exp     -> LPAR ( type RPAR exp | exp RPAR ) [postexp] 
-    //         -> CHAR_LITERAL [postexp]
-    //         -> STRING_LITERAL [postexp]
-    //         -> IDENT [postexp] 
-    //         -> IDENT LPAR [ exp (COMMA exp)* ] RPAR [postexp]
-    //         -> INT_LITERAL [postexp] 
-    //         -> MINUS (IDENT|INT_LITERL) [postexp]
-    //         -> ASTERIX exp [postexp]
-    //         -> SIZEOF LPAR type [postexp]
+    // exp     -> exp2 [OR exp]
     private Expr expectExp() {
-        // FunCallExpr || VarExpr
-        if (accept(TokenClass.IDENTIFIER)) {
-            String name = expect(TokenClass.IDENTIFIER).data;
-            // FunCallExpr
-            if (accept(TokenClass.LPAR)) {
-                expect(TokenClass.LPAR);
-                ArrayList<Expr> params = new ArrayList<Expr>();
-                if (!accept(TokenClass.RPAR)) {
-                    Expr param = expectExp();
-                    params.add(param);
-                    while (accept(TokenClass.COMMA)) {
-                        expect(TokenClass.COMMA);
-                        Expr nextParam = expectExp();
-                        params.add(nextParam);
-                    }
-                }
-                expect(TokenClass.RPAR);
-                FunCallExpr funCallExpr = new FunCallExpr(name, params);
-                return parsePostExp(funCallExpr);
+        // exp2
+        if (accept(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
+            Expr exp = expectExp8();
+            // exp2 [OR exp]
+            if (accept(TokenClass.OR)) {
+                expect(TokenClass.OR);
+                Expr exp2 = expectExp();
+                return new BinOp(exp, Op.OR, exp2);
             }
-            // VarExpr
+            // exp2
             else {
-                VarExpr varExpr = new VarExpr(name);
-                return parsePostExp(varExpr);
+                return expectExp2();
             }
         }
-        // TypecastExpr || ?
+        // ERROR
+        else {
+            expect(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR);
+            return null;
+        }
+    }
+
+    // exp2    -> exp AND exp
+    //         -> exp3
+    private Expr expectExp2() {
+        // exp2
+        if (accept(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
+            Expr exp = expectExp();
+            // exp2 AND exp
+            if (accept(TokenClass.AND)) {
+                expect(TokenClass.AND);
+                Expr exp2 = expectExp();
+                return new BinOp(exp, Op.AND, exp2);
+            }
+            // exp2
+            else {
+                return expectExp3();
+            }
+        }
+        // ERROR
+        else {
+            expect(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR);
+            return null;
+        }
+    }
+
+    // exp3    -> exp (EQ | NE) exp
+    //         -> exp4
+    private Expr expectExp3() {
+        // exp | exp4
+        if (accept(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
+            Expr exp = expectExp();
+            // exp EQ exp
+            if (accept(TokenClass.EQ)) {
+                expect(TokenClass.EQ);
+                Expr exp2 = expectExp();
+                return new BinOp(exp, Op.EQ, exp2);
+            }
+            // exp NE exp
+            if (accept(TokenClass.NE)) {
+                expect(TokenClass.NE);
+                Expr exp2 = expectExp();
+                return new BinOp(exp, Op.NE, exp2);
+            }
+            // exp4
+            else {
+                return expectExp3();
+            }
+        }
+        // ERROR
+        else {
+            expect(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR);
+            return null;
+        }
+    }
+
+    // exp4    -> exp (LT | LE | GT | GE) exp
+    //         -> exp5
+    private Expr expectExp4() {
+        if (accept(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
+            Expr exp = expectExp();
+            //  exp LT exp
+            if (accept(TokenClass.LT)) {
+                expect(TokenClass.LT);
+                Expr exp2 = expectExp();
+                return new BinOp(exp, Op.EQ, exp2);
+            }
+            // exp LE exp
+            if (accept(TokenClass.NE)) {
+                expect(TokenClass.NE);
+                Expr exp2 = expectExp();
+                return new BinOp(exp, Op.NE, exp2);
+            }
+            // exp GT exp
+            if (accept(TokenClass.GT)) {
+                expect(TokenClass.GT);
+                Expr exp2 = expectExp();
+                return new BinOp(exp, Op.GT, exp2);
+            }
+            // exp GT exp
+            if (accept(TokenClass.GE)) {
+                expect(TokenClass.GE);
+                Expr exp2 = expectExp();
+                return new BinOp(exp, Op.GE, exp2);
+            }
+            else {
+                return expectExp5();
+            }
+        }
+        // ERROR
+        else {
+            expect(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR);
+            return null;
+        }
+    }
+
+    // exp5    -> exp (PLUS | MINUS) exp
+    //         -> exp6
+    private Expr expectExp5() {
+        if (accept(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
+            Expr exp = expectExp();
+            //  exp PLUS exp
+            if (accept(TokenClass.PLUS)) {
+                expect(TokenClass.PLUS);
+                Expr exp2 = expectExp();
+                return new BinOp(exp, Op.ADD, exp2);
+            }
+            // exp MINUS exp
+            if (accept(TokenClass.MINUS)) {
+                expect(TokenClass.MINUS);
+                Expr exp2 = expectExp();
+                return new BinOp(exp, Op.SUB, exp2);
+            }
+            else {
+                return expectExp6();
+            }
+        }
+        // ERROR
+        else {
+            expect(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR);
+            return null;
+        }
+    }
+
+    // exp6    -> exp (ASTERIX | DIV | REM) exp
+    //         -> exp7
+    private Expr expectExp6() {
+        if (accept(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
+            Expr exp = expectExp();
+            //  exp ASTERIX exp
+            if (accept(TokenClass.ASTERIX)) {
+                expect(TokenClass.ASTERIX);
+                Expr exp2 = expectExp();
+                return new BinOp(exp, Op.MUL, exp2);
+            }
+            // exp DIV exp
+            if (accept(TokenClass.DIV)) {
+                expect(TokenClass.DIV);
+                Expr exp2 = expectExp();
+                return new BinOp(exp, Op.DIV, exp2);
+            }
+            // exp REM exp
+            if (accept(TokenClass.REM)) {
+                expect(TokenClass.REM);
+                Expr exp2 = expectExp();
+                return new BinOp(exp, Op.MOD, exp2);
+            }
+            else {
+                return expectExp7();
+            }
+        }
+        // ERROR
+        else {
+            expect(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR);
+            return null;
+        }
+    }
+
+    // exp7    -> MINUS exp
+    //         -> LPAR type RPAR exp
+    //         -> ASTERIX exp
+    //         -> SIZEOF LPAR type RPAR
+    //         -> exp8
+    private Expr expectExp7() {
+        if (accept(TokenClass.MINUS)) {
+            expect(TokenClass.MINUS);
+            Expr exp = expectExp();
+            return new BinOp(new IntLiteral("0"), Op.SUB, exp);
+        }
         else if (accept(TokenClass.LPAR)) {
-            expect(TokenClass.LPAR);
-            // TypecastExpr
-            if (accept(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
+            TokenClass oneAhead = lookAhead(1).tokenClass;
+            if (oneAhead == TokenClass.INT || oneAhead == TokenClass.CHAR || oneAhead == TokenClass.VOID || oneAhead == TokenClass.STRUCT) {
+                expect(TokenClass.LPAR);
                 Type type = expectType();
                 expect(TokenClass.RPAR);
-                Expr expr = expectExp();
-                parsePostExp(expr);
-                return new TypecastExpr(type, expr);
+                Expr exp = expectExp();
+                return new TypecastExpr(type, exp);
             }
-            // Else we expect to see  (exp RPAR)
             else {
-                Expr expr = expectExp();
-                expect(TokenClass.RPAR);
-                return parsePostExp(expr);
+                return expectExp8();
             }
         }
-        // ChrLiteral
-        else if (accept(TokenClass.CHAR_LITERAL)) {
-            String chr = expect(TokenClass.CHAR_LITERAL).data;
-            ChrLiteral chrLit = new ChrLiteral(chr.charAt(0));
-            parsePostExp(chrLit);
-            return chrLit;
-        }
-        // StrLiteral
-        else if (accept(TokenClass.STRING_LITERAL)) {
-            String str = expect(TokenClass.STRING_LITERAL).data;
-            StrLiteral strLit = new StrLiteral(str);
-            return parsePostExp(strLit);
-        }
-        // IntLiteral
-        else if (accept(TokenClass.INT_LITERAL)) {
-            String inte = expect(TokenClass.INT_LITERAL).data;
-            IntLiteral intLit = new IntLiteral(inte);
-            return parsePostExp(intLit);
-        }
-        // Special Case => 0 MINUS Expr
-        else if (accept(TokenClass.MINUS)) {
-            expect(TokenClass.MINUS);
-            Expr expr = expectExp();
-            BinOp binOp = new BinOp(new IntLiteral("0"), Op.SUB, expr);
-            return parsePostExp(binOp);
-        }
-        // ValueAtExpr
         else if (accept(TokenClass.ASTERIX)) {
             expect(TokenClass.ASTERIX);
-            Expr expr = expectExp();
-            ValueAtExpr valAtExpr = new ValueAtExpr(expr);
-            return parsePostExp(valAtExpr);
+            Expr exp = expectExp();
+            return new ValueAtExpr(exp);
         }
-        // SizeOfExpr
         else if (accept(TokenClass.SIZEOF)) {
             expect(TokenClass.SIZEOF);
             expect(TokenClass.LPAR);
             Type type = expectType();
             expect(TokenClass.RPAR);
-            SizeOfExpr sizeOfExpr = new SizeOfExpr(type);
-            return parsePostExp(sizeOfExpr);
+            return new SizeOfExpr(type);
         }
-        // Error; no Expr.
         else {
-            System.out.println("Error: Expected an exp");
-            error(TokenClass.LPAR, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.MINUS, TokenClass.IDENTIFIER, TokenClass.ASTERIX, TokenClass.SIZEOF);
-            return null;
+            return expectExp8();
         }
     }
 
-    // Parses postexp
-    // postexp -> (LSBR exp RSBR | DOT IDENT | op exp) [postexp]
-    //
-    // op      -> ( MINUS | ASTERIX | GT | LT | GE | LE | NE | EQ | PLUS | DIV | REM | OR | AND )
-    private Expr parsePostExp(Expr lastExpr) {
-        // ArrayAccessExp
-        if (accept(TokenClass.LSBR)) {
-            expect(TokenClass.LSBR);
-            Expr expr = expectExp();
-            expect(TokenClass.RSBR);
-            ArrayAccessExpr arrayAccessExpr = new ArrayAccessExpr(lastExpr, expr);
-            return parsePostExp(arrayAccessExpr);
-        }
-        // FieldAccessExp
-        else if (accept(TokenClass.DOT)) {
-            expect(TokenClass.DOT);
+    // 
+    private Expr expectExp8() {
+        if (accept(TokenClass.IDENTIFIER)) {
             String name = expect(TokenClass.IDENTIFIER).data;
-            FieldAccessExpr fieldAccessExpr = new FieldAccessExpr(lastExpr, name);
-            return parsePostExp(fieldAccessExpr);
+            if (accept(TokenClass.LPAR)) {
+                expect(TokenClass.LPAR);
+                if (accept(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
+                    ArrayList<Expr> args = new ArrayList<Expr>();
+                    args.add(expectExp());
+                    while (accept(TokenClass.COMMA)) {
+                        expect(TokenClass.COMMA);
+                        args.add(expectExp());
+                    }
+                    expect(TokenClass.RPAR);
+                    return new FunCallExpr(name, args);
+                }
+                else {
+                    expect(TokenClass.RPAR);
+                    return new FunCallExpr(name, new ArrayList<Expr>());
+                }
+            }
+            else if (accept(TokenClass.LSBR)) {
+                expect(TokenClass.LSBR);
+                Expr exp = expectExp();
+                expect(TokenClass.RSBR);
+                return new ArrayAccessExpr(new VarExpr(name), exp);
+            }
+            else if (accept(TokenClass.DOT)) {
+                expect(TokenClass.DOT);
+                String field = expect(TokenClass.IDENTIFIER).data;
+                return new FieldAccessExpr(new VarExpr(name), field);
+            }
+            else {
+                return new VarExpr(name);
+            }
         }
-        // BinOp
-        else if (accept(TokenClass.GT, TokenClass.LT, TokenClass.GE, TokenClass.LE, TokenClass.NE, TokenClass.EQ, TokenClass.PLUS, TokenClass.MINUS, TokenClass.DIV, TokenClass.ASTERIX, TokenClass.REM, TokenClass.OR, TokenClass.AND)) {
-            Op op = tokenToOp(expect(TokenClass.GT, TokenClass.LT, TokenClass.GE, TokenClass.LE, TokenClass.NE, TokenClass.EQ, TokenClass.PLUS, TokenClass.MINUS, TokenClass.DIV, TokenClass.ASTERIX, TokenClass.REM, TokenClass.OR, TokenClass.AND).tokenClass);
-            Expr expr = expectExp();
-            BinOp binOp = new BinOp(lastExpr, op, expr);
-            return parsePostExp(binOp);
+        else if (accept(TokenClass.INT_LITERAL)) {
+            String val = expect(TokenClass.INT_LITERAL).data;
+            return new IntLiteral(val);
         }
-        // No postexp, return last expr.
+        else if (accept(TokenClass.CHAR_LITERAL)) {
+            String val = expect(TokenClass.CHAR_LITERAL).data;
+            return new ChrLiteral(val.charAt(0));
+        }
+        else if (accept(TokenClass.STRING_LITERAL)) {
+            String val = expect(TokenClass.STRING_LITERAL).data;
+            return new StrLiteral(val);
+        }
         else {
-            return lastExpr;
+            expect(TokenClass.LPAR);
+            Expr exp = expectExp();
+            expect(TokenClass.RPAR);
+            return exp;
+
         }
     }
+
+
+    // // Expects exp
+    // // exp     -> LPAR ( type RPAR exp | exp RPAR ) [postexp] 
+    // //         -> CHAR_LITERAL [postexp]
+    // //         -> STRING_LITERAL [postexp]
+    // //         -> IDENT [postexp] 
+    // //         -> IDENT LPAR [ exp (COMMA exp)* ] RPAR [postexp]
+    // //         -> INT_LITERAL [postexp] 
+    // //         -> MINUS (IDENT|INT_LITERL) [postexp]
+    // //         -> ASTERIX exp [postexp]
+    // //         -> SIZEOF LPAR type [postexp]
+    // private Expr expectExp() {
+    //     // FunCallExpr || VarExpr
+    //     if (accept(TokenClass.IDENTIFIER)) {
+    //         String name = expect(TokenClass.IDENTIFIER).data;
+    //         // FunCallExpr
+    //         if (accept(TokenClass.LPAR)) {
+    //             expect(TokenClass.LPAR);
+    //             ArrayList<Expr> params = new ArrayList<Expr>();
+    //             if (!accept(TokenClass.RPAR)) {
+    //                 Expr param = expectExp();
+    //                 params.add(param);
+    //                 while (accept(TokenClass.COMMA)) {
+    //                     expect(TokenClass.COMMA);
+    //                     Expr nextParam = expectExp();
+    //                     params.add(nextParam);
+    //                 }
+    //             }
+    //             expect(TokenClass.RPAR);
+    //             FunCallExpr funCallExpr = new FunCallExpr(name, params);
+    //             return parsePostExp(funCallExpr);
+    //         }
+    //         // VarExpr
+    //         else {
+    //             VarExpr varExpr = new VarExpr(name);
+    //             return parsePostExp(varExpr);
+    //         }
+    //     }
+    //     // TypecastExpr || ?
+    //     else if (accept(TokenClass.LPAR)) {
+    //         expect(TokenClass.LPAR);
+    //         // TypecastExpr
+    //         if (accept(TokenClass.STRUCT, TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
+    //             Type type = expectType();
+    //             expect(TokenClass.RPAR);
+    //             Expr expr = expectExp();
+    //             parsePostExp(expr);
+    //             return new TypecastExpr(type, expr);
+    //         }
+    //         // Else we expect to see  (exp RPAR)
+    //         else {
+    //             Expr expr = expectExp();
+    //             expect(TokenClass.RPAR);
+    //             return parsePostExp(expr);
+    //         }
+    //     }
+    //     // ChrLiteral
+    //     else if (accept(TokenClass.CHAR_LITERAL)) {
+    //         String chr = expect(TokenClass.CHAR_LITERAL).data;
+    //         ChrLiteral chrLit = new ChrLiteral(chr.charAt(0));
+    //         parsePostExp(chrLit);
+    //         return chrLit;
+    //     }
+    //     // StrLiteral
+    //     else if (accept(TokenClass.STRING_LITERAL)) {
+    //         String str = expect(TokenClass.STRING_LITERAL).data;
+    //         StrLiteral strLit = new StrLiteral(str);
+    //         return parsePostExp(strLit);
+    //     }
+    //     // IntLiteral
+    //     else if (accept(TokenClass.INT_LITERAL)) {
+    //         String inte = expect(TokenClass.INT_LITERAL).data;
+    //         IntLiteral intLit = new IntLiteral(inte);
+    //         return parsePostExp(intLit);
+    //     }
+    //     // Special Case => 0 MINUS Expr
+    //     else if (accept(TokenClass.MINUS)) {
+    //         expect(TokenClass.MINUS);
+    //         Expr expr = expectExp();
+    //         BinOp binOp = new BinOp(new IntLiteral("0"), Op.SUB, expr);
+    //         return parsePostExp(binOp);
+    //     }
+    //     // ValueAtExpr
+    //     else if (accept(TokenClass.ASTERIX)) {
+    //         expect(TokenClass.ASTERIX);
+    //         Expr expr = expectExp();
+    //         ValueAtExpr valAtExpr = new ValueAtExpr(expr);
+    //         return parsePostExp(valAtExpr);
+    //     }
+    //     // SizeOfExpr
+    //     else if (accept(TokenClass.SIZEOF)) {
+    //         expect(TokenClass.SIZEOF);
+    //         expect(TokenClass.LPAR);
+    //         Type type = expectType();
+    //         expect(TokenClass.RPAR);
+    //         SizeOfExpr sizeOfExpr = new SizeOfExpr(type);
+    //         return parsePostExp(sizeOfExpr);
+    //     }
+    //     // Error; no Expr.
+    //     else {
+    //         System.out.println("Error: Expected an exp");
+    //         error(TokenClass.LPAR, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.MINUS, TokenClass.IDENTIFIER, TokenClass.ASTERIX, TokenClass.SIZEOF);
+    //         return null;
+    //     }
+    // }
+
+    // // Parses postexp
+    // // postexp -> (LSBR exp RSBR | DOT IDENT | op exp) [postexp]
+    // //
+    // // op      -> ( MINUS | ASTERIX | GT | LT | GE | LE | NE | EQ | PLUS | DIV | REM | OR | AND )
+    // private Expr parsePostExp(Expr lastExpr) {
+    //     // ArrayAccessExp
+    //     if (accept(TokenClass.LSBR)) {
+    //         expect(TokenClass.LSBR);
+    //         Expr expr = expectExp();
+    //         expect(TokenClass.RSBR);
+    //         ArrayAccessExpr arrayAccessExpr = new ArrayAccessExpr(lastExpr, expr);
+    //         return parsePostExp(arrayAccessExpr);
+    //     }
+    //     // FieldAccessExp
+    //     else if (accept(TokenClass.DOT)) {
+    //         expect(TokenClass.DOT);
+    //         String name = expect(TokenClass.IDENTIFIER).data;
+    //         FieldAccessExpr fieldAccessExpr = new FieldAccessExpr(lastExpr, name);
+    //         return parsePostExp(fieldAccessExpr);
+    //     }
+    //     // BinOp
+    //     else if (accept(TokenClass.GT, TokenClass.LT, TokenClass.GE, TokenClass.LE, TokenClass.NE, TokenClass.EQ, TokenClass.PLUS, TokenClass.MINUS, TokenClass.DIV, TokenClass.ASTERIX, TokenClass.REM, TokenClass.OR, TokenClass.AND)) {
+    //         Op op = tokenToOp(expect(TokenClass.GT, TokenClass.LT, TokenClass.GE, TokenClass.LE, TokenClass.NE, TokenClass.EQ, TokenClass.PLUS, TokenClass.MINUS, TokenClass.DIV, TokenClass.ASTERIX, TokenClass.REM, TokenClass.OR, TokenClass.AND).tokenClass);
+    //         Expr expr = expectExp();
+    //         BinOp binOp = new BinOp(lastExpr, op, expr);
+    //         return parsePostExp(binOp);
+    //     }
+    //     // No postexp, return last expr.
+    //     else {
+    //         return lastExpr;
+    //     }
+    // }
 
 
 
