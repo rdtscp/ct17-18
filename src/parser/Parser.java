@@ -1,15 +1,6 @@
 package parser;
 
-import ast.BaseType;
 import ast.*;
-import ast.FunDecl;
-import ast.Program;
-import ast.StructTypeDecl;
-import ast.StructType;
-import ast.ArrayType;
-import ast.PointerType;
-import ast.VarDecl;
-import ast.Type;
 import lexer.Token;
 import lexer.Tokeniser;
 import lexer.Token.TokenClass;
@@ -606,6 +597,119 @@ public class Parser {
         }
         return output;
     }
+
+    /*********************************\
+               WIP Precedence
+    \*********************************/
+
+    // exp     -> IDENT LPAR [ exp (COMMA exp)* ] RPAR | IDENT LSBR exp RSBR | IDENT DOT IDENT | exp2
+    private Expr expectExp1() {
+        // IDENT LPAR [ exp (COMMA exp)* ] RPAR | IDENT LSBR exp RSBR | IDENT DOT IDENT
+        if (accept(TokenClass.IDENTIFIER)) {
+            String ident1 = expect(TokenClass.IDENTIFIER).data;
+            // IDENT LPAR [ exp (COMMA exp)* ] RPAR
+            if (accept(TokenClass.LPAR)) {
+                expect(TokenClass.LPAR);
+                // @TODO Try parse params.
+                // parseExp();
+                // while (accept(TokenClass.COMMA)) {
+                //     expect(TokenClass.COMMA);
+                //     expectExp();
+                // }
+                expect(TokenClass.RPAR);
+                return null;
+            }
+            // IDENT LSBR exp RSBR
+            else if (accept(TokenClass.LSBR)) {
+                expect(TokenClass.LSBR);
+                Expr indexExpr = expectExp();
+                expect(TokenClass.RSBR);
+                return new ArrayAccessExpr(new VarExpr(ident1), indexExpr);
+            }
+            // IDENT DOT IDENT
+            else if (accept(TokenClass.DOT)) {
+                expect(TokenClass.DOT);
+                String ident2 = expect(TokenClass.IDENTIFIER);
+                return new FieldAccessExpr(ident1, ident2);
+            }
+            // ERROR
+            else {
+                expect(TokenClass.LPAR, TokenClass.LSBR, TokenClass.DOT);
+                return null;
+            }
+        }
+        // exp2
+        else {
+            return expectExp2();
+        }
+    }
+
+    // exp2     -> MINUS exp | LPAR type RPAR exp | ASTERIX exp | SIZEOF LPAR type RPAR | exp3
+    private Expr expectExp2() {
+        // MINUS exp
+        if (accept(TokenClass.MINUS)) {
+            expect(TokenClass.MINUS);
+            Expr expr = expectExp();
+
+            return new BinOp(IntLiteral("0"), Op.SUB, expr);
+        }
+        // LPAR type RPAR exp
+        else if (accept(TokenClass.LPAR)) {
+            expect(TokenClass.LPAR);
+            Type type = expectType();
+            expect(TokenClass.RPAR);
+            Expr expr = expectExpr();
+
+            return new TypecastExpr(type, expr);
+        }
+        // ASTERIX exp
+        else if (accept(TokenClass.ASTERIX)) {
+            expect(TokenClass.ASTERIX);
+            Expr expr = expectExp();
+            return new ValueAtExpr(expr);
+        }
+        // SIZEOF LPAR type RPAR
+        else if (accept(TokenClass.SIZEOF)) {
+            expect(TokenClass.SIZEOF);
+            expect(TokenClass.LPAR);
+            Type type = expectType();
+            expect(TokenClass.RPAR);
+
+            return new SizeOfExpr(type);
+        }
+        // exp3
+        else {
+            return expectExp3();
+        }
+    }
+
+    // exp3    -> exp ASTERIX exp | exp DIV exp | exp REM exp | exp4
+    private Expr expectExp3() {
+        return expectExp4();
+    }
+
+    // exp4    -> exp PLUS exp | exp MINUS exp | exp5
+    private Expr expectExp4() {
+        return expectExp5();
+    }
+
+    // exp5    -> exp LT exp | exp LE exp | exp GT exp | exp GE exp | exp6
+    private Expr expectExp5() {
+        return expectExp6();
+    }
+    // exp6    -> exp EQ exp | exp NE exp | exp7    
+    private Expr expectExp6() {
+        return expectExp7();
+    }
+
+    // exp7    -> exp AND exp || exp OR exp    
+    private Expr expectExp7() {
+        return null;
+    }
+
+    /*********************************\
+    ==================================
+    \*********************************/
 
     // Expects exp
     // exp     -> LPAR ( type RPAR exp | exp RPAR ) [postexp] 
