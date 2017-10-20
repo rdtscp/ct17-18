@@ -601,7 +601,7 @@ public class Parser {
     // exp     -> exp2 [OR exp]
     private Expr expectExp() {
         // exp2
-        if (accept(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
+        if (accept(TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
             Expr exp = expectExp8();
             // exp2 [OR exp]
             if (accept(TokenClass.OR)) {
@@ -616,7 +616,7 @@ public class Parser {
         }
         // ERROR
         else {
-            expect(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR);
+            expect(TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR);
             return null;
         }
     }
@@ -625,7 +625,7 @@ public class Parser {
     //         -> exp3
     private Expr expectExp2() {
         // exp2
-        if (accept(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
+        if (accept(TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
             Expr exp = expectExp();
             // exp2 AND exp
             if (accept(TokenClass.AND)) {
@@ -640,7 +640,7 @@ public class Parser {
         }
         // ERROR
         else {
-            expect(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR);
+            expect(TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR);
             return null;
         }
     }
@@ -649,7 +649,7 @@ public class Parser {
     //         -> exp4
     private Expr expectExp3() {
         // exp | exp4
-        if (accept(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
+        if (accept(TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
             Expr exp = expectExp();
             // exp EQ exp
             if (accept(TokenClass.EQ)) {
@@ -670,7 +670,7 @@ public class Parser {
         }
         // ERROR
         else {
-            expect(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR);
+            expect(TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR);
             return null;
         }
     }
@@ -678,7 +678,7 @@ public class Parser {
     // exp4    -> exp (LT | LE | GT | GE) exp
     //         -> exp5
     private Expr expectExp4() {
-        if (accept(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
+        if (accept(TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
             Expr exp = expectExp();
             //  exp LT exp
             if (accept(TokenClass.LT)) {
@@ -710,7 +710,7 @@ public class Parser {
         }
         // ERROR
         else {
-            expect(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR);
+            expect(TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR);
             return null;
         }
     }
@@ -718,7 +718,7 @@ public class Parser {
     // exp5    -> exp (PLUS | MINUS) exp
     //         -> exp6
     private Expr expectExp5() {
-        if (accept(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
+        if (accept(TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
             Expr exp = expectExp();
             //  exp PLUS exp
             if (accept(TokenClass.PLUS)) {
@@ -738,7 +738,7 @@ public class Parser {
         }
         // ERROR
         else {
-            expect(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR);
+            expect(TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR);
             return null;
         }
     }
@@ -746,7 +746,7 @@ public class Parser {
     // exp6    -> exp (ASTERIX | DIV | REM) exp
     //         -> exp7
     private Expr expectExp6() {
-        if (accept(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
+        if (accept(TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
             Expr exp = expectExp();
             //  exp ASTERIX exp
             if (accept(TokenClass.ASTERIX)) {
@@ -772,7 +772,7 @@ public class Parser {
         }
         // ERROR
         else {
-            expect(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR);
+            expect(TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR);
             return null;
         }
     }
@@ -824,7 +824,7 @@ public class Parser {
             String name = expect(TokenClass.IDENTIFIER).data;
             if (accept(TokenClass.LPAR)) {
                 expect(TokenClass.LPAR);
-                if (accept(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
+                if (accept(TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
                     ArrayList<Expr> args = new ArrayList<Expr>();
                     args.add(expectExp());
                     while (accept(TokenClass.COMMA)) {
