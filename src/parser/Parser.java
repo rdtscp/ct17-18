@@ -603,7 +603,7 @@ public class Parser {
         Expr exp2 = expectExp2();
         while (accept(TokenClass.OR)) {
             expect(TokenClass.OR);
-            Expr exp = expectExp();
+            Expr exp = expectExp2();
             exp2 = new BinOp(exp2, Op.OR, exp);
         }
         return exp2;
@@ -614,7 +614,7 @@ public class Parser {
         Expr exp3 = expectExp3();
         while(accept(TokenClass.AND)) {
             expect(TokenClass.AND);
-            Expr exp = expectExp();
+            Expr exp = expectExp3();
             exp3 = new BinOp(exp3, Op.AND, exp);
         }
         return exp3;
@@ -626,12 +626,12 @@ public class Parser {
         while (accept(TokenClass.EQ, TokenClass.NE)) {
             if (accept(TokenClass.EQ)) {
                 expect(TokenClass.EQ);
-                Expr exp = expectExp();
+                Expr exp = expectExp4();
                 exp4 = new BinOp(exp4, Op.EQ, exp);
             }
             else if (accept(TokenClass.NE)) {
                 expect(TokenClass.NE);
-                Expr exp = expectExp();
+                Expr exp = expectExp4();
                 exp4 = new BinOp(exp4, Op.NE, exp);
             }
         }
@@ -644,22 +644,22 @@ public class Parser {
         while (accept(TokenClass.LT, TokenClass.LE, TokenClass.GT, TokenClass.GE)) {
             if (accept(TokenClass.LT)) {
                 expect(TokenClass.LT);
-                Expr exp = expectExp();
+                Expr exp = expectExp5();
                 exp5 = new BinOp(exp5, Op.LT, exp);
             }
             else if (accept(TokenClass.LE)) {
                 expect(TokenClass.LE);
-                Expr exp = expectExp();
+                Expr exp = expectExp5();
                 exp5 = new BinOp(exp5, Op.LE, exp);
             }
             else if (accept(TokenClass.GT)) {
                 expect(TokenClass.GT);
-                Expr exp = expectExp();
+                Expr exp = expectExp5();
                 exp5 = new BinOp(exp5, Op.GT, exp);
             }
             else if (accept(TokenClass.GE)) {
                 expect(TokenClass.GE);
-                Expr exp = expectExp();
+                Expr exp = expectExp5();
                 exp5 = new BinOp(exp5, Op.GE, exp);
             }
         }
@@ -672,12 +672,12 @@ public class Parser {
         while (accept(TokenClass.PLUS, TokenClass.MINUS)) {
             if (accept(TokenClass.PLUS)) {
                 expect(TokenClass.PLUS);
-                Expr exp = expectExp();
+                Expr exp = expectExp6();
                 exp6 = new BinOp(exp6, Op.ADD, exp);
             }
             else if (accept(TokenClass.MINUS)) {
                 expect(TokenClass.MINUS);
-                Expr exp = expectExp();
+                Expr exp = expectExp6();
                 exp6 = new BinOp(exp6, Op.SUB, exp);
             }
         }
@@ -690,17 +690,17 @@ public class Parser {
         while (accept(TokenClass.ASTERIX, TokenClass.DIV, TokenClass.REM)) {
             if (accept(TokenClass.ASTERIX)) {
                 expect(TokenClass.ASTERIX);
-                Expr exp = expectExp();
+                Expr exp = expectExp7();
                 exp7 = new BinOp(exp7, Op.MUL, exp);
             }
             else if (accept(TokenClass.DIV)) {
                 expect(TokenClass.DIV);
-                Expr exp = expectExp();
+                Expr exp = expectExp7();
                 exp7 = new BinOp(exp7, Op.DIV, exp);
             }
             else if (accept(TokenClass.REM)) {
                 expect(TokenClass.REM);
-                Expr exp = expectExp();
+                Expr exp = expectExp7();
                 exp7 = new BinOp(exp7, Op.MOD, exp);
             }
         }
