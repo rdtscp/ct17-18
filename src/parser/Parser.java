@@ -715,7 +715,7 @@ public class Parser {
     private Expr expectExp7() {
         if (accept(TokenClass.MINUS)) {
             expect(TokenClass.MINUS);
-            Expr exp = expectExp();
+            Expr exp = expectExp8();
             return new BinOp(new IntLiteral("0"), Op.SUB, exp);
         }
         else if (accept(TokenClass.LPAR)) {
