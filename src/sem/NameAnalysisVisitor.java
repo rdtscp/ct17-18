@@ -105,7 +105,11 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 
 	@Override
 	public Void visitVarExpr(VarExpr v) {
-		if (currScope.lookup(v.name) == null) {
+		Symbol var = currScope.lookup(v.name);
+		if (var == null) {
+			error("Variable referenced that does not exist: " + v.name);
+		}
+		else if (!(var instanceof Variable)) {
 			error("Variable referenced that does not exist: " + v.name);
 		}
 		return null;
@@ -147,13 +151,14 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 
     @Override
     public Void visitFunCallExpr(FunCallExpr fce) {
-		if (currScope.lookup(fce.name) == null) {
-			error("Called function that does not exits: " + fce.name);
+		Symbol funCall = currScope.lookup(fce.name);
+		if (funCall == null) {
+			error("Function referenced that does not exist: " + fce.name);
 		}
-		else {
-			for (Expr arg: fce.exprs) arg.accept(this);
-		}
-        return null;
+		else if (!(funCall instanceof Variable)) {
+		error("Function referenced that does not exist: " + fce.name);
+	}
+		return null;
     }
 
     @Override
