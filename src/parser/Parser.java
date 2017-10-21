@@ -715,7 +715,7 @@ public class Parser {
     private Expr expectExp7() {
         if (accept(TokenClass.MINUS)) {
             expect(TokenClass.MINUS);
-            Expr exp = expectExp8();
+            Expr exp = expectExp();
             return new BinOp(new IntLiteral("0"), Op.SUB, exp);
         }
         else if (accept(TokenClass.LPAR)) {
@@ -733,7 +733,7 @@ public class Parser {
         }
         else if (accept(TokenClass.ASTERIX)) {
             expect(TokenClass.ASTERIX);
-            Expr exp = expectExp8();
+            Expr exp = expectExp();
             return new ValueAtExpr(exp);
         }
         else if (accept(TokenClass.SIZEOF)) {
@@ -748,7 +748,15 @@ public class Parser {
         }
     }
 
-    // 
+    // exp8    -> IDENT [pIdent]
+    //         -> INT_LITERAL
+    //         -> CHAR_LITERAL
+    //         -> STRING_LITERAL
+    //         -> LPAR exp RPAR
+    //
+    // pIdent  -> LPAR [ exp (COMMA exp)* ] RPAR
+    //         -> LSBR exp RSBR
+    //         -> DOT IDENT
     private Expr expectExp8() {
         if (accept(TokenClass.IDENTIFIER)) {
             String name = expect(TokenClass.IDENTIFIER).data;
@@ -796,12 +804,15 @@ public class Parser {
             String val = expect(TokenClass.STRING_LITERAL).data;
             return new StrLiteral(val);
         }
-        else {
+        else if (accept(TokenClass.LPAR)) {
             expect(TokenClass.LPAR);
             Expr exp = expectExp();
             expect(TokenClass.RPAR);
             return exp;
-
+        }
+        else {
+            expect(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR);
+            return null;
         }
     }
 
