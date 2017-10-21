@@ -105,11 +105,8 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 
 	@Override
 	public Void visitVarExpr(VarExpr v) {
-		if (currScope.lookupCurrent(v.name) == null) {
-			currScope.put(new Variable(v.name));
-		}
-		else {
-			error("Identifier already exists: " + v.name);
+		if (currScope.lookup(v.name) == null) {
+			error("Variable referenced that does not exist: " + v.name);
 		}
 		return null;
 	}
