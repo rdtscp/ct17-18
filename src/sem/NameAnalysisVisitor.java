@@ -155,7 +155,7 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 		if (funCall == null) {
 			error("Function referenced that does not exist: " + fce.name);
 		}
-		else if (!(funCall instanceof Variable)) {
+		else if (!(funCall instanceof Procedure)) {
 		error("Function referenced that does not exist: " + fce.name);
 	}
 		return null;
