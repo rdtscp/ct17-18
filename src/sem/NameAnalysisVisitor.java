@@ -74,7 +74,7 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 		// Check if anything else exists under this identifier in the current scope.
 		if (currScope.lookupCurrent(fd.name) == null) {
 			// Add this identifier to our current scope.
-			currScope.put(new Procedure(fd.name, fd.type));
+			currScope.put(new Procedure(fd, fd.name, fd.type));
 			
 			// Create a Scope for this FunDecl, and check the scope of all its items.
 			currScope = new Scope(currScope);
