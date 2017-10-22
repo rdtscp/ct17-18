@@ -196,6 +196,11 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 
     @Override
     public Void visitFunCallExpr(FunCallExpr fce) {
+		// Hardcode imported functions as valid.
+		if (fce.ident.equals("print_s") || fce.ident.equals("print_c") || fce.ident.equals("print_i") || fce.ident.equals("read_c") || fce.ident.equals("read_i")) {
+			return null;
+		}
+
 		// Get the Symbol associated with this identifier.
 		Symbol funDecl = currScope.lookup(fce.ident);
 		// If no Symbol exists, program is referencing something undefined.
