@@ -810,6 +810,12 @@ public class Parser {
             expect(TokenClass.RPAR);
             return exp;
         }
+        else if (accept(TokenClass.ASTERIX)) {
+            return expectExp();
+        }
+        else if (accept(TokenClass.MINUS)) {
+            return expectExp();
+        }
         else {
             expect(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR);
             return null;
