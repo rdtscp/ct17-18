@@ -53,7 +53,7 @@ public class ASTPrinter implements ASTVisitor<Void> {
     public Void visitVarDecl(VarDecl vd){
         writer.print("VarDecl(");
         vd.type.accept(this);
-        writer.print(","+vd.varName);
+        writer.print(","+vd.ident);
         writer.print(")");
         return null;
     }
@@ -61,7 +61,7 @@ public class ASTPrinter implements ASTVisitor<Void> {
     @Override
     public Void visitVarExpr(VarExpr v) {
         writer.print("VarExpr(");
-        writer.print(v.name);
+        writer.print(v.ident);
         writer.print(")");
         return null;
     }
@@ -75,7 +75,7 @@ public class ASTPrinter implements ASTVisitor<Void> {
     @Override
     public Void visitStructTypeDecl(StructTypeDecl st) {
         writer.print("StructTypeDecl(");
-        st.structName.accept(this);
+        st.structType.accept(this);
         writer.print(",");
         String delimiter = "";
         for (VarDecl vd : st.varDecls) {
@@ -90,7 +90,7 @@ public class ASTPrinter implements ASTVisitor<Void> {
     @Override
     public Void visitStructType(StructType st) {
         writer.print("StructType(");
-        writer.print(st.structType + ")");
+        writer.print(st.identifier + ")");
         return null;
     }
 
@@ -233,7 +233,7 @@ public class ASTPrinter implements ASTVisitor<Void> {
 
     @Override
     public Void visitFunCallExpr(FunCallExpr fce) {
-        writer.print("FunCallExpr(" + fce.name);
+        writer.print("FunCallExpr(" + fce.ident);
         int numExprs = fce.exprs.size();
         if (numExprs > 0) {
             writer.print(",");
