@@ -143,7 +143,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 	@Override
 	public Type visitAssign(Assign a) {
 		// a.expr1 should be one of the following: VarExpr, FieldAccessExpr, ArrayAccessExpr or ValuteAtExpr
-		if (!(a.expr1 instanceof VarExpr) && !(a.expr1 instanceof FieldAccessExpr) && !(a.expr1 instanceof FieldAccessExpr) && !(a.expr1 instanceof ValueAtExpr)) {
+		if (!(a.expr1 instanceof VarExpr) && !(a.expr1 instanceof FieldAccessExpr) && !(a.expr1 instanceof ArrayAccessExpr) && !(a.expr1 instanceof ValueAtExpr)) {
 			error("LHS of Assign is not one of the following: VarExpr, FieldAccessExpr, ArrayAccessExpr or ValuteAtExpr");
 		}
 		a.expr1.accept(this);
@@ -189,7 +189,6 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 			return BaseType.CHAR;
 		}
 		Symbol funDeclSym = currScope.lookup(fce.ident);
-		System.out.println(funDeclSym);
 		FunDecl funDecl = (FunDecl)funDeclSym.decl;
 		for (int i=0; i < fce.exprs.size(); i++) {
 			Type argType   = fce.exprs.get(i).type;
