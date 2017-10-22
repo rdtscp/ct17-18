@@ -180,7 +180,14 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 
 	@Override
     public Type visitFunCallExpr(FunCallExpr fce) {
+		if (fce.ident.equals("print_s") || fce.ident.equals("print_c") || fce.ident.equals("print_i")) {
+			return BaseType.VOID;
+		}
+		if (fce.ident.equals("read_c") || fce.ident.equals("read_i")) {
+			return BaseType.CHAR;
+		}
 		Symbol funDeclSym = currScope.lookup(fce.ident);
+		System.out.println(funDeclSym);
 		FunDecl funDecl = (FunDecl)funDeclSym.decl;
 		for (int i=0; i < fce.exprs.size(); i++) {
 			Type argType   = fce.exprs.get(i).type;
