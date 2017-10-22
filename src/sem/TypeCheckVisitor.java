@@ -121,12 +121,12 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		if (r.expr != null) {
 			returnType = r.expr.accept(this);
 			if (funRetType != returnType) {
-				error("Return statement in FunDecl[" + currFunDecl.name + "] should return [" + returnType + "], but returns: " + funRetType);
+				error("Return statement in FunDecl[" + currFunDecl.name + "] should return [" + funRetType + "], but returns: " + returnType);
 			}
 		}
 		else {
 			if (funRetType != returnType) {
-				error("Return statement in FunDecl[" + currFunDecl.name + "] should return [BaseType.VOID], but returns: " + funRetType);
+				error("Return statement in FunDecl[" + currFunDecl.name + "] should return [VOID], but returns: " + funRetType);
 			}
 		}
 		return null;
@@ -134,8 +134,10 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 
 	@Override
 	public Type visitVarExpr(VarExpr v) {
-		Symbol varDecl = currScope.lookup(v.ident);
-		return ((VarDecl)varDecl.decl).type;
+		Symbol varDeclSym = currScope.lookup(v.ident);
+		ASTNode varDeclNode = varDeclSym.decl;
+		VarDecl varDecl = (VarDecl) varDeclNode;
+		return varDecl.type;
 	}
 
 	@Override
