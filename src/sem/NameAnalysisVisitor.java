@@ -50,8 +50,15 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 		}
 		// struct IDENT IDENT;
 		else if (vd.type instanceof StructType) {
+			//System.out.println("--- Processing a Struct Instance Decl ---");
+			// Get the ident of the type.
 			String structTypeIdent = ((StructType)vd.type).identifier;
-			varDecl = new Struct(vd, structTypeIdent, varIdent);
+			//System.out.println("    Instance Ident: " + varIdent);
+			//System.out.println("    Type Ident: " + structTypeIdent);
+			// Get the Type>Fields mapping object.
+			StructIdent type = structTypes.get(structTypeIdent);
+			//System.out.println("    This Type has " + type.fields.size() + " fields.");
+			varDecl = new Struct(vd, type, varIdent);
 		}
 		// TYPE IDENT[INT_LITERAL];
 		else if (vd.type instanceof ArrayType) {
@@ -195,11 +202,26 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 
     @Override
     public Void visitFieldAccessExpr(FieldAccessExpr fae) {
-		// return new FieldAccessExpr(new VarExpr(name), field);
-		String field = fae.field;
-		VarExpr struct = (VarExpr)fae.struct;
-		System.out.println("struct.ident: " + struct.ident);
-		System.out.println(struct.vd);
+		//System.out.println("--- Checking Field Access ---");
+		VarExpr var = (VarExpr)fae.struct;
+		//System.out.println("    This struct instance has ident: " + var.ident);
+		//System.out.println("    requesting field: " + fae.field);
+
+		Symbol structDecl = currScope.lookup(var.ident);
+		if (structDecl == null) {
+			error("Attempted to access field of a variable that does not exist: " + var.ident);
+		}
+		else if (structDecl instanceof Struct) {
+			for (VarDecl field: ((Struct)structDecl).type.fields) {
+				if (field.ident.equals(fae.field)) {
+					return null;
+				}
+			}
+			error("Attempted to access a field of a struct which does not exist: " + var.ident + "." + fae.field);
+		}
+		else {
+			error("Attempted to access a field of a variable which is not a struct: " + var.ident);
+		}
 		return null;
     }
 

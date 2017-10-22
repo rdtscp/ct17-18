@@ -6,9 +6,9 @@ public class Struct extends Variable {
 
     public VarDecl vd;
     public String name;
-    public String type;
+    public StructIdent type;
 	
-	public Struct(VarDecl vd, String name, String type) {
+	public Struct(VarDecl vd, StructIdent type, String name) {
         super(vd, name);
         this.vd     = vd;
         this.name   = name;
