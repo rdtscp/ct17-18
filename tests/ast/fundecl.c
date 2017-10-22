@@ -1,5 +1,6 @@
 int main() {
     int a;
     int b;
-    a = *aPtr * b;    
+    a = *a * b;
+    while (a < b) print_i(a);
 }
