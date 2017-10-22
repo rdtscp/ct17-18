@@ -5,13 +5,13 @@ import java.util.ArrayList;
 /**
  * @author cdubach
  */
-public class StructTypeDecl implements ASTNode {
+public class StructTypeDecl implements ASTNode  {
 
-    public final StructType structName;
+    public final StructType structType;
     public final ArrayList<VarDecl> varDecls;
 
-    public StructTypeDecl(StructType structName, ArrayList<VarDecl> varDecls) {
-        this.structName = structName;
+    public StructTypeDecl(StructType structType, ArrayList<VarDecl> varDecls) {
+        this.structType = structType;
         this.varDecls   = varDecls;
     }
 

@@ -1,5 +1,10 @@
-int main() {
-    b = 1 - (1 - 1);
+struct foo {
+    int x;
+    int y;
+};
 
-    return (-1 * (1 -1 -1 + 5%2));
+struct foo foo;
+
+int main() {
+    return 1;
 }

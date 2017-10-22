@@ -4,33 +4,22 @@ import ast.*;
 
 public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 
+	Scope globalScope;
+	Scope currScope = null;
+
 	@Override
-	public Type visitBaseType(BaseType bt) {
-		// To be completed...
+	public Type visitProgram(Program p) {
+		globalScope = new Scope();
+		currScope = globalScope;
+		System.out.println("Testing Types of Program");
+		for (StructTypeDecl structTypeDecl : p.structTypeDecls) structTypeDecl.accept(this);
+		for (VarDecl varDecl: p.varDecls) varDecl.accept(this);
+		for (FunDecl funDecl: p.funDecls) funDecl.accept(this);
 		return null;
 	}
 
 	@Override
 	public Type visitStructTypeDecl(StructTypeDecl st) {
-		// To be completed...
-		return null;
-	}
-
-	@Override
-	public Type visitBlock(Block b) {
-		// To be completed...
-		return null;
-	}
-
-	@Override
-	public Type visitFunDecl(FunDecl p) {
-		// To be completed...
-		return null;
-	}
-
-
-	@Override
-	public Type visitProgram(Program p) {
 		// To be completed...
 		return null;
 	}
@@ -148,7 +137,28 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
     @Override
     public Type visitOp(Op o) {
         return null;
-    }
+	}
+	
+	@Override
+	public Type visitBaseType(BaseType bt) {
+		// To be completed...
+		return null;
+	}
+
+	@Override
+	public Type visitBlock(Block b) {
+		// To be completed...
+		return null;
+	}
+
+	@Override
+	public Type visitFunDecl(FunDecl p) {
+		// To be completed...
+		return null;
+	}
+
+
+	
 
 	// To be completed...
 

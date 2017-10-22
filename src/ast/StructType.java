@@ -2,10 +2,10 @@ package ast;
 
 public class StructType implements Type {
 
-    public final String structType;
+    public final String identifier;
 
-    public StructType(String structType) {
-        this.structType = structType;
+    public StructType(String identifier) {
+        this.identifier = identifier;
     }
 
     public <T> T accept(ASTVisitor<T> v) {
