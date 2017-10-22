@@ -228,14 +228,14 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 	@Override
     public Type visitBinOp(BinOp bo) {
 		Type lhs = bo.expr1.accept(this);
-		Type rhs = bo.expr1.accept(this);
+		Type rhs = bo.expr2.accept(this);
 		if (lhs == BaseType.VOID) {
 			error("LHS of Binary Operation has type VOID");
 		}
 		if (rhs == BaseType.VOID) {
 			error("RHS of Binary Operation has type VOID");
 		}
-		if (!(lhs.getClass().equals(rhs.getClass()))) {
+		if (lhs != rhs) {
 			error("Binary Operation where LHS and RHS are not of same type.");
 		}
 		switch (bo.op) {
