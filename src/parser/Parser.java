@@ -733,7 +733,7 @@ public class Parser {
         }
         else if (accept(TokenClass.ASTERIX)) {
             expect(TokenClass.ASTERIX);
-            Expr exp = expectExp();
+            Expr exp = expectExp8();
             return new ValueAtExpr(exp);
         }
         else if (accept(TokenClass.SIZEOF)) {
