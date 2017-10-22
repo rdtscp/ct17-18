@@ -1,15 +1,17 @@
 package sem;
 
 import ast.*;
+import java.util.HashMap;
 
 public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 
 	Scope currScope = null;
 	FunDecl currFunDecl = null;
+	HashMap<String, StructIdent> structTypes;
 	
 	@Override
 	public Type visitProgram(Program p) {
-		System.out.println("Testing Types of Program");
+		structTypes = new HashMap<String, StructIdent>();
 		currScope = new Scope();
 		for (StructTypeDecl structTypeDecl : p.structTypeDecls) structTypeDecl.accept(this);
 		for (VarDecl varDecl: p.varDecls) varDecl.accept(this);
@@ -18,8 +20,11 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 	}
 
 	@Override
-	public Type visitStructTypeDecl(StructTypeDecl st) {
-		// To be completed...
+	public Type visitStructTypeDecl(StructTypeDecl std) {
+		String structTypeIdent = std.structType.identifier;
+		// Check if we already have a StructIdent under this ident.
+		StructIdent newStruct = new StructIdent(structTypeIdent, std.varDecls);
+		structTypes.put(std.structType.identifier, newStruct);
 		return null;
 	}
 
@@ -34,13 +39,13 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 			varDecl = new Variable(vd, varIdent);
 		}
 		// // struct IDENT IDENT;
-		// else if (vd.type instanceof StructType) {
-		// 	// Get the ident of the type.
-		// 	String structTypeIdent = ((StructType)vd.type).identifier;
-		// 	// Get the Type>Fields mapping object.
-		// 	StructIdent type = structTypes.get(structTypeIdent);
-		// 	varDecl = new Struct(vd, type, varIdent);
-		// }
+		else if (vd.type instanceof StructType) {
+			// Get the ident of the type.
+			String structTypeIdent = ((StructType)vd.type).identifier;
+			// Get the Type>Fields mapping object.
+			StructIdent type = structTypes.get(structTypeIdent);
+			varDecl = new Struct(vd, type, varIdent);
+		}
 		// TYPE IDENT[INT_LITERAL];
 		else if (vd.type instanceof ArrayType) {
 			int arraySize = ((ArrayType)vd.type).size;
@@ -146,8 +151,11 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		if (!(a.expr1 instanceof VarExpr) && !(a.expr1 instanceof FieldAccessExpr) && !(a.expr1 instanceof ArrayAccessExpr) && !(a.expr1 instanceof ValueAtExpr)) {
 			error("LHS of Assign is not one of the following: VarExpr, FieldAccessExpr, ArrayAccessExpr or ValuteAtExpr");
 		}
-		a.expr1.accept(this);
-		a.expr2.accept(this);
+		Type lhs = a.expr1.accept(this);
+		Type rhs = a.expr2.accept(this);
+		if (lhs != rhs) {
+			error("Assignment LHS has different Type expectation to RHS Type.");
+		}
 		return null;
 	}
 
@@ -171,11 +179,18 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		VarExpr var = (VarExpr)fae.struct;
 
 		Symbol structDecl = currScope.lookup(var.ident);
-		for (VarDecl field: ((StructTypeDecl)structDecl.decl).varDecls) {
+		// System.out.println(" --- Struct Field Access ---");
+		// System.out.println("   Accessing: " + var.ident + "." + fae.field);
+		// System.out.println("   StructType: " + ((Struct)structDecl).type.typeIdent);
+		// System.out.println("   Num Fields: " + ((Struct)structDecl).type.fields.size());
+		
+		for (VarDecl field: ((Struct)structDecl).type.fields) {
+			// System.out.println("      Looking @ field: " + field.ident + " with type: " + field.type);
 			if (field.ident.equals(fae.field)) {
 				return field.type;
 			}
 		}
+
 		error("FATAL Error, should never reach here! Error occured because Struct Field access attempted to access a field that did not exist.");
         return null;
     }
