@@ -191,7 +191,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		Symbol funDeclSym = currScope.lookup(fce.ident);
 		FunDecl funDecl = (FunDecl)funDeclSym.decl;
 		for (int i=0; i < fce.exprs.size(); i++) {
-			Type argType   = fce.exprs.get(i).type;
+			Type argType   = fce.exprs.get(i).accept(this);
 			Type paramType = funDecl.params.get(i).type;
 			if (!(argType.getClass().equals(paramType.getClass()))) {
 				error("Parameter " + i + " of FunCall[" + fce.ident + " is not the correct type");
