@@ -7,9 +7,11 @@ import java.util.List;
 public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 
 	Scope currScope;
+	HashMap<String, StructIdent> structTypes;
 
 	@Override
 	public Void visitProgram(Program p) {
+		structTypes = new HashMap<String, StructIdent>();
 		currScope = new Scope();
 		for (StructTypeDecl structTypeDecl : p.structTypeDecls) structTypeDecl.accept(this);
 		for (VarDecl varDecl: p.varDecls) varDecl.accept(this);
@@ -19,18 +21,20 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 
 	@Override
 	public Void visitStructTypeDecl(StructTypeDecl std) {
-
-		// String type = std.structType.identifier;
-		
-		// // Check if anything under this IDENTIFIER exists within the scope.
-		// if (currScope.lookupCurrent(std.structType.identifier) == null) {
-		// 	currScope.put(new StructTypeDeclSem(type, std.varDecls));
-		// 	return null;
-		// }
-		// else {
-		// 	error("Tried to declare a StructType using an identifier already in use: " + std.structType.identifier);
-		// 	return null;
-		// }
+		String structTypeIdent = std.structType.identifier;
+		// Check if we already have a StructIdent under this ident.
+		if (structTypes.containsKey(structTypeIdent)) {
+			error("Attempted to declare a Struct with an identifier that is already in use: " + structTypeIdent);
+			return null;
+		}
+		// Check if this identifier is already in use elsewhere.
+		if (currScope.lookupCurrent(structTypeIdent) != null) {
+			error("Attempted to declare a Struct with an identifier that is already in use: " + structTypeIdent);
+			return null;
+		}
+		// Else we can create a StructType with ident: structTypeIdent
+		StructIdent newStruct = new StructIdent(structTypeIdent, std.varDecls);
+		structTypes.put(std.structType.identifier, newStruct);
 		return null;
 	}
 
@@ -44,7 +48,7 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 		if (vd.type instanceof BaseType) {
 			varDecl = new Variable(vd, varIdent);
 		}
-			// struct IDENT IDENT;
+		// struct IDENT IDENT;
 		else if (vd.type instanceof StructType) {
 			String structTypeIdent = ((StructType)vd.type).identifier;
 			varDecl = new Struct(vd, structTypeIdent, varIdent);
@@ -87,7 +91,7 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 			currScope = currScope.outer;
 		}
 		else {
-			error("Attempe to declare a function with identifier that is already in use: " + fd.name);
+			error("Attemped to declare a function with identifier that is already in use: " + fd.name);
 		}
 		return null;
 	}
@@ -191,7 +195,12 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 
     @Override
     public Void visitFieldAccessExpr(FieldAccessExpr fae) {
-        return null;
+		// return new FieldAccessExpr(new VarExpr(name), field);
+		String field = fae.field;
+		VarExpr struct = (VarExpr)fae.struct;
+		System.out.println("struct.ident: " + struct.ident);
+		System.out.println(struct.vd);
+		return null;
     }
 
     @Override
