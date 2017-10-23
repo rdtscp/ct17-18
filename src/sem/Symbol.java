@@ -1,11 +1,11 @@
 package sem;
 
-import ast.ASTNode;
+import ast.*;
 
 public abstract class Symbol {
 	
-	public String name;
 	ASTNode decl;
+	public String name;
 	
 	public Symbol(ASTNode decl, String name) {
 		this.name = name;
