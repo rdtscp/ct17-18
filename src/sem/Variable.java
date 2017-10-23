@@ -5,13 +5,13 @@ import ast.Type;
 
 public class Variable extends Symbol {
 	
-	public VarDecl vd;
+	public VarDecl decl;
 	public String name;
 	public Type type;
 
 	public Variable(VarDecl vd, String name) {
 		super(vd, name);
-		this.vd   = vd;
+		this.decl = vd;
 		this.name = name;
 	}
 }

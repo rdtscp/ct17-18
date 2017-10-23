@@ -1,17 +1,18 @@
 package sem;
 
 import ast.VarDecl;
+import ast.StructTypeDecl;
 
 public class Struct extends Variable {
 
-    public VarDecl vd;
+    public VarDecl decl;
     public String name;
-    public StructIdent type;
+    public StructTypeDecl std;
 	
-	public Struct(VarDecl vd, StructIdent type, String name) {
+	public Struct(VarDecl vd, String name, StructTypeDecl std) {
         super(vd, name);
-        this.vd     = vd;
-        this.name   = name;
-        this.type   = type;
+        this.decl  = vd;
+        this.name  = name;
+        this.std   = std;
 	}
 }

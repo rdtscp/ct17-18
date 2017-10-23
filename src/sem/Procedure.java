@@ -1,16 +1,14 @@
 package sem;
 
-import ast.*;
+import ast.FunDecl;
 
 public class Procedure extends Symbol {
 	
 	public FunDecl decl;
 	public String name;
-	public Type type;
 	
-	public Procedure(FunDecl decl, String name, Type type) {
+	public Procedure(FunDecl decl, String name) {
         super(decl, name);
 		this.name = name;
-		this.type = type;
 	}
 }
