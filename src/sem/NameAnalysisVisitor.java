@@ -7,15 +7,49 @@ import java.util.List;
 public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 
 	Scope currScope;
-	HashMap<String, StructIdent> structTypes;
+	HashMap<String, StructTypeDecl> structTypes;
 	boolean createBlockScope = true;
 
 	@Override
 	public Void visitProgram(Program p) {
-		structTypes = new HashMap<String, StructIdent>();
+		// Initialise the Scope of the Program, and the declared StructTypes
+		structTypes = new HashMap<String, StructTypeDecl>();
 		currScope = new Scope();
+		
+		// Set Up Imported Functions.
+		// --- read_i ---
+		currScope.put(new Procedure(new FunDecl(BaseType.INT, "read_i", new ArrayList<VarDecl>(), null), "read_i", BaseType.INT));
+		
+		// --- read_c ---
+		currScope.put(new Procedure(new FunDecl(BaseType.CHAR, "read_c", new ArrayList<VarDecl>(), null), "read_c", BaseType.CHAR));
+		
+		// --- mcmalloc ---
+		ArrayList<VarDecl> mcmallocParams = new ArrayList<VarDecl>();
+		mcmallocParams.add(new VarDecl(BaseType.INT, "size"));
+		currScope.put(new Procedure(new FunDecl(new PointerType(BaseType.VOID), "mcmalloc", mcmallocParams, null), "mcmalloc", BaseType.VOID));
+		
+		// --- print_c ---
+		ArrayList<VarDecl> print_cParams = new ArrayList<VarDecl>();
+		print_cParams.add(new VarDecl(BaseType.CHAR, "c"));
+		currScope.put(new Procedure(new FunDecl(BaseType.VOID, "print_c", print_cParams, null)));
+		
+		// --- print_i ---
+		ArrayList<VarDecl> print_iParams = new ArrayList<VarDecl>();
+		print_iParams.add(new VarDecl(BaseType.INT, "i"));
+		currScope.put(new Procedure(new FunDecl(BaseType.VOID, "print_i", print_iParams, null)));
+		
+		// --- print_s ---
+		ArrayList<VarDecl> print_sParams = new ArrayList<VarDecl>();
+		print_sParams.add(new VarDecl(new PointerType(BaseType.CHAR), "s");
+		currScope.put(new Procedure(new FunDecl(BaseType.VOID, "print_s", print_sParams, null)));
+
+		// Check Names of all StructTypeDecls
 		for (StructTypeDecl structTypeDecl : p.structTypeDecls) structTypeDecl.accept(this);
+		
+		// Check Names of all VarDecls
 		for (VarDecl varDecl: p.varDecls) varDecl.accept(this);
+		
+		// Check Names of all FunDecls
 		for (FunDecl funDecl: p.funDecls) funDecl.accept(this);
 		return null;
 	}
@@ -28,79 +62,88 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 			error("Attempted to declare a Struct with an identifier that is already in use: " + structTypeIdent);
 			return null;
 		}
-		// Check if this identifier is already in use elsewhere.
+		// Check if this identifier is already in current scope.
 		if (currScope.lookupCurrent(structTypeIdent) != null) {
 			error("Attempted to declare a Struct with an identifier that is already in use: " + structTypeIdent);
 			return null;
 		}
 		// Else we can create a StructType with ident: structTypeIdent
-		StructIdent newStruct = new StructIdent(structTypeIdent, std.varDecls);
-		structTypes.put(std.structType.identifier, newStruct);
+		structTypes.put(structTypeIdent, std);
+
+		// Create a new Scope for the StructTypeDecl, and check its VarDecls names dont clash.
+		currScope = new Scope(currScope);
+		for (VarDecl varDecl: std.vardDecls) {
+			varDecl.accept(this);
+		}
+		currScope = currScope.outer;
 		return null;
 	}
 
 	@Override
 	public Void visitVarDecl(VarDecl vd) {
-		String varIdent = vd.ident;
-		if (varIdent.equals("print_s") || varIdent.equals("print_c") || varIdent.equals("print_i") || varIdent.equals("read_c") || varIdent.equals("read_i")) {
-			error("Tried to declare a Variable with identifier already in use: " + varIdent);
+		// If this identifier is free.
+		if (currScope.lookupCurrent(vd.ident) == null) {
+			// Add standard INT/CHAR/VOID Variable to Scope.
+			if (vd.type instanceof BaseType) {
+				currScope.put(new Variable(vd, vd.ident));
+				return null;
+			}
+			// Attempting to declare a Struct Variable.
+			if (vd.type instanceof StructType) {
+				StructType vdStructType = (StructType)vd.type;
+
+				// Check if a Struct of this type exists.
+				if (structTypes.containsKey(vdStructType.identifier)) {
+					currScope.put(new Struct(vd, vd.ident, structTypes.get(vdStructType.identifier)));
+					return null;
+				}
+				// Error if not.
+				else {
+					error("Attempted to declare a Variable of type [" + vdStructType.identifier + "] which does not exist.");
+					return null;
+				}
+			}
+			// Attempting to declare an Array Variable.
+			if (vd.type instanceof ArrayType) {
+				ArrayType vdArrayType = (ArrayType)vd.type;
+
+				// Add this VarDecl to the Scope.
+				currScope.put(new Array(vd, vd.ident));
+				return null;
+			}
+			// Attempting to declare a Pointer Variable.
+			if (vd.type instanceof PointerType) {
+				PointerType vdPtrType = (PointerType)vd.type;
+
+				// Add this VarDecl to the Scope.
+				currScope.put(new Pointer(vd, vd.ident));
+				return null;
+			}
+
+			// Shouldn't reach here.
+			error("FATAL ERROR: VarDecl has unknown Type");
 			return null;
 		}
 
-		// Create the VarDecl's Symbol.
-		Symbol varDecl = null;
-		// TYPE IDENT;
-		if (vd.type instanceof BaseType) {
-			varDecl = new Variable(vd, varIdent);
-		}
-		// struct IDENT IDENT;
-		else if (vd.type instanceof StructType) {
-			// Get the ident of the type.
-			String structTypeIdent = ((StructType)vd.type).identifier;
-			// Get the Type>Fields mapping object.
-			StructIdent type = structTypes.get(structTypeIdent);
-			varDecl = new Struct(vd, type, varIdent);
-		}
-		// TYPE IDENT[INT_LITERAL];
-		else if (vd.type instanceof ArrayType) {
-			int arraySize = ((ArrayType)vd.type).size;
-			varDecl = new Array(vd, varIdent, arraySize);
-		}
-		// TYPE * IDENT;
-		else if (vd.type instanceof PointerType) {
-			varDecl = new Variable(vd, varIdent);
-		}
-
-		// Check if anything else exists under this identifier exists in current scope.
-		if (currScope.lookupCurrent(vd.ident) == null) {
-			currScope.put(varDecl);
-		}
-		else {
-			error("Attempted to declare a variable with identifier that is already in use: " + varIdent);
-		}
+		error("Attempted to declare a Variable with an identifier already in use: " + vd.ident);
 		return null;
 	}
 
 	@Override
 	public Void visitFunDecl(FunDecl fd) {
-		if (fd.name.equals("print_s") || fd.name.equals("print_c") || fd.name.equals("print_i") || fd.name.equals("read_c") || fd.name.equals("read_i")) {
-			error("Tried to declare a Function with identifier already in use: " + fd.name);
-			return null;
-		}
-		// Check if anything else exists under this identifier in the current scope.
+		// If this identifier is free.
 		if (currScope.lookupCurrent(fd.name) == null) {
 			// Add this identifier to our current scope.
-			currScope.put(new Procedure(fd, fd.name, fd.type));
+			currScope.put(new Procedure(fd, fd.name));
 			
-			// Create a Scope for this FunDecl, and check the scope of all its items.
 			currScope = new Scope(currScope);
+		
 			// Check Params.
-			for (VarDecl varDecl: fd.params) varDecl.accept(this);
+			for (VarDecl varDecl: fd.params) varDecl.accept(this);	
 			// Check block.
-			createBlockScope = false;
-			visitBlock(fd.block);
+			createBlockScope = false;	// Mark that visitBlock is not to create a new Scope.
+			fd.block.accept(this);
 
-			// Return to previous scope.
 			currScope = currScope.outer;
 		}
 		else {
@@ -119,12 +162,10 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 			currScope = currScope.outer;
 		}
 		else {
-			System.out.println(b.varDecls.size() + " <VarDecls, Stmts> " + b.stmts.size());
-			createBlockScope = true;
+			createBlockScope = true; // Reset blockScope informer.
 			// Go through all VarDecl's and Stmt's checking their scope.
 			for (VarDecl varDecl: b.varDecls) varDecl.accept(this);
 			for (Stmt stmt: b.stmts) stmt.accept(this);
-
 		}
 		return null;
 	}	
@@ -167,17 +208,16 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 	public Void visitVarExpr(VarExpr v) {
 		// Get the Symbol associated with this identifier.
 		Symbol varDecl = currScope.lookup(v.ident);
+
 		// If no Symbol exists, program is referencing something undefined.
-		if (varDecl == null) {
-			error("Reference to variable that does not exist: " + v.ident);
-		}
-		// Check the Symbol is a Variable.
-		else if (!(varDecl instanceof Variable)) {
-			error("Variable referenced that does not exist: " + v.ident);
-		}
-		else {
-			v.vd = (VarDecl)varDecl.decl;
-		}
+		if (varDecl == null) error("Reference to variable that does not exist: " + v.ident);
+
+		// Check the Symbol is a Variable. Note: Struct, Array, Pointer extend Variable.
+		else if (!(varDecl instanceof Variable)) error("Variable referenced that does not exist: " + v.ident);
+		
+		// VarExpr is a Variable => Link this expr to its VarDecl
+		else v.vd = (VarDecl)varDecl.decl;
+
 		return null;
 	}
 
@@ -210,49 +250,54 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 
     @Override
     public Void visitFieldAccessExpr(FieldAccessExpr fae) {
-		VarExpr var = (VarExpr)fae.struct;
+		// FieldAccessExpr made up of VarExpr.IDENTIFIER  -  new FieldAccessExpr(new VarExpr(name), field);
+		VarExpr structVar = (VarExpr)fae.struct;
 
-		Symbol structDecl = currScope.lookup(var.ident);
+		// Get the Variable for this structVar.
+		Symbol struct = currScope.lookup(structVar.ident);
+
+		// If no such structVar exists, throw error.
 		if (structDecl == null) {
 			error("Attempted to access field of a variable that does not exist: " + var.ident);
+			return null;
 		}
-		else if (structDecl instanceof Struct) {
-			for (VarDecl field: ((Struct)structDecl).type.fields) {
-				if (field.ident.equals(fae.field)) {
-					return null;
-				}
+		// Check that the existing item is a Struct.
+		else if (structVar instanceof Struct) {
+			StructTypeDecl std = (StructTypeDecl)((Struct)structVar);
+
+			// Check if this field exists in the StructTypeDecl.
+			for (VarDecl field: std.varDecls) {
+				if (field.ident.equals(fae.field)) return null;
 			}
-			error("Attempted to access a field of a struct which does not exist: " + var.ident + "." + fae.field);
+
+			// Reached here means that the field did not exist in the StructTypeDecl.
+			error("Field in FieldAccessExpr did not exist for the variable: " + var.ident + "." + fae.field);
+			return null;
 		}
+		// Variable referenced is not a Struct.
 		else {
-			error("Attempted to access a field of a variable which is not a struct: " + var.ident);
+			error("Attempted to access a field of a variable which is not a struct: " + var.ident + "." + fae.field);
+			return null;
 		}
-		return null;
-    }
+	}
 
     @Override
     public Void visitFunCallExpr(FunCallExpr fce) {
-		// Hardcode imported functions as valid.
-		if (fce.ident.equals("print_s") || fce.ident.equals("print_c") || fce.ident.equals("print_i") || fce.ident.equals("read_c") || fce.ident.equals("read_i")) {
-			return null;
-		}
-
 		// Get the Symbol associated with this identifier.
 		Symbol funDecl = currScope.lookup(fce.ident);
-		// If no Symbol exists, program is referencing something undefined.
-		if (funDecl == null) {
+
+		// If no Symbol exists, or the Symbol is not a Procedure.
+		if (funDecl == null || !(funDecl instanceof Procedure)) {
 			error("Reference to function that does not exist: " + fce.ident);
+			return null;
 		}
-		else if (!(funDecl instanceof Procedure)) {
-			error("Function referenced that does not exist: " + fce.ident);
-		}
+		// Identifier refers to a Procedure.
 		else {
-			for (Expr expr: fce.exprs) {
-				expr.accept(this);
-			}
+			// Check each of the params is valid in scope.
+			for (Expr expr: fce.exprs) expr.accept(this);
 			fce.fd = (FunDecl)funDecl.decl;
+			return null;
 		}
-		return null;
     }
 
     @Override
