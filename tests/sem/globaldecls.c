@@ -8,5 +8,6 @@ void main() {
     ltr = '1';
     num_arr[3] = num;
     ltr_arr[3] = ltr;
+    num_arr[3] = ltr;
     return;
 }
