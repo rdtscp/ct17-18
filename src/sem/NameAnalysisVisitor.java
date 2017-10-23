@@ -99,7 +99,6 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 			// Check block.
 			createBlockScope = false;
 			visitBlock(fd.block);
-			createBlockScope = true;
 
 			// Return to previous scope.
 			currScope = currScope.outer;
@@ -112,11 +111,21 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 
 	@Override
 	public Void visitBlock(Block b) {
-		if (createBlockScope) currScope = new Scope(currScope);
-		// Go through all VarDecl's and Stmt's checking their scope.
-		for (VarDecl varDecl: b.varDecls) varDecl.accept(this);
-		for (Stmt stmt: b.stmts) stmt.accept(this);
-		if (createBlockScope) currScope = currScope.outer;
+		if (createBlockScope) {
+			currScope = new Scope(currScope);
+			// Go through all VarDecl's and Stmt's checking their scope.
+			for (VarDecl varDecl: b.varDecls) varDecl.accept(this);
+			for (Stmt stmt: b.stmts) stmt.accept(this);
+			currScope = currScope.outer;
+		}
+		else {
+			System.out.println(b.varDecls.size() + " <VarDecls, Stmts> " + b.stmts.size());
+			createBlockScope = true;
+			// Go through all VarDecl's and Stmt's checking their scope.
+			for (VarDecl varDecl: b.varDecls) varDecl.accept(this);
+			for (Stmt stmt: b.stmts) stmt.accept(this);
+
+		}
 		return null;
 	}	
 
@@ -238,6 +247,9 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 			error("Function referenced that does not exist: " + fce.ident);
 		}
 		else {
+			for (Expr expr: fce.exprs) {
+				expr.accept(this);
+			}
 			fce.fd = (FunDecl)funDecl.decl;
 		}
 		return null;

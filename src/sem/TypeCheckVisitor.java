@@ -91,10 +91,22 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 
 	@Override
 	public Type visitBlock(Block b) {
-		if (createBlockScope) currScope = new Scope(currScope);
-		for (VarDecl varDecl: b.varDecls) varDecl.accept(this);
-		for (Stmt stmt: b.stmts) stmt.accept(this);
-		if (createBlockScope) currScope = currScope.outer;		
+
+		if (createBlockScope) {
+			currScope = new Scope(currScope);
+			// Go through all VarDecl's and Stmt's checking their scope.
+			for (VarDecl varDecl: b.varDecls) varDecl.accept(this);
+			for (Stmt stmt: b.stmts) stmt.accept(this);
+			currScope = currScope.outer;
+		}
+		else {
+			System.out.println(b.varDecls.size() + " <VarDecls, Stmts> " + b.stmts.size());
+			createBlockScope = true;
+			// Go through all VarDecl's and Stmt's checking their scope.
+			for (VarDecl varDecl: b.varDecls) varDecl.accept(this);
+			for (Stmt stmt: b.stmts) stmt.accept(this);
+
+		}	
 		return null;
 	}
 
@@ -145,6 +157,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		Symbol varDeclSym = currScope.lookup(v.ident);
 		ASTNode varDeclNode = varDeclSym.decl;
 		VarDecl varDecl = (VarDecl) varDeclNode;
+		System.out.println("Found var: " + varDecl.ident + " with type: " + varDecl.type);
 		return varDecl.type;
 	}
 
