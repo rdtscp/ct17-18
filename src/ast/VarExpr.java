@@ -1,6 +1,7 @@
 package ast;
 
 public class VarExpr extends Expr {
+
     public final String ident;
     public VarDecl vd; // to be filled in by the name analyser
     
