@@ -36,6 +36,10 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		Symbol varDecl = null;
 		// TYPE IDENT;
 		if (vd.type instanceof BaseType) {
+			if (vd.type == BaseType.VOID) {
+				error("Variable cannot have type void.");
+				return null;
+			}
 			varDecl = new Variable(vd, varIdent);
 		}
 		// // struct IDENT IDENT;
@@ -205,6 +209,11 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		}
 		Symbol funDeclSym = currScope.lookup(fce.ident);
 		FunDecl funDecl = (FunDecl)funDeclSym.decl;
+		// Check if we are calling this function with incorrect number of params.
+		if (fce.exprs.size() != funDecl.params.size()) {
+			error("Function [" + funDecl.name + "] requires " + funDecl.params.size() + " parameters, but " + fce.exprs.size() + " were provided.");
+			return BaseType.VOID;
+		}
 		for (int i=0; i < fce.exprs.size(); i++) {
 			Type argType   = fce.exprs.get(i).accept(this);
 			Type paramType = funDecl.params.get(i).type;

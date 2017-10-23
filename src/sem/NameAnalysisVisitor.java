@@ -8,6 +8,7 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 
 	Scope currScope;
 	HashMap<String, StructIdent> structTypes;
+	boolean createBlockScope = true;
 
 	@Override
 	public Void visitProgram(Program p) {
@@ -88,7 +89,9 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 			// Check Params.
 			for (VarDecl varDecl: fd.params) varDecl.accept(this);
 			// Check block.
+			createBlockScope = false;
 			visitBlock(fd.block);
+			createBlockScope = true;
 
 			// Return to previous scope.
 			currScope = currScope.outer;
@@ -101,9 +104,11 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 
 	@Override
 	public Void visitBlock(Block b) {
+		if (createBlockScope) currScope = new Scope(currScope);
 		// Go through all VarDecl's and Stmt's checking their scope.
 		for (VarDecl varDecl: b.varDecls) varDecl.accept(this);
 		for (Stmt stmt: b.stmts) stmt.accept(this);
+		if (createBlockScope) currScope = currScope.outer;
 		return null;
 	}	
 
