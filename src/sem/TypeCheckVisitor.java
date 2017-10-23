@@ -8,6 +8,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 	Scope currScope = null;
 	FunDecl currFunDecl = null;
 	HashMap<String, StructIdent> structTypes;
+	boolean createBlockScope = true;
 	
 	@Override
 	public Type visitProgram(Program p) {
@@ -77,7 +78,9 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		// Check Params.
 		for (VarDecl varDecl: fd.params) varDecl.accept(this);
 		// Check block.
+		createBlockScope = false;
 		visitBlock(fd.block);
+		createBlockScope = true;
 
 		// Return to the previous scope.
 		currScope = currScope.outer;
@@ -88,8 +91,10 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 
 	@Override
 	public Type visitBlock(Block b) {
+		if (createBlockScope) currScope = new Scope(currScope);
 		for (VarDecl varDecl: b.varDecls) varDecl.accept(this);
 		for (Stmt stmt: b.stmts) stmt.accept(this);
+		if (createBlockScope) currScope = currScope.outer;		
 		return null;
 	}
 
@@ -99,9 +104,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		if (whileCondition != BaseType.INT) {
 			error("While Condition is not of Type BaseType.INT");
 		}
-		currScope = new Scope(currScope);
 		w.stmt.accept(this);
-		currScope = currScope.outer;
 		return null;
 	}
 
@@ -111,14 +114,10 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		if (ifCondition != BaseType.INT) {
 			error("If Condition is not of Type BaseType.INT");
 		}
-		currScope = new Scope(currScope);
 		i.stmt1.accept(this);
-		currScope = currScope.outer;
 
 		if (i.stmt2 != null) {
-			currScope = new Scope(currScope);
 			i.stmt2.accept(this);
-			currScope = currScope.outer;
 		}
 		return null;
 	}
@@ -205,8 +204,11 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		if (fce.ident.equals("print_s") || fce.ident.equals("print_c") || fce.ident.equals("print_i")) {
 			return BaseType.VOID;
 		}
-		if (fce.ident.equals("read_c") || fce.ident.equals("read_i")) {
+		if (fce.ident.equals("read_c")) {
 			return BaseType.CHAR;
+		}
+		if (fce.ident.equals("read_i")) {
+			return BaseType.INT;
 		}
 		Symbol funDeclSym = currScope.lookup(fce.ident);
 		FunDecl funDecl = (FunDecl)funDeclSym.decl;
