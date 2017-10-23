@@ -2,7 +2,7 @@ package sem;
 
 import ast.*;
 import java.util.HashMap;
-import java.util.List;
+import java.util.ArrayList;
 
 public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 
@@ -18,30 +18,30 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 		
 		// Set Up Imported Functions.
 		// --- read_i ---
-		currScope.put(new Procedure(new FunDecl(BaseType.INT, "read_i", new ArrayList<VarDecl>(), null), "read_i", BaseType.INT));
+		currScope.put(new Procedure(new FunDecl(BaseType.INT, "read_i", new ArrayList<VarDecl>(), null), "read_i"));
 		
 		// --- read_c ---
-		currScope.put(new Procedure(new FunDecl(BaseType.CHAR, "read_c", new ArrayList<VarDecl>(), null), "read_c", BaseType.CHAR));
+		currScope.put(new Procedure(new FunDecl(BaseType.CHAR, "read_c", new ArrayList<VarDecl>(), null), "read_c"));
 		
 		// --- mcmalloc ---
 		ArrayList<VarDecl> mcmallocParams = new ArrayList<VarDecl>();
 		mcmallocParams.add(new VarDecl(BaseType.INT, "size"));
-		currScope.put(new Procedure(new FunDecl(new PointerType(BaseType.VOID), "mcmalloc", mcmallocParams, null), "mcmalloc", BaseType.VOID));
+		currScope.put(new Procedure(new FunDecl(new PointerType(BaseType.VOID), "mcmalloc", mcmallocParams, null), "mcmalloc"));
 		
 		// --- print_c ---
 		ArrayList<VarDecl> print_cParams = new ArrayList<VarDecl>();
 		print_cParams.add(new VarDecl(BaseType.CHAR, "c"));
-		currScope.put(new Procedure(new FunDecl(BaseType.VOID, "print_c", print_cParams, null)));
+		currScope.put(new Procedure(new FunDecl(BaseType.VOID, "print_c", print_cParams, null), "print_c"));
 		
 		// --- print_i ---
 		ArrayList<VarDecl> print_iParams = new ArrayList<VarDecl>();
 		print_iParams.add(new VarDecl(BaseType.INT, "i"));
-		currScope.put(new Procedure(new FunDecl(BaseType.VOID, "print_i", print_iParams, null)));
+		currScope.put(new Procedure(new FunDecl(BaseType.VOID, "print_i", print_iParams, null), "print_i"));
 		
 		// --- print_s ---
 		ArrayList<VarDecl> print_sParams = new ArrayList<VarDecl>();
-		print_sParams.add(new VarDecl(new PointerType(BaseType.CHAR), "s");
-		currScope.put(new Procedure(new FunDecl(BaseType.VOID, "print_s", print_sParams, null)));
+		print_sParams.add(new VarDecl(new PointerType(BaseType.CHAR), "s"));
+		currScope.put(new Procedure(new FunDecl(BaseType.VOID, "print_s", print_sParams, null), "print_s"));
 
 		// Check Names of all StructTypeDecls
 		for (StructTypeDecl structTypeDecl : p.structTypeDecls) structTypeDecl.accept(this);
@@ -72,9 +72,7 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 
 		// Create a new Scope for the StructTypeDecl, and check its VarDecls names dont clash.
 		currScope = new Scope(currScope);
-		for (VarDecl varDecl: std.vardDecls) {
-			varDecl.accept(this);
-		}
+		for (VarDecl varDecl: std.varDecls) { varDecl.accept(this); }
 		currScope = currScope.outer;
 		return null;
 	}
@@ -251,19 +249,20 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
     @Override
     public Void visitFieldAccessExpr(FieldAccessExpr fae) {
 		// FieldAccessExpr made up of VarExpr.IDENTIFIER  -  new FieldAccessExpr(new VarExpr(name), field);
-		VarExpr structVar = (VarExpr)fae.struct;
+		VarExpr struct = (VarExpr)fae.struct;
 
 		// Get the Variable for this structVar.
-		Symbol struct = currScope.lookup(structVar.ident);
+		Symbol varSym = currScope.lookup(struct.ident);
 
 		// If no such structVar exists, throw error.
-		if (structDecl == null) {
-			error("Attempted to access field of a variable that does not exist: " + var.ident);
+		if (varSym == null) {
+			error("Attempted to access field of a variable that does not exist: " + struct.ident);
 			return null;
 		}
 		// Check that the existing item is a Struct.
-		else if (structVar instanceof Struct) {
-			StructTypeDecl std = (StructTypeDecl)((Struct)structVar);
+		else if (varSym instanceof Struct) {
+			Struct structSym  = (Struct)varSym; 
+			StructTypeDecl std = structSym.std;
 
 			// Check if this field exists in the StructTypeDecl.
 			for (VarDecl field: std.varDecls) {
@@ -271,12 +270,12 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 			}
 
 			// Reached here means that the field did not exist in the StructTypeDecl.
-			error("Field in FieldAccessExpr did not exist for the variable: " + var.ident + "." + fae.field);
+			error("Field in FieldAccessExpr did not exist for the variable: " + struct.ident + "." + fae.field);
 			return null;
 		}
 		// Variable referenced is not a Struct.
 		else {
-			error("Attempted to access a field of a variable which is not a struct: " + var.ident + "." + fae.field);
+			error("Attempted to access a field of a variable which is not a struct: " + struct.ident + "." + fae.field);
 			return null;
 		}
 	}
