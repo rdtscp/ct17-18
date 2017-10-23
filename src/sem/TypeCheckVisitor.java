@@ -2,96 +2,137 @@ package sem;
 
 import ast.*;
 import java.util.HashMap;
+import java.util.ArrayList;
 
 public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 
 	Scope currScope = null;
-	FunDecl currFunDecl = null;
-	HashMap<String, StructIdent> structTypes;
+	HashMap<String, StructTypeDecl> structTypes;
 	boolean createBlockScope = true;
+	FunDecl currFunDecl = null;
 	
+	/**********************************************************************\
+	  	TypeCheckVisitor Assumes that all variables referenced do exist. 
+	\**********************************************************************/
+
 	@Override
 	public Type visitProgram(Program p) {
-		structTypes = new HashMap<String, StructIdent>();
+		// Initialise the Scope of the Program, and the declared StructTypes
+		structTypes = new HashMap<String, StructTypeDecl>();
 		currScope = new Scope();
+
+		// Set Up Imported Functions.
+		// --- read_i ---
+		currScope.put(new Procedure(new FunDecl(BaseType.INT, "read_i", new ArrayList<VarDecl>(), null), "read_i"));
+		
+		// --- read_c ---
+		currScope.put(new Procedure(new FunDecl(BaseType.CHAR, "read_c", new ArrayList<VarDecl>(), null), "read_c"));
+		
+		// --- mcmalloc ---
+		ArrayList<VarDecl> mcmallocParams = new ArrayList<VarDecl>();
+		mcmallocParams.add(new VarDecl(BaseType.INT, "size"));
+		currScope.put(new Procedure(new FunDecl(new PointerType(BaseType.VOID), "mcmalloc", mcmallocParams, null), "mcmalloc"));
+		
+		// --- print_c ---
+		ArrayList<VarDecl> print_cParams = new ArrayList<VarDecl>();
+		print_cParams.add(new VarDecl(BaseType.CHAR, "c"));
+		currScope.put(new Procedure(new FunDecl(BaseType.VOID, "print_c", print_cParams, null), "print_c"));
+		
+		// --- print_i ---
+		ArrayList<VarDecl> print_iParams = new ArrayList<VarDecl>();
+		print_iParams.add(new VarDecl(BaseType.INT, "i"));
+		currScope.put(new Procedure(new FunDecl(BaseType.VOID, "print_i", print_iParams, null), "print_i"));
+		
+		// --- print_s ---
+		ArrayList<VarDecl> print_sParams = new ArrayList<VarDecl>();
+		print_sParams.add(new VarDecl(new PointerType(BaseType.CHAR), "s"));
+		currScope.put(new Procedure(new FunDecl(BaseType.VOID, "print_s", print_sParams, null), "print_s"));
+
+		// Check Names of all StructTypeDecls
 		for (StructTypeDecl structTypeDecl : p.structTypeDecls) structTypeDecl.accept(this);
-		for (VarDecl varDecl: p.varDecls) varDecl.accept(this);
-		for (FunDecl funDecl: p.funDecls) funDecl.accept(this);
+		
+		// Check Names of all VarDecls
+		for (VarDecl varDecl: p.varDecls) { varDecl.accept(this); }
+		
+		// Check Names of all FunDecls
+		for (FunDecl funDecl: p.funDecls) { funDecl.accept(this); }
 		return null;
 	}
 
 	@Override
 	public Type visitStructTypeDecl(StructTypeDecl std) {
 		String structTypeIdent = std.structType.identifier;
-		// Check if we already have a StructIdent under this ident.
-		StructIdent newStruct = new StructIdent(structTypeIdent, std.varDecls);
-		structTypes.put(std.structType.identifier, newStruct);
+
+		// We can create a StructType with ident: structTypeIdent
+		structTypes.put(structTypeIdent, std);
+		
+		// Create a new Scope for the StructTypeDecl, and check its VarDecls names dont clash.
+		currScope = new Scope(currScope);
+		for (VarDecl varDecl: std.varDecls) { varDecl.accept(this); }
+		currScope = currScope.outer;
+		
 		return null;
 	}
 
 	@Override
 	public Type visitVarDecl(VarDecl vd) {
-		String varIdent = vd.ident;
-
-		// Create the VarDecl's Symbol.
-		Symbol varDecl = null;
-		// TYPE IDENT;
+		// Declare a standard INT/CHAR/VOID Variable.
 		if (vd.type instanceof BaseType) {
-			if (vd.type == BaseType.VOID) {
-				error("Variable cannot have type void.");
-				return null;
-			}
-			varDecl = new Variable(vd, varIdent);
+			currScope.put(new Variable(vd, vd.ident));
+			return null;
 		}
-		// // struct IDENT IDENT;
-		else if (vd.type instanceof StructType) {
-			// Get the ident of the type.
-			String structTypeIdent = ((StructType)vd.type).identifier;
-			// Get the Type>Fields mapping object.
-			StructIdent type = structTypes.get(structTypeIdent);
-			varDecl = new Struct(vd, type, varIdent);
+		// Declare a Struct Variable.
+		if (vd.type instanceof StructType) {
+			StructType vdStructType = (StructType)vd.type;
+			// Add this Struct Variable to the current Scope.
+			currScope.put(new Struct(vd, vd.ident, structTypes.get(vdStructType.identifier)));
+			
+			return null;
 		}
-		// TYPE IDENT[INT_LITERAL];
-		else if (vd.type instanceof ArrayType) {
-			int arraySize = ((ArrayType)vd.type).size;
-			varDecl = new Array(vd, varIdent, arraySize);
+		// Attempting to declare an Array Variable.
+		if (vd.type instanceof ArrayType) {
+			ArrayType vdArrayType = (ArrayType)vd.type;
+
+			// Add this Array Variable to the Scope.
+			currScope.put(new Array(vd, vd.ident));
+			return null;
 		}
-		// TYPE * IDENT;
-		else if (vd.type instanceof PointerType) {
-			varDecl = new Variable(vd, varIdent);
+		// Attempting to declare a Pointer Variable.
+		if (vd.type instanceof PointerType) {
+			PointerType vdPtrType = (PointerType)vd.type;
+
+			// Add this VarDecl to the Scope.
+			currScope.put(new Pointer(vd, vd.ident));
+			return null;
 		}
 
-		// We have done NameAnalysis, so can just safely add this variable to scope.
-		currScope.put(varDecl);
-
+		// Shouldn't reach here.
+		error("FATAL ERROR: VarDecl has unknown Type");
 		return null;
 	}
 
 	@Override
 	public Type visitFunDecl(FunDecl fd) {
+		// Store the FunDecl we are currently TypeChecking. [ For use by visitReturn() ]
 		currFunDecl = fd;
-		// If we are at this stage, we know that there are no name conflicts.
-		currScope.put(new Procedure(fd, fd.name, fd.type));
 
-		// Create a Scope for this FunDecl, and check the scope of all its items.
+		// Add this identifier to our current scope.
+		currScope.put(new Procedure(fd, fd.name));
+		
 		currScope = new Scope(currScope);
+	
 		// Check Params.
-		for (VarDecl varDecl: fd.params) varDecl.accept(this);
+		for (VarDecl varDecl: fd.params) varDecl.accept(this);	
 		// Check block.
-		createBlockScope = false;
-		visitBlock(fd.block);
-		createBlockScope = true;
+		createBlockScope = false;	// Mark that visitBlock is not to create a new Scope.
+		fd.block.accept(this);
 
-		// Return to the previous scope.
 		currScope = currScope.outer;
-
-		currFunDecl = null;
 		return null;
 	}
 
 	@Override
 	public Type visitBlock(Block b) {
-
 		if (createBlockScope) {
 			currScope = new Scope(currScope);
 			// Go through all VarDecl's and Stmt's checking their scope.
@@ -100,69 +141,70 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 			currScope = currScope.outer;
 		}
 		else {
-			System.out.println(b.varDecls.size() + " <VarDecls, Stmts> " + b.stmts.size());
 			createBlockScope = true;
 			// Go through all VarDecl's and Stmt's checking their scope.
 			for (VarDecl varDecl: b.varDecls) varDecl.accept(this);
 			for (Stmt stmt: b.stmts) stmt.accept(this);
-
-		}	
+		}
 		return null;
 	}
 
 	@Override
 	public Type visitWhile(While w) {
-		Type whileCondition = w.expr.accept(this);
-		if (whileCondition != BaseType.INT) {
-			error("While Condition is not of Type BaseType.INT");
-		}
+		Type conditionType = w.expr.accept(this);
+		w.expr.type = conditionType;
+		
+		if (conditionType != BaseType.INT) error("While Condition is not of Type BaseType.INT");
+
 		w.stmt.accept(this);
+
 		return null;
 	}
 
 	@Override
 	public Type visitIf(If i) {
-		Type ifCondition = i.expr.accept(this);
-		if (ifCondition != BaseType.INT) {
-			error("If Condition is not of Type BaseType.INT");
-		}
-		i.stmt1.accept(this);
+		Type conditionType = i.expr.accept(this);
+		i.expr.type = conditionType;
 
-		if (i.stmt2 != null) {
-			i.stmt2.accept(this);
-		}
+		if (conditionType != BaseType.INT) error("If Condition is not of Type BaseType.INT");
+
+		i.stmt1.accept(this);
+		if (i.stmt2 != null) i.stmt2.accept(this);
+
 		return null;
 	}
 
 	@Override
 	public Type visitReturn(Return r) {
-		Type funRetType = currFunDecl.type;
-		Type returnType = BaseType.VOID;
-		if (r.expr != null) {
-			returnType = r.expr.accept(this);
-			if (funRetType != returnType) {
-				error("Return statement in FunDecl[" + currFunDecl.name + "] should return [" + funRetType + "], but returns: " + returnType);
-			}
-		}
-		else {
-			if (funRetType != returnType) {
-				error("Return statement in FunDecl[" + currFunDecl.name + "] should return [VOID], but returns: " + funRetType);
-			}
-		}
+		// Get the expected and actual return type.
+		Type expectRetType = currFunDecl.type;
+		Type actualRetType = BaseType.VOID;
+		if (r.expr != null) actualRetType = r.expr.accept(this);
+
+		// Check if return types match.
+		if (expectRetType != actualRetType) error("Function [" + currFunDecl.name + "] returning incorrect type.");
+
 		return null;
 	}
 
 	@Override
 	public Type visitVarExpr(VarExpr v) {
-		Symbol varDeclSym = currScope.lookup(v.ident);
-		ASTNode varDeclNode = varDeclSym.decl;
-		VarDecl varDecl = (VarDecl) varDeclNode;
-		System.out.println("Found var: " + varDecl.ident + " with type: " + varDecl.type);
-		return varDecl.type;
+		Symbol varSym = currScope.lookup(v.ident);
+		
+		// Check that this is a Variable and not a Procedure.
+		if (varSym instanceof Variable) {
+			VarDecl varDecl = (VarDecl)varSym.decl;
+			return varDecl.type;
+		}
+
+		// Reached here means it is a function identifier and not a Variable identifier.
+		error("Incorrect usage of Function identifier: " + v.ident);
+		return null;
 	}
 
 	@Override
 	public Type visitAssign(Assign a) {
+		// Check that the LHS is one of the following: VarExpr, FieldAccessExpr, ArrayAccessExpr, ValueAtExpr
 		if (!(a.expr1 instanceof VarExpr) && !(a.expr1 instanceof FieldAccessExpr) && !(a.expr1 instanceof ArrayAccessExpr) && !(a.expr1 instanceof ValueAtExpr)) {
 			error("LHS of Assign is not one of the following: VarExpr, FieldAccessExpr, ArrayAccessExpr or ValuteAtExpr");
 		}
@@ -181,32 +223,54 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 
 	@Override
     public Type visitArrayAccessExpr(ArrayAccessExpr aae) {
-		Type arrTypeSem = aae.array.accept(this);
-		ArrayType arrType = (ArrayType)arrTypeSem;
-		Type arrayType = arrType.arrayType;
-		Type indexExpType = aae.index.accept(this);
-		if (indexExpType != BaseType.INT) {
-			error("Attempted to reference an array index with expression that is not of Type BaseType.INT");
+		// Get the identifier of this array.
+		VarExpr array = (VarExpr)aae.array;
+
+		// Get the Symbol for this identifier.
+		Symbol arraySym = currScope.lookup(array.ident);
+
+		// Check this identifier is tied to an array.
+		if (arraySym instanceof Array) {
+			VarDecl arrDecl = (VarDecl)arraySym.decl;
+			
+			// Check that indexing expression is of type INT.
+			Type indexType = aae.index.accept(this);
+			if (indexType != BaseType.INT) {
+				error("Attempted to index array with non-integer expression.");
+				return null;
+			}
+
+			// If all is well, return the type of this array.
+			return arrDecl.type;
 		}
-		return arrayType;
+		else {
+			error("Attempted to treat identifier [" + array.ident + "] as an array.");
+			return null;
+		}
     }
 
 	@Override
     public Type visitFieldAccessExpr(FieldAccessExpr fae) {
+		// Get the identifier of this struct variable.
 		VarExpr var = (VarExpr)fae.struct;
 
-		Symbol structDecl = currScope.lookup(var.ident);
-		// System.out.println(" --- Struct Field Access ---");
-		// System.out.println("   Accessing: " + var.ident + "." + fae.field);
-		// System.out.println("   StructType: " + ((Struct)structDecl).type.typeIdent);
-		// System.out.println("   Num Fields: " + ((Struct)structDecl).type.fields.size());
+		// Get the Symbol for this identifier.
+		Symbol varSym = currScope.lookup(var.ident);
 		
-		for (VarDecl field: ((Struct)structDecl).type.fields) {
-			// System.out.println("      Looking @ field: " + field.ident + " with type: " + field.type);
-			if (field.ident.equals(fae.field)) {
-				return field.type;
+		// Check this identifier is tied to a struct variable.
+		if (varSym instanceof Struct) {
+			Struct structSym = (Struct)varSym;
+			for (VarDecl field: structSym.std.varDecls) {
+				if (field.ident.equals(fae.field)) {
+					return field.type;
+				}
 			}
 		}
+		else {
+			error("Attempted to treat identifier [" + var.ident + "] as a struct instance.");
+			return null;
+		}
+		
 
 		error("FATAL Error, should never reach here! Error occured because Struct Field access attempted to access a field that did not exist.");
         return null;
@@ -214,30 +278,35 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 
 	@Override
     public Type visitFunCallExpr(FunCallExpr fce) {
-		if (fce.ident.equals("print_s") || fce.ident.equals("print_c") || fce.ident.equals("print_i")) {
-			return BaseType.VOID;
-		}
-		if (fce.ident.equals("read_c")) {
-			return BaseType.CHAR;
-		}
-		if (fce.ident.equals("read_i")) {
-			return BaseType.INT;
-		}
-		Symbol funDeclSym = currScope.lookup(fce.ident);
-		FunDecl funDecl = (FunDecl)funDeclSym.decl;
-		// Check if we are calling this function with incorrect number of params.
-		if (fce.exprs.size() != funDecl.params.size()) {
-			error("Function [" + funDecl.name + "] requires " + funDecl.params.size() + " parameters, but " + fce.exprs.size() + " were provided.");
-			return BaseType.VOID;
-		}
-		for (int i=0; i < fce.exprs.size(); i++) {
-			Type argType   = fce.exprs.get(i).accept(this);
-			Type paramType = funDecl.params.get(i).type;
-			if (!(argType.getClass().equals(paramType.getClass()))) {
-				error("Parameter " + i + " of FunCall[" + fce.ident + " is not the correct type");
+		Symbol funSym = currScope.lookup(fce.ident);
+
+		// Check that we are dealing with a Procedure.
+		if (funSym instanceof Procedure) {
+			// Get this FunCallExpr's Decl
+			Procedure procedureSym = (Procedure)funSym;
+			FunDecl funDecl = procedureSym.decl;
+
+			// Check the params match the arguments.
+			// Size
+			if (fce.exprs.size() != funDecl.params.size()) {
+				error("Called Function [" + fce.ident + "] with incorrect number of paramaters. Expects " + funDecl.params.size() + " but received " + fce.exprs.size());
+				return null;
 			}
+			// Individual
+			for (int i=0; i < fce.exprs.size(); i++) {
+				Type argType   = fce.exprs.get(i).accept(this);
+				Type paramType = funDecl.params.get(i).type;
+				if (!(argType.getClass().equals(paramType.getClass()))) {
+					error("Parameter " + i + " of FunCall[" + fce.ident + "] is not the correct type");
+					return null;
+				}
+			}
+			return funDecl.type;
 		}
-		return funDecl.type;
+		else {
+			error("Attempted to treat identifier [" + fce.ident + "] as a function.");
+			return null;
+		}
 	}
 	
 	@Override
@@ -258,7 +327,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 
     @Override
     public Type visitStrLiteral(StrLiteral sl) {
-        return BaseType.CHAR;
+		return new ArrayType(BaseType.CHAR, Integer.toString(sl.val.length() + 1));
     }
 
     @Override
