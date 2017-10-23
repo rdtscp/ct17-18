@@ -42,6 +42,10 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 	@Override
 	public Void visitVarDecl(VarDecl vd) {
 		String varIdent = vd.ident;
+		if (varIdent.equals("print_s") || varIdent.equals("print_c") || varIdent.equals("print_i") || varIdent.equals("read_c") || varIdent.equals("read_i")) {
+			error("Tried to declare a Variable with identifier already in use: " + varIdent);
+			return null;
+		}
 
 		// Create the VarDecl's Symbol.
 		Symbol varDecl = null;
@@ -79,6 +83,10 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 
 	@Override
 	public Void visitFunDecl(FunDecl fd) {
+		if (fd.name.equals("print_s") || fd.name.equals("print_c") || fd.name.equals("print_i") || fd.name.equals("read_c") || fd.name.equals("read_i")) {
+			error("Tried to declare a Function with identifier already in use: " + fd.name);
+			return null;
+		}
 		// Check if anything else exists under this identifier in the current scope.
 		if (currScope.lookupCurrent(fd.name) == null) {
 			// Add this identifier to our current scope.
@@ -117,12 +125,8 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 		// Check the while condition's scope validity.
 		w.expr.accept(this);
 
-		// Create a new Scope for the while block and check all the Stmt's.
-		currScope = new Scope(currScope);
+		// Check the while block scope validity.
 		w.stmt.accept(this);
-
-		// Return to previous Scope.
-		currScope = currScope.outer;
 		return null;
 	}
 
@@ -131,18 +135,12 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 		// Check if the if condition's scope validity.
 		i.expr.accept(this);
 
-		// Create a new Scope for the IF block and check all the Stmt's.
-		currScope = new Scope(currScope);
+		// Check IF Block.
 		i.stmt1.accept(this);
 
-		// Return to the previous Scope.
-		currScope = currScope.outer;
-
-		// If an ELSE block exists, create a new Scope for it, and check it.
+		// If an ELSE block exists, check it.
 		if (i.stmt2 != null) {
-			currScope = new Scope(currScope);
 			i.stmt2.accept(this);
-			currScope = currScope.outer;
 		}
 		return null;
 	}
