@@ -151,7 +151,6 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 
 	@Override
 	public Type visitAssign(Assign a) {
-		// a.expr1 should be one of the following: VarExpr, FieldAccessExpr, ArrayAccessExpr or ValuteAtExpr
 		if (!(a.expr1 instanceof VarExpr) && !(a.expr1 instanceof FieldAccessExpr) && !(a.expr1 instanceof ArrayAccessExpr) && !(a.expr1 instanceof ValueAtExpr)) {
 			error("LHS of Assign is not one of the following: VarExpr, FieldAccessExpr, ArrayAccessExpr or ValuteAtExpr");
 		}
@@ -170,7 +169,9 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 
 	@Override
     public Type visitArrayAccessExpr(ArrayAccessExpr aae) {
-		Type arrayType = aae.array.accept(this);
+		Type arrTypeSem = aae.array.accept(this);
+		ArrayType arrType = (ArrayType)arrTypeSem;
+		Type arrayType = arrType.arrayType;
 		Type indexExpType = aae.index.accept(this);
 		if (indexExpType != BaseType.INT) {
 			error("Attempted to reference an array index with expression that is not of Type BaseType.INT");
