@@ -748,15 +748,13 @@ public class Parser {
         }
     }
 
-    // exp8    -> IDENT [pIdent]
-    //         -> INT_LITERAL
-    //         -> CHAR_LITERAL
-    //         -> STRING_LITERAL
-    //         -> LPAR exp RPAR
+    // exp8    -> IDENT [pIdent] [pExp]
+    //         -> INT_LITERAL [pExp]
+    //         -> CHAR_LITERAL [pExp]
+    //         -> STRING_LITERAL [pExp]
+    //         -> LPAR exp RPAR [pExp]
     //
     // pIdent  -> LPAR [ exp (COMMA exp)* ] RPAR
-    //         -> LSBR exp RSBR
-    //         -> DOT IDENT
     private Expr expectExp8() {
         if (accept(TokenClass.IDENTIFIER)) {
             String name = expect(TokenClass.IDENTIFIER).data;
@@ -774,21 +772,16 @@ public class Parser {
                 }
                 else {
                     expect(TokenClass.RPAR);
+                    if (accept(TokenClass.DOT, TokenClass.LSBR)) {
+                        return expectPostExp(new FunCallExpr(name, new ArrayList<Expr>()));
+                    }
                     return new FunCallExpr(name, new ArrayList<Expr>());
                 }
             }
-            else if (accept(TokenClass.LSBR)) {
-                expect(TokenClass.LSBR);
-                Expr exp = expectExp();
-                expect(TokenClass.RSBR);
-                return new ArrayAccessExpr(new VarExpr(name), exp);
-            }
-            else if (accept(TokenClass.DOT)) {
-                expect(TokenClass.DOT);
-                String field = expect(TokenClass.IDENTIFIER).data;
-                return new FieldAccessExpr(new VarExpr(name), field);
-            }
             else {
+                if (accept(TokenClass.DOT, TokenClass.LSBR)) {
+                    return expectPostExp(new VarExpr(name));
+                }
                 return new VarExpr(name);
             }
         }
@@ -808,6 +801,9 @@ public class Parser {
             expect(TokenClass.LPAR);
             Expr exp = expectExp();
             expect(TokenClass.RPAR);
+            if (accept(TokenClass.DOT, TokenClass.LSBR)) {
+                return expectPostExp(exp);
+            }
             return exp;
         }
         else if (accept(TokenClass.ASTERIX)) {
@@ -819,6 +815,22 @@ public class Parser {
         else {
             expect(TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR);
             return null;
+        }
+    }
+
+    // pExp    -> LSBR exp RSBR
+    //         -> DOT IDENT
+    private Expr expectPostExp(Expr expr) {
+        if (accept(TokenClass.LSBR)) {
+            expect(TokenClass.LSBR);
+            Expr expr2 = expectExp();
+            expect(TokenClass.RSBR);
+            return new ArrayAccessExpr(expr, expr2);
+        }
+        else {
+            expect(TokenClass.DOT);
+            String field = expect(TokenClass.IDENTIFIER).data;
+            return new FieldAccessExpr(expr, field);
         }
     }
 
