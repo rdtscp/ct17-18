@@ -78,6 +78,10 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 	public Type visitVarDecl(VarDecl vd) {
 		// Declare a standard INT/CHAR/VOID Variable.
 		if (vd.type instanceof BaseType) {
+			if (vd.type == BaseType.VOID) {
+				error("Cannot declare variable of type VOID");
+				return null;
+			}
 			currScope.put(new Variable(vd, vd.ident));
 			return null;
 		}
@@ -92,6 +96,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		// Attempting to declare an Array Variable.
 		if (vd.type instanceof ArrayType) {
 			ArrayType vdArrayType = (ArrayType)vd.type;
+
 			// Add this Array Variable to the Scope.
 			currScope.put(new Array(vd, vd.ident));
 			return null;

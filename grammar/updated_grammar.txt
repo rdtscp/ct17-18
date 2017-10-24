@@ -51,10 +51,11 @@ exp8    -> IDENT [pIdent]
         -> INT_LITERAL
         -> CHAR_LITERAL
         -> STRING_LITERAL
-        -> LPAR exp RPAR
+        -> LPAR exp RPAR [postExp]
 
-pIdent  -> LPAR [ exp (COMMA exp)* ] RPAR
-        -> LSBR exp RSBR
+pIdent  -> LPAR [ exp (COMMA exp)* ] RPAR [postExp]
+
+postExp -> LSBR exp RSBR
         -> DOT IDENT
 
 /************************************************************\
