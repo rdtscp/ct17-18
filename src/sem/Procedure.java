@@ -10,5 +10,6 @@ public class Procedure extends Symbol {
 	public Procedure(FunDecl decl, String name) {
         super(decl, name);
 		this.name = name;
+		this.decl = decl;
 	}
 }
