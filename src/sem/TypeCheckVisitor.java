@@ -92,7 +92,6 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		// Attempting to declare an Array Variable.
 		if (vd.type instanceof ArrayType) {
 			ArrayType vdArrayType = (ArrayType)vd.type;
-
 			// Add this Array Variable to the Scope.
 			currScope.put(new Array(vd, vd.ident));
 			return null;
@@ -240,8 +239,9 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 				return null;
 			}
 
-			// If all is well, return the type of this array.
-			return arrDecl.type;
+			// If all is well, return the type of this array element.
+			ArrayType arr = (ArrayType) arrDecl.type;
+			return arr.arrayType;
 		}
 		else {
 			error("Attempted to treat identifier [" + array.ident + "] as an array.");
