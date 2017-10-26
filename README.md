@@ -28,7 +28,7 @@ For parts 1-3 of the coursework, the marking will be a function of the number of
 You will get one point for each passing test and -1 for each failing test.
 Then the mark is calculated by dividing the number of points achieved by the number of tests.
 To be more precise, here is the formula used for marking: 
-2/3*max(0,(#passed_v_tests-#failed_v_tests)/(#passed_v_tests+#failed_v_tests)) + 1/3*max(0,(#passed_h_tests-#failed_h_tests)/(#passed_h_tests+#failed_h_tests))
+2/3\*max(0,(#passed_v_tests-#failed_v_tests)/(#passed_v_tests+#failed_v_tests)) + 1/3\*max(0,(#passed_h_tests-#failed_h_tests)/(#passed_h_tests+#failed_h_tests))
 where _v_ represents the visible tests and _h_ the hidden ones.
 
 ## Part 3
