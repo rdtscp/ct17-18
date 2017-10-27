@@ -67,7 +67,7 @@ Using EBNF syntax, the output should be of the form: `AST_NODE_CLASS_NAME '(' [S
 * `-1` should result in `BinOp(IntLiteral(0),SUB,IntLiteral(1))`.
 * `2+3+4` should result in `BinOp(BinOp(IntLiteral(2), ADD, IntLiteral(3)), ADD, IntLiteral(4))`  (all binary operators are left associative in our language)
 * `2*3+4` should result in `BinOp(BinOp(IntLiteral(2), MUL, IntLiteral(3)), ADD, IntLiteral(4))`  (multiplication has precedence over addition, see precedence table from part I)
-* `struct node_t { int field1; char field2; };` should result in `StructTypeDecl(node_t,VarDecl(INT,field1),VarDecl(CHAR,field2))`
+* `struct node_t { int field1; char field2; };` should result in `StructTypeDecl(StructType(node_t),VarDecl(INT,field1),VarDecl(CHAR,field2))`
 * `struct node_t n;` should result in `VarDecl(StructType(node_t), n)`
 
 Note that you are free to add white spaces in your output format; spaces, newlines and tabulations will be ignore by our comparison tool.
