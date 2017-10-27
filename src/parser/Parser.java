@@ -606,6 +606,9 @@ public class Parser {
             Expr exp = expectExp2();
             exp2 = new BinOp(exp2, Op.OR, exp);
         }
+        if (accept(TokenClass.DOT, TokenClass.LSBR)) {
+            return expectPostExp(exp2);
+        }
         return exp2;
     }
 
@@ -616,6 +619,9 @@ public class Parser {
             expect(TokenClass.AND);
             Expr exp = expectExp3();
             exp3 = new BinOp(exp3, Op.AND, exp);
+        }
+        if (accept(TokenClass.DOT, TokenClass.LSBR)) {
+            return expectPostExp(exp3);
         }
         return exp3;
     }
@@ -634,6 +640,9 @@ public class Parser {
                 Expr exp = expectExp4();
                 exp4 = new BinOp(exp4, Op.NE, exp);
             }
+        }
+        if (accept(TokenClass.DOT, TokenClass.LSBR)) {
+            return expectPostExp(exp4);
         }
         return exp4;
     }
@@ -663,6 +672,9 @@ public class Parser {
                 exp5 = new BinOp(exp5, Op.GE, exp);
             }
         }
+        if (accept(TokenClass.DOT, TokenClass.LSBR)) {
+            return expectPostExp(exp5);
+        }
         return exp5;
     }
 
@@ -680,6 +692,9 @@ public class Parser {
                 Expr exp = expectExp6();
                 exp6 = new BinOp(exp6, Op.SUB, exp);
             }
+        }
+        if (accept(TokenClass.DOT, TokenClass.LSBR)) {
+            return expectPostExp(exp6);
         }
         return exp6;
     }
@@ -716,6 +731,9 @@ public class Parser {
         if (accept(TokenClass.MINUS)) {
             expect(TokenClass.MINUS);
             Expr exp = expectExp8();
+            if (accept(TokenClass.DOT, TokenClass.LSBR)) {
+                return expectPostExp(new BinOp(new IntLiteral("0"), Op.SUB, exp));
+            }
             return new BinOp(new IntLiteral("0"), Op.SUB, exp);
         }
         else if (accept(TokenClass.LPAR)) {
@@ -725,6 +743,9 @@ public class Parser {
                 Type type = expectType();
                 expect(TokenClass.RPAR);
                 Expr exp = expectExp8();
+                if (accept(TokenClass.DOT, TokenClass.LSBR)) {
+                    return expectPostExp(new TypecastExpr(type, exp));
+                }
                 return new TypecastExpr(type, exp);
             }
             else {
@@ -734,6 +755,9 @@ public class Parser {
         else if (accept(TokenClass.ASTERIX)) {
             expect(TokenClass.ASTERIX);
             Expr exp = expectExp8();
+            if (accept(TokenClass.DOT, TokenClass.LSBR)) {
+                return expectPostExp(new ValueAtExpr(exp));
+            }
             return new ValueAtExpr(exp);
         }
         else if (accept(TokenClass.SIZEOF)) {
@@ -741,6 +765,9 @@ public class Parser {
             expect(TokenClass.LPAR);
             Type type = expectType();
             expect(TokenClass.RPAR);
+            if (accept(TokenClass.DOT, TokenClass.LSBR)) {
+                return expectPostExp(new SizeOfExpr(type));
+            }
             return new SizeOfExpr(type);
         }
         else {
@@ -787,14 +814,23 @@ public class Parser {
         }
         else if (accept(TokenClass.INT_LITERAL)) {
             String val = expect(TokenClass.INT_LITERAL).data;
+            if (accept(TokenClass.DOT, TokenClass.LSBR)) {
+                return expectPostExp(new IntLiteral(val));
+            }
             return new IntLiteral(val);
         }
         else if (accept(TokenClass.CHAR_LITERAL)) {
             String val = expect(TokenClass.CHAR_LITERAL).data;
+            if (accept(TokenClass.DOT, TokenClass.LSBR)) {
+                return expectPostExp(new ChrLiteral(val.charAt(0)));
+            }
             return new ChrLiteral(val.charAt(0));
         }
         else if (accept(TokenClass.STRING_LITERAL)) {
             String val = expect(TokenClass.STRING_LITERAL).data;
+            if (accept(TokenClass.DOT, TokenClass.LSBR)) {
+                return expectPostExp(new StrLiteral(val));
+            }
             return new StrLiteral(val);
         }
         else if (accept(TokenClass.LPAR)) {
