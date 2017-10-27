@@ -1,4 +1,17 @@
+struct foo {
+    int ident;
+    int arr[5];
+};
+
 int x;
+int array[5];
+struct foo s_arr[5];
+struct foo bar;
+
+struct foo func() {
+    struct foo bar;
+    return bar;
+}
 
 void main() {
     char ltr;
@@ -9,4 +22,7 @@ void main() {
     print_i(num);
     print_c(ltr);
     print_s("string");
+    // num = (bar.arr)[2];
+    // num = (s_arr[0]).ident;
+    // num = func().ident;
 }
