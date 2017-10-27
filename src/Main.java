@@ -1,5 +1,6 @@
 import ast.ASTPrinter;
 import ast.Program;
+import gen.CodeGenerator;
 import lexer.Scanner;
 import lexer.Token;
 import lexer.Tokeniser;
@@ -39,12 +40,12 @@ public class Main {
     private static final int PASS           = 0;
     
     private enum Mode {
-        LEXER, PARSER, AST, SEMANTICANALYSIS
+        LEXER, PARSER, AST, SEMANTICANALYSIS, GEN
     }
 
     private static void usage() {
         System.out.println("Usage: java "+Main.class.getSimpleName()+" pass inputfile outputfile");
-        System.out.println("where pass is either: -lexer, -parser, -ast, -sem");
+        System.out.println("where pass is either: -lexer, -parser, -ast, -sem or -gen");
         System.exit(-1);
     }
 
@@ -57,6 +58,7 @@ public class Main {
         switch (args[0]) {
             case "-lexer": mode = Mode.LEXER; break;	case "-parser": mode = Mode.PARSER; break;
             case "-ast":   mode = Mode.AST; break;		case "-sem":    mode = Mode.SEMANTICANALYSIS; break;
+            case "-gen":   mode = Mode.GEN; break;
             default:
                 usage();
                 break;
@@ -124,6 +126,22 @@ public class Main {
                 System.exit(errors == 0 ? PASS : SEM_FAIL);
             } else
                 System.exit(PARSER_FAIL);
+        } else if (mode == Mode.GEN) {
+            Parser parser = new Parser(tokeniser);
+            Program programAst = parser.parse();
+            if (parser.getErrorCount() > 0)
+                System.exit(PARSER_FAIL);
+            SemanticAnalyzer sem = new SemanticAnalyzer();
+            int errors = sem.analyze(programAst);
+            if (errors > 0)
+                System.exit(SEM_FAIL);
+            CodeGenerator codegen = new CodeGenerator();
+            try {
+                codegen.emitProgram(programAst, outputFile);
+            } catch (FileNotFoundException e) {
+                System.out.println("File "+outputFile.toString()+" does not exist.");
+                System.exit(FILE_NOT_FOUND);
+            }
         } else {
         	System.exit(MODE_FAIL);
         }
