@@ -18,7 +18,8 @@ public class Register {
             new Register(4,"a0"),
             new Register(5,"a1"),
             new Register(6,"a2"),
-            new Register(7,"a3")};
+            new Register(7,"a3")
+    };
 
     public static final List<Register> tmpRegs = new ArrayList<Register>();
     static {

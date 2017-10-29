@@ -50,6 +50,72 @@ public class CodeGenerator implements ASTVisitor<Register> {
     }
 
     @Override
+    public Register visitProgram(Program p) {
+        // Create functions for printing:
+        
+        // Find the main function first, and declare
+        for (FunDecl funDecl: p.funDecls) {
+            if (funDecl.name.equals("main")) {
+                writer.print("\n\n");
+                funDecl.accept(this);
+            }
+            writer.print("\n\tli\t$v0, 10\n\tsyscall");
+        }
+        writer.print("\n\nprint_i:\n\tli\t$v0, 1");
+        writer.print("\n\tsyscall");
+        writer.print("\n\tjr $ra\n\n");
+        // Declare the rest of the functions.
+        for (FunDecl funDecl: p.funDecls) {
+            if (!funDecl.name.equals("main")) {
+                funDecl.accept(this);
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public Register visitFunDecl(FunDecl fd) {
+        System.out.println("Generating MIPS for FunDecl: " + fd.name);
+        writer.print(fd.name + ":");
+        fd.block.accept(this);
+        return null;
+    }
+
+    @Override
+	public Register visitBlock(Block b) {
+        for (Stmt stmt: b.stmts) {
+            stmt.accept(this);
+        }
+		return null;
+    }
+
+    @Override
+    public Register visitExprStmt(ExprStmt es) {
+		return es.expr.accept(this);
+    }
+    
+    @Override
+    public Register visitFunCallExpr(FunCallExpr fce) {
+        // Load all expected arguments into the appropriate registers.
+        for (int i = 0; i < fce.exprs.size(); i++) {
+            VarDecl currArg = fce.fd.params.get(i);
+            Expr  currParam = fce.exprs.get(i);
+            if (currArg.type == BaseType.INT) {
+                writer.print("\n\taddi $a" + i + ", $zero, ");
+                currParam.accept(this);
+            }
+        }
+        writer.print("\n");
+        writer.print("\tjal " + fce.ident);
+
+        return null;
+	}
+
+
+
+
+
+    @Override
     public Register visitBaseType(BaseType bt) {
         return null;
     }
@@ -59,23 +125,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
         return null;
     }
 
-    @Override
-    public Register visitBlock(Block b) {
-        // TODO: to complete
-        return null;
-    }
-
-    @Override
-    public Register visitFunDecl(FunDecl p) {
-        // TODO: to complete
-        return null;
-    }
-
-    @Override
-    public Register visitProgram(Program p) {
-        // TODO: to complete
-        return null;
-    }
 
     @Override
     public Register visitVarDecl(VarDecl vd) {
@@ -88,4 +137,113 @@ public class CodeGenerator implements ASTVisitor<Register> {
         // TODO: to complete
         return null;
     }
+
+    /* ******************* */
+
+    
+
+	@Override
+	public Register visitWhile(While w) {
+		return null;
+	}
+
+	@Override
+	public Register visitIf(If i) {
+		return null;
+	}
+
+	@Override
+	public Register visitReturn(Return r) {
+		return null;
+	}
+
+	@Override
+	public Register visitAssign(Assign a) {
+		return null;
+	}
+
+
+
+	@Override
+    public Register visitArrayAccessExpr(ArrayAccessExpr aae) {
+		return null;
+    }
+
+	@Override
+    public Register visitFieldAccessExpr(FieldAccessExpr fae) {
+        return null;
+    }
+
+	
+	
+	@Override
+    public Register visitTypecastExpr(TypecastExpr te) {
+		return null;
+	}
+	
+	@Override
+    public Register visitValueAtExpr(ValueAtExpr vae) {
+		return null;
+    }
+
+
+	@Override
+    public Register visitIntLiteral(IntLiteral il) {
+        writer.print(il.val);
+        return null;
+    }
+
+    @Override
+    public Register visitStrLiteral(StrLiteral sl) {
+		return null;
+    }
+
+    @Override
+    public Register visitChrLiteral(ChrLiteral cl) {
+        return null;
+	}
+
+	@Override
+    public Register visitBinOp(BinOp bo) {
+		return null;
+    }
+
+    @Override
+    public Register visitSizeOfExpr(SizeOfExpr soe) {
+        return null;
+    }    
+
+
+
+	
+
+
+
+	/**************************\
+			   Not Used
+	\**************************/
+
+	
+	@Override
+	public Register visitArrayType(ArrayType at) {
+		// To be completed...
+		return null;
+	}
+
+    @Override
+    public Register visitOp(Op o) {
+        return null;
+	}
+
+	@Override
+	public Register visitStructType(StructType st) {
+		// To be completed...
+		return null;
+	}
+
+	@Override
+	public Register visitPointerType(PointerType pt) {
+		// To be completed...
+		return null;
+	}
 }
