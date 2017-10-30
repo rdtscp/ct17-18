@@ -241,6 +241,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		Type lhs = a.expr1.accept(this);
 		Type rhs = a.expr2.accept(this);
 
+
 		if (lhs instanceof ArrayType) {
 			ArrayType arrayExprType = (ArrayType)lhs;
 			lhs = arrayExprType.arrayType.accept(this);
@@ -258,6 +259,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 			PointerType arrayExprType = (PointerType)rhs;
 			rhs = arrayExprType.type.accept(this);
 		}
+
 
 		if (lhs != rhs) {
 			error("Assignment LHS has different Type expectation to RHS Type. LHS: " + lhs + " RHS: " + rhs);
@@ -425,45 +427,45 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		}
 		switch (bo.op) {
 			case SUB:
-				if (lhs != BaseType.INT) error("LHS of - Operation is not of Type INT");
-				if (rhs != BaseType.INT) error("RHS of - Operation is not of Type INT");
-				return null;
+				if (lhs != BaseType.INT) { error("LHS of - Operation is not of Type INT"); return null; }
+				if (rhs != BaseType.INT) { error("RHS of - Operation is not of Type INT"); return null; }
+				break;
 			case MUL:
-				if (lhs != BaseType.INT) error("LHS of * Operation is not of Type INT");
-				if (rhs != BaseType.INT) error("RHS of * Operation is not of Type INT");
-				return null;
+				if (lhs != BaseType.INT) { error("LHS of * Operation is not of Type INT"); return null; }
+				if (rhs != BaseType.INT) { error("RHS of * Operation is not of Type INT"); return null; }
+				break;
 			case DIV:
-				if (lhs != BaseType.INT) error("LHS of / Operation is not of Type INT");
-				if (rhs != BaseType.INT) error("RHS of / Operation is not of Type INT");
-				return null;
+				if (lhs != BaseType.INT) { error("LHS of / Operation is not of Type INT"); return null; }
+				if (rhs != BaseType.INT) { error("RHS of / Operation is not of Type INT"); return null; }
+				break;
 			case MOD:
-				if (lhs != BaseType.INT) error("LHS of % Operation is not of Type INT");
-				if (rhs != BaseType.INT) error("RHS of % Operation is not of Type INT");
-				return null;
+				if (lhs != BaseType.INT) { error("LHS of % Operation is not of Type INT"); return null; }
+				if (rhs != BaseType.INT) { error("RHS of % Operation is not of Type INT"); return null; }
+				break;
 			case GT:
-				if (lhs != BaseType.INT) error("LHS of > Operation is not of Type INT");
-				if (rhs != BaseType.INT) error("RHS of > Operation is not of Type INT");
-				return null;
+				if (lhs != BaseType.INT) { error("LHS of > Operation is not of Type INT"); return null; }
+				if (rhs != BaseType.INT) { error("RHS of > Operation is not of Type INT"); return null; }
+				break;
 			case LT:
-				if (lhs != BaseType.INT) error("LHS of < Operation is not of Type INT");
-				if (rhs != BaseType.INT) error("RHS of < Operation is not of Type INT");
-				return null;
+				if (lhs != BaseType.INT) { error("LHS of < Operation is not of Type INT"); return null; }
+				if (rhs != BaseType.INT) { error("RHS of < Operation is not of Type INT"); return null; }
+				break;
 			case GE:
-				if (lhs != BaseType.INT) error("LHS of >= Operation is not of Type INT");
-				if (rhs != BaseType.INT) error("RHS of >= Operation is not of Type INT");
-				return null;
+				if (lhs != BaseType.INT) { error("LHS of >= Operation is not of Type INT"); return null; }
+				if (rhs != BaseType.INT) { error("RHS of >= Operation is not of Type INT"); return null; }
+				break;
 			case LE:
-				if (lhs != BaseType.INT) error("LHS of <= Operation is not of Type INT");
-				if (rhs != BaseType.INT) error("RHS of <= Operation is not of Type INT");
-				return null;
+				if (lhs != BaseType.INT) { error("LHS of <= Operation is not of Type INT"); return null; }
+				if (rhs != BaseType.INT) { error("RHS of <= Operation is not of Type INT"); return null; }
+				break;
 			case OR:
-				if (lhs != BaseType.INT) error("LHS of || Operation is not of Type INT");
-				if (rhs != BaseType.INT) error("RHS of || Operation is not of Type INT");
-				return null;
+				if (lhs != BaseType.INT) { error("LHS of || Operation is not of Type INT"); return null; }
+				if (rhs != BaseType.INT) { error("RHS of || Operation is not of Type INT"); return null; }
+				break;
 			case AND:
-				if (lhs != BaseType.INT) error("LHS of && Operation is not of Type INT");
-				if (rhs != BaseType.INT) error("RHS of && Operation is not of Type INT");
-				return null;
+				if (lhs != BaseType.INT) { error("LHS of && Operation is not of Type INT"); return null; }
+				if (rhs != BaseType.INT) { error("RHS of && Operation is not of Type INT"); return null; }
+				break;
 		}
 		if (bo.op == Op.GT || bo.op == Op.LT || bo.op == Op.GE || bo.op == Op.LE || bo.op == Op.NE || bo.op == Op.EQ || bo.op == Op.OR || bo.op == Op.AND) {
 			return BaseType.INT;
