@@ -248,36 +248,40 @@ public class NameAnalysisVisitor extends BaseSemanticVisitor<Void> {
 
     @Override
     public Void visitFieldAccessExpr(FieldAccessExpr fae) {
-		// FieldAccessExpr made up of VarExpr.IDENTIFIER  -  new FieldAccessExpr(new VarExpr(name), field);
-		VarExpr struct = (VarExpr)fae.struct;
+		fae.struct.accept(this);
+		return null;
 
-		// Get the Variable for this structVar.
-		Symbol varSym = currScope.lookup(struct.ident);
+		// // FieldAccessExpr made up of VarExpr.IDENTIFIER  -  new FieldAccessExpr(new VarExpr(name), field);
+		// VarExpr struct = (VarExpr)fae.struct;
+		// fae.
 
-		// If no such structVar exists, throw error.
-		if (varSym == null) {
-			error("Attempted to access field of a variable that does not exist: " + struct.ident);
-			return null;
-		}
-		// Check that the existing item is a Struct.
-		else if (varSym instanceof Struct) {
-			Struct structSym  = (Struct)varSym; 
-			StructTypeDecl std = structSym.std;
+		// // Get the Variable for this structVar.
+		// Symbol varSym = currScope.lookup(struct.ident);
 
-			// Check if this field exists in the StructTypeDecl.
-			for (VarDecl field: std.varDecls) {
-				if (field.ident.equals(fae.field)) return null;
-			}
+		// // If no such structVar exists, throw error.
+		// if (varSym == null) {
+		// 	error("Attempted to access field of a variable that does not exist: " + struct.ident);
+		// 	return null;
+		// }
+		// // Check that the existing item is a Struct.
+		// else if (varSym instanceof Struct) {
+		// 	Struct structSym  = (Struct)varSym; 
+		// 	StructTypeDecl std = structSym.std;
 
-			// Reached here means that the field did not exist in the StructTypeDecl.
-			error("Field in FieldAccessExpr did not exist for the variable: " + struct.ident + "." + fae.field);
-			return null;
-		}
-		// Variable referenced is not a Struct.
-		else {
-			error("Attempted to access a field of a variable which is not a struct: " + struct.ident + "." + fae.field);
-			return null;
-		}
+		// 	// Check if this field exists in the StructTypeDecl.
+		// 	for (VarDecl field: std.varDecls) {
+		// 		if (field.ident.equals(fae.field)) return null;
+		// 	}
+
+		// 	// Reached here means that the field did not exist in the StructTypeDecl.
+		// 	error("Field in FieldAccessExpr did not exist for the variable: " + struct.ident + "." + fae.field);
+		// 	return null;
+		// }
+		// // Variable referenced is not a Struct.
+		// else {
+		// 	error("Attempted to access a field of a variable which is not a struct: " + struct.ident + "." + fae.field);
+		// 	return null;
+		// }
 	}
 
     @Override

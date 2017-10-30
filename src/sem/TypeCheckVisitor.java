@@ -181,9 +181,22 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 	@Override
 	public Type visitReturn(Return r) {
 		// Get the expected and actual return type.
-		Type expectRetType = currFunDecl.type;
+		Type expectRetType = currFunDecl.type.accept(this);
+		// Handle cases where the return type is a pointer.
+		if (expectRetType instanceof PointerType) {
+			expectRetType = ((PointerType)expectRetType).type.accept(this);
+		}
+
 		Type actualRetType = BaseType.VOID;
 		if (r.expr != null) actualRetType = r.expr.accept(this);
+
+		// Handle cases where the return type might be a pointer or an array.
+		if (actualRetType instanceof ArrayType) {
+			actualRetType = ((ArrayType)actualRetType).arrayType.accept(this);
+		}
+		else if (actualRetType instanceof PointerType) {
+			actualRetType = ((PointerType)actualRetType).type.accept(this);
+		}
 
 		// Check if return types match.
 		if (expectRetType instanceof StructType) {
@@ -211,7 +224,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		// Check that this is a Variable and not a Procedure.
 		if (varSym instanceof Variable) {
 			VarDecl varDecl = (VarDecl)varSym.decl;
-			return varDecl.type;
+			return varDecl.type.accept(this);
 		}
 
 		// Reached here means it is a function identifier and not a Variable identifier.
@@ -241,28 +254,17 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 	@Override
     public Type visitArrayAccessExpr(ArrayAccessExpr aae) {
 		// Get the identifier of this array.
-		VarExpr array = (VarExpr)aae.array;
-
-		// Get the Symbol for this identifier.
-		Symbol arraySym = currScope.lookup(array.ident);
-
-		// Check this identifier is tied to an array.
-		if (arraySym instanceof Array) {
-			VarDecl arrDecl = (VarDecl)arraySym.decl;
-			
-			// Check that indexing expression is of type INT.
-			Type indexType = aae.index.accept(this);
-			if (indexType != BaseType.INT) {
-				error("Attempted to index array with non-integer expression.");
-				return null;
-			}
-
-			// If all is well, return the type of this array element.
-			ArrayType arr = (ArrayType) arrDecl.type;
-			return arr.arrayType;
+		Type exprType = aae.array.accept(this);
+		if (exprType instanceof ArrayType) {
+			ArrayType arrayExprType = (ArrayType)exprType;
+			return arrayExprType.arrayType.accept(this);
+		}
+		else if (exprType instanceof PointerType) {
+			PointerType arrayExprType = (PointerType)exprType;
+			return arrayExprType.type.accept(this);
 		}
 		else {
-			error("Attempted to treat identifier [" + array.ident + "] as an array.");
+			error("ArrayAccessExpr attempts to reference an expression which cannot be an array.");
 			return null;
 		}
     }
@@ -270,32 +272,34 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 	@Override
     public Type visitFieldAccessExpr(FieldAccessExpr fae) {
 		// Get the identifier of this struct variable.
-		VarExpr var = (VarExpr)fae.struct;
-
-		// Get the Symbol for this identifier.
-		Symbol varSym = currScope.lookup(var.ident);
-		
-		// Check this identifier is tied to a struct variable.
-		if (varSym instanceof Struct) {
-			Struct structSym = (Struct)varSym;
-			for (VarDecl field: structSym.std.varDecls) {
-				if (field.ident.equals(fae.field)) {
-					return field.type;
+		Type exprType = fae.struct.accept(this);
+		if (exprType instanceof StructType) {
+			StructType structType = (StructType)exprType;
+			StructTypeDecl std = structTypes.get(structType.identifier);
+			if (std == null) {
+				error("StructTypeDEcl does not exist for identifier: [" + structType.identifier + "]");
+				return null;
+			}
+			else {
+				for (VarDecl field: std.varDecls) {
+					if (field.ident.equals(fae.field)) {
+						return field.type.accept(this);
+					}
 				}
+				// Reached here means this field does not exist.
+				error("Attempted to access a field [" + fae.field + "] of struct type [" + structType.identifier + "] which is not defined.");
+				return null;
 			}
 		}
 		else {
-			error("Attempted to treat identifier [" + var.ident + "] as a struct instance.");
+			error("FieldAccessExpr attempts to reference an expression which cannot be a struct.");
 			return null;
 		}
-		
-
-		error("FATAL Error, should never reach here! Error occured because Struct Field access attempted to access a field that did not exist.");
-        return null;
     }
 
 	@Override
     public Type visitFunCallExpr(FunCallExpr fce) {
+		System.out.println("visitFunCallExpr: " + fce);
 		Symbol funSym = currScope.lookup(fce.ident);
 
 		// Check that we are dealing with a Procedure.
@@ -312,13 +316,33 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 			}
 			// Individual
 			for (int i=0; i < fce.exprs.size(); i++) {
+				// Fetch the types of the parameters.
 				Type argType   = fce.exprs.get(i).accept(this);
 				Type paramType = funDecl.params.get(i).type.accept(this);
+
+				// Handle cases where the argument type might be a pointer or an array.
+				if (argType instanceof ArrayType) {
+					argType = ((ArrayType)argType).arrayType.accept(this);
+				}
+				else if (argType instanceof PointerType) {
+					argType = ((PointerType)argType).type.accept(this);
+				}
+
+				// Handle cases where the param type might be a pointer or an array.
+				if (paramType instanceof ArrayType) {
+					paramType = ((ArrayType)paramType).arrayType.accept(this);
+				}
+				else if (paramType instanceof PointerType) {
+					paramType = ((PointerType)paramType).type.accept(this);
+				}
+
+				// Now compare arguments to make sure they are valid.
 				if (!(argType.getClass().equals(paramType.getClass()))) {
 					error("Parameter " + i + " of FunCall[" + fce.ident + "] is not the correct type. Expected [" + paramType + "] but received [" + argType + "]");
 					return null;
 				}
 			}
+			System.out.println("    returning: " + funDecl.type);
 			return funDecl.type.accept(this);
 		}
 		else {
@@ -418,7 +442,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 
 	@Override
 	public Type visitArrayType(ArrayType at) {
-		return at.arrayType.accept(this);
+		return at;
 	}
 
     @Override
@@ -438,7 +462,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 
 	@Override
 	public Type visitPointerType(PointerType pt) {
-		return pt.type;
+		return pt;
 	}
 
 }
