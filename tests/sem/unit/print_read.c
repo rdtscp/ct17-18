@@ -3,6 +3,11 @@ struct foo {
     int arr[5];
 };
 
+struct foo2 {
+    int field1;
+    int field2;
+};
+
 int x;
 int array[5];
 struct foo s_arr[5];
