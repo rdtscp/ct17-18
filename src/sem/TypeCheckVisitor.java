@@ -186,7 +186,19 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		if (r.expr != null) actualRetType = r.expr.accept(this);
 
 		// Check if return types match.
-		if (expectRetType != actualRetType) error("Function [" + currFunDecl.name + "] returning incorrect type.");
+		if (expectRetType instanceof StructType) {
+			if (actualRetType instanceof StructType) {
+				StructType expectRetStructType = (StructType) expectRetType;
+				StructType actualRetStructType = (StructType) actualRetType;
+				if (!expectRetStructType.identifier.equals(actualRetStructType.identifier)) {
+					error("Function [" + currFunDecl.name + "] returning incorrect type. Expected: [struct " + expectRetStructType.identifier + "] but returned: [struct " + actualRetStructType.identifier + "]");
+				}
+			}
+			else {
+				error("Function [" + currFunDecl.name + "] returning incorrect type. Expected: [" + expectRetType + "] but returned: [" + actualRetType + "]");
+			}
+		}
+		else if (expectRetType != actualRetType) error("Function [" + currFunDecl.name + "] returning incorrect type. Expected: [" + expectRetType + "] but returned: [" + actualRetType + "]");
 
 		return null;
 	}
@@ -194,6 +206,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 	@Override
 	public Type visitVarExpr(VarExpr v) {
 		Symbol varSym = currScope.lookup(v.ident);
+
 		
 		// Check that this is a Variable and not a Procedure.
 		if (varSym instanceof Variable) {
@@ -300,13 +313,13 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 			// Individual
 			for (int i=0; i < fce.exprs.size(); i++) {
 				Type argType   = fce.exprs.get(i).accept(this);
-				Type paramType = funDecl.params.get(i).type;
+				Type paramType = funDecl.params.get(i).type.accept(this);
 				if (!(argType.getClass().equals(paramType.getClass()))) {
-					error("Parameter " + i + " of FunCall[" + fce.ident + "] is not the correct type");
+					error("Parameter " + i + " of FunCall[" + fce.ident + "] is not the correct type. Expected [" + paramType + "] but received [" + argType + "]");
 					return null;
 				}
 			}
-			return funDecl.type;
+			return funDecl.type.accept(this);
 		}
 		else {
 			error("Attempted to treat identifier [" + fce.ident + "] as a function.");
@@ -332,7 +345,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 
     @Override
     public Type visitStrLiteral(StrLiteral sl) {
-		return new ArrayType(BaseType.CHAR, Integer.toString(sl.val.length() + 1));
+		return new ArrayType(BaseType.CHAR, Integer.toString(sl.val.length() + 1)).accept(this);
     }
 
     @Override
@@ -416,8 +429,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 	
 	@Override
 	public Type visitArrayType(ArrayType at) {
-		// To be completed...
-		return null;
+		return at.arrayType.accept(this);
 	}
 
     @Override
@@ -427,20 +439,17 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 	
 	@Override
 	public Type visitBaseType(BaseType bt) {
-		// To be completed...
-		return null;
+		return bt;
 	}
 
 	@Override
 	public Type visitStructType(StructType st) {
-		// To be completed...
-		return null;
+		return st;
 	}
 
 	@Override
 	public Type visitPointerType(PointerType pt) {
-		// To be completed...
-		return null;
+		return pt.type;
 	}
 
 }
