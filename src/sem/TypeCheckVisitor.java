@@ -241,7 +241,10 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		Type lhs = a.expr1.accept(this);
 		Type rhs = a.expr2.accept(this);
 
+		// System.out.println("\nAssign - LHS: " + a.expr1 + "\n\t Type: " + lhs);
+		// System.out.println("Assign - RHS: " + a.expr2 + "\n\t Type: " + rhs);
 
+		// Convert from arrays/pointers to their types.
 		if (lhs instanceof ArrayType) {
 			ArrayType arrayExprType = (ArrayType)lhs;
 			lhs = arrayExprType.arrayType.accept(this);
@@ -251,6 +254,7 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 			lhs = arrayExprType.type.accept(this);
 		}
 
+		// Convert from arrays/pointers to their types.
 		if (rhs instanceof ArrayType) {
 			ArrayType arrayExprType = (ArrayType)rhs;
 			rhs = arrayExprType.arrayType.accept(this);
@@ -260,6 +264,22 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 			rhs = arrayExprType.type.accept(this);
 		}
 
+		if (lhs instanceof StructType) {
+			if (rhs instanceof StructType) {
+				StructType lhsStruct = (StructType)lhs;
+				StructType rhsStruct = (StructType)rhs;
+				if (!lhsStruct.identifier.equals(rhsStruct.identifier)) {
+					error("Tried to assign a variable of Type Struct[" + lhsStruct.identifier + "] to something of Type Struct[" + rhsStruct.identifier + "]");
+				}
+				else {
+					return lhsStruct;
+				}
+			}
+			else {
+				error("LHS of Assign is a StructType, but RHS is not.");
+				return null;
+			}
+		}
 
 		if (lhs != rhs) {
 			error("Assignment LHS has different Type expectation to RHS Type. LHS: " + lhs + " RHS: " + rhs);
@@ -294,6 +314,8 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
     public Type visitFieldAccessExpr(FieldAccessExpr fae) {
 		// Get the identifier of this struct variable.
 		Type exprType = fae.struct.accept(this);
+
+
 		if (exprType instanceof StructType) {
 			StructType structType = (StructType)exprType;
 			StructTypeDecl std = structTypes.get(structType.identifier);
@@ -393,7 +415,15 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 	
 	@Override
     public Type visitValueAtExpr(ValueAtExpr vae) {
-		return vae.expr.accept(this);
+		Type vaeExprType = vae.expr.accept(this);
+		if (vaeExprType instanceof PointerType) {
+			PointerType pointerType = (PointerType)vaeExprType;
+			return pointerType.type.accept(this);
+		}
+		else {
+			error("ValueAtExpr did not get the value of something with type PointerType");
+			return null;
+		}
     }
 
 
