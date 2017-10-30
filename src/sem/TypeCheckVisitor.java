@@ -427,45 +427,53 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 			case SUB:
 				if (lhs != BaseType.INT) error("LHS of - Operation is not of Type INT");
 				if (rhs != BaseType.INT) error("RHS of - Operation is not of Type INT");
-				break;
+				return null;
 			case MUL:
 				if (lhs != BaseType.INT) error("LHS of * Operation is not of Type INT");
 				if (rhs != BaseType.INT) error("RHS of * Operation is not of Type INT");
-				break;
+				return null;
 			case DIV:
 				if (lhs != BaseType.INT) error("LHS of / Operation is not of Type INT");
 				if (rhs != BaseType.INT) error("RHS of / Operation is not of Type INT");
-				break;
+				return null;
 			case MOD:
 				if (lhs != BaseType.INT) error("LHS of % Operation is not of Type INT");
 				if (rhs != BaseType.INT) error("RHS of % Operation is not of Type INT");
-				break;
+				return null;
 			case GT:
 				if (lhs != BaseType.INT) error("LHS of > Operation is not of Type INT");
 				if (rhs != BaseType.INT) error("RHS of > Operation is not of Type INT");
-				break;
+				return null;
 			case LT:
 				if (lhs != BaseType.INT) error("LHS of < Operation is not of Type INT");
 				if (rhs != BaseType.INT) error("RHS of < Operation is not of Type INT");
-				break;
+				return null;
 			case GE:
 				if (lhs != BaseType.INT) error("LHS of >= Operation is not of Type INT");
 				if (rhs != BaseType.INT) error("RHS of >= Operation is not of Type INT");
-				break;
+				return null;
 			case LE:
 				if (lhs != BaseType.INT) error("LHS of <= Operation is not of Type INT");
 				if (rhs != BaseType.INT) error("RHS of <= Operation is not of Type INT");
-				break;
+				return null;
 			case OR:
 				if (lhs != BaseType.INT) error("LHS of || Operation is not of Type INT");
 				if (rhs != BaseType.INT) error("RHS of || Operation is not of Type INT");
-				break;
+				return null;
 			case AND:
 				if (lhs != BaseType.INT) error("LHS of && Operation is not of Type INT");
 				if (rhs != BaseType.INT) error("RHS of && Operation is not of Type INT");
-				break;
+				return null;
 		}
-        return lhs;
+		if (bo.op == Op.GT || bo.op == Op.LT || bo.op == Op.GE || bo.op == Op.LE || bo.op == Op.NE || bo.op == Op.EQ || bo.op == Op.OR || bo.op == Op.AND) {
+			return BaseType.INT;
+		}
+		else if (bo.op == Op.MOD || bo.op == Op.DIV || bo.op == Op.MUL || bo.op == Op.SUB) {
+			return BaseType.INT;
+		}
+		else {
+			return lhs;
+		}
     }
 
     @Override
