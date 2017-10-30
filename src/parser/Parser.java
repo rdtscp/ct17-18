@@ -390,11 +390,16 @@ public class Parser {
         // Check for vardecl && fundecl.
         TokenClass twoAhead   = lookAhead(2).tokenClass;
         TokenClass threeAhead = lookAhead(3).tokenClass;
+        TokenClass fourAhead = lookAhead(4).tokenClass;
         if (twoAhead != TokenClass.RPAR) {
             if (twoAhead != TokenClass.COMMA) {
                 if (threeAhead != TokenClass.RPAR) {
                     if (threeAhead != TokenClass.COMMA) {
-                        return output;
+                        if (fourAhead != TokenClass.RPAR) {
+                            if (fourAhead != TokenClass.COMMA) {
+                                return output;
+                            }
+                        }
                     }
                 }
             }
@@ -425,10 +430,8 @@ public class Parser {
             
             while (accept(TokenClass.COMMA)) {
                 expect(TokenClass.COMMA);
-                Type paramType = expectType();
-                System.out.println("this");                
+                Type paramType = expectType();             
                 String paramName = expect(TokenClass.IDENTIFIER).data;
-                System.out.println("this");
                 
                 output.add(new VarDecl(paramType, paramName));                
             }
