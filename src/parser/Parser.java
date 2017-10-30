@@ -795,7 +795,7 @@ public class Parser {
             String name = expect(TokenClass.IDENTIFIER).data;
             if (accept(TokenClass.LPAR)) {
                 expect(TokenClass.LPAR);
-                if (accept(TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
+                if (accept(TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.STRING_LITERAL, TokenClass.IDENTIFIER, TokenClass.INT_LITERAL, TokenClass.CHAR_LITERAL, TokenClass.ASTERIX, TokenClass.STRING_LITERAL, TokenClass.LPAR)) {
                     ArrayList<Expr> args = new ArrayList<Expr>();
                     args.add(expectExp());
                     while (accept(TokenClass.COMMA)) {
