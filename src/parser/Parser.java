@@ -334,7 +334,6 @@ public class Parser {
                     expect(TokenClass.ASTERIX);
                     funType = new PointerType(funType);
                 }
-
                 funName = expect(TokenClass.IDENTIFIER).data;
                 expect(TokenClass.LPAR);
                 funArgs = expectParams();
@@ -415,6 +414,10 @@ public class Parser {
             }
             else if (accept(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID)) {
                 Type paramType = tokenToType(expect(TokenClass.INT, TokenClass.CHAR, TokenClass.VOID).tokenClass);
+                if (accept(TokenClass.ASTERIX)) {
+                    expect(TokenClass.ASTERIX);
+                    paramType = new PointerType(paramType);
+                }
                 String paramName = expect(TokenClass.IDENTIFIER).data;
 
                 output.add(new VarDecl(paramType, paramName));                
@@ -423,8 +426,10 @@ public class Parser {
             while (accept(TokenClass.COMMA)) {
                 expect(TokenClass.COMMA);
                 Type paramType = expectType();
+                System.out.println("this");                
                 String paramName = expect(TokenClass.IDENTIFIER).data;
-
+                System.out.println("this");
+                
                 output.add(new VarDecl(paramType, paramName));                
             }
         }
