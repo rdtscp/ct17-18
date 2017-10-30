@@ -416,17 +416,6 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
         return BaseType.INT;
     }    
 
-
-
-	
-
-
-
-	/**************************\
-			   Not Used
-	\**************************/
-
-	
 	@Override
 	public Type visitArrayType(ArrayType at) {
 		return at.arrayType.accept(this);
