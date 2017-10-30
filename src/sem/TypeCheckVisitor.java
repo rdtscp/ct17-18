@@ -240,8 +240,27 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		}
 		Type lhs = a.expr1.accept(this);
 		Type rhs = a.expr2.accept(this);
+
+		if (lhs instanceof ArrayType) {
+			ArrayType arrayExprType = (ArrayType)lhs;
+			lhs = arrayExprType.arrayType.accept(this);
+		}
+		else if (lhs instanceof PointerType) {
+			PointerType arrayExprType = (PointerType)lhs;
+			lhs = arrayExprType.type.accept(this);
+		}
+
+		if (rhs instanceof ArrayType) {
+			ArrayType arrayExprType = (ArrayType)rhs;
+			rhs = arrayExprType.arrayType.accept(this);
+		}
+		else if (rhs instanceof PointerType) {
+			PointerType arrayExprType = (PointerType)rhs;
+			rhs = arrayExprType.type.accept(this);
+		}
+
 		if (lhs != rhs) {
-			error("Assignment LHS has different Type expectation to RHS Type.");
+			error("Assignment LHS has different Type expectation to RHS Type. LHS: " + lhs + " RHS: " + rhs);
 		}
 		return null;
 	}
@@ -299,7 +318,6 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 
 	@Override
     public Type visitFunCallExpr(FunCallExpr fce) {
-		System.out.println("visitFunCallExpr: " + fce);
 		Symbol funSym = currScope.lookup(fce.ident);
 
 		// Check that we are dealing with a Procedure.
@@ -335,14 +353,29 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 				else if (paramType instanceof PointerType) {
 					paramType = ((PointerType)paramType).type.accept(this);
 				}
-
-				// Now compare arguments to make sure they are valid.
-				if (!(argType.getClass().equals(paramType.getClass()))) {
-					error("Parameter " + i + " of FunCall[" + fce.ident + "] is not the correct type. Expected [" + paramType + "] but received [" + argType + "]");
-					return null;
+				
+				// In the case that the argument is a struct.
+				if (paramType instanceof StructType) {
+					if (argType instanceof StructType) {
+						StructType paramStruct = (StructType)paramType;
+						StructType argumStruct = (StructType)argType;
+						if (!paramStruct.identifier.equals(argumStruct.identifier)) {
+							error("Argument " + i + " of function [" + funDecl.name + "] expects a StructType [" + paramStruct.identifier + "] but receives a StructType [" + argumStruct.identifier + "]");
+						}
+					}
+					else {
+						error("Argument " + i + " of function [" + funDecl.name + "] expects a StructType but does not receive one.");
+						return null;
+					}
+				}
+				else {
+					// Now compare arguments to make sure they are valid.
+					if (argType != paramType) {
+						error("Parameter " + i + " of FunCall[" + fce.ident + "] is not the correct type. Expected [" + paramType + "] but received [" + argType + "]");
+						return null;
+					}
 				}
 			}
-			System.out.println("    returning: " + funDecl.type);
 			return funDecl.type.accept(this);
 		}
 		else {
