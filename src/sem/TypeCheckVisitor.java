@@ -244,26 +244,6 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 		// System.out.println("\nAssign - LHS: " + a.expr1 + "\n\t Type: " + lhs);
 		// System.out.println("Assign - RHS: " + a.expr2 + "\n\t Type: " + rhs);
 
-		// Convert from arrays/pointers to their types.
-		if (lhs instanceof ArrayType) {
-			ArrayType arrayExprType = (ArrayType)lhs;
-			lhs = arrayExprType.arrayType.accept(this);
-		}
-		else if (lhs instanceof PointerType) {
-			PointerType arrayExprType = (PointerType)lhs;
-			lhs = arrayExprType.type.accept(this);
-		}
-
-		// Convert from arrays/pointers to their types.
-		if (rhs instanceof ArrayType) {
-			ArrayType arrayExprType = (ArrayType)rhs;
-			rhs = arrayExprType.arrayType.accept(this);
-		}
-		else if (rhs instanceof PointerType) {
-			PointerType arrayExprType = (PointerType)rhs;
-			rhs = arrayExprType.type.accept(this);
-		}
-
 		if (lhs instanceof StructType) {
 			if (rhs instanceof StructType) {
 				StructType lhsStruct = (StructType)lhs;
@@ -277,6 +257,99 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 			}
 			else {
 				error("LHS of Assign is a StructType, but RHS is not.");
+				return null;
+			}
+		}
+
+		if (lhs instanceof ArrayType) {
+			if (rhs instanceof ArrayType) {
+				ArrayType lhsArray = (ArrayType)lhs;
+				ArrayType rhsArray = (ArrayType)rhs;
+				Type lhsArrType = lhsArray.arrayType.accept(this);
+				Type rhsArrType = rhsArray.arrayType.accept(this);
+				if (lhsArrType == rhsArrType) {
+					if (lhsArray.size == rhsArray.size) {
+						return lhsArray;
+					}
+					else {
+						error("LHS of Assign is an Array of size: " + lhsArray.size + " but RHS is an Array of size: " + rhsArray.size);
+						return null;
+					}
+				}
+				else {
+					error("LHS of Assign is an Array of Type: " + lhsArrType + " but RHS is an Array of Type: " + rhsArrType);
+					return null;
+				}
+			}
+			else {
+				error("LHS of Assign was an ArrayType, but RHS was not.");
+				return null;
+			}
+		}
+
+		if (lhs instanceof PointerType) {
+			if (rhs instanceof PointerType) {
+				Type lhsPointType = ((PointerType)lhs).type.accept(this);
+				Type rhsPointType = ((PointerType)rhs).type.accept(this);
+				while (lhsPointType instanceof PointerType) {
+					lhsPointType = ((PointerType)lhs).type.accept(this);
+				}
+				while (rhsPointType instanceof PointerType) {
+					rhsPointType = ((PointerType)rhs).type.accept(this);
+				}
+				if (lhsPointType instanceof StructType) {
+					if (rhsPointType instanceof StructType) {
+						StructType lhsStruct = (StructType)lhsPointType;
+						StructType rhsStruct = (StructType)rhsPointType;
+						if (!lhsStruct.identifier.equals(rhsStruct.identifier)) {
+							error("Tried to assign a variable of Type Struct[" + lhsStruct.identifier + "] to something of Type Struct[" + rhsStruct.identifier + "]");
+						}
+						else {
+							return lhsStruct;
+						}
+					}
+					else {
+						error("LHS of Assign is a StructType, but RHS is not.");
+						return null;
+					}
+				}
+		
+				if (lhsPointType instanceof ArrayType) {
+					if (rhsPointType instanceof ArrayType) {
+						ArrayType lhsArray = (ArrayType)lhsPointType;
+						ArrayType rhsArray = (ArrayType)rhsPointType;
+						Type lhsArrType = lhsArray.arrayType.accept(this);
+						Type rhsArrType = rhsArray.arrayType.accept(this);
+						if (lhsArrType == rhsArrType) {
+							if (lhsArray.size == rhsArray.size) {
+								return lhsArray;
+							}
+							else {
+								error("LHS of Assign is an Array of size: " + lhsArray.size + " but RHS is an Array of size: " + rhsArray.size);
+								return null;
+							}
+						}
+						else {
+							error("LHS of Assign is an Array of Type: " + lhsArrType + " but RHS is an Array of Type: " + rhsArrType);
+							return null;
+						}
+					}
+					else {
+						error("LHS of Assign was an ArrayType, but RHS was not.");
+						return null;
+					}
+				}
+
+				if (lhsPointType == rhsPointType) {
+					return lhs;
+				}
+				else {
+					error("LHS of Assign was a Pointer of Type: " + lhsPointType + " but RHS was a Pointer of Type: " + rhsPointType);
+				}
+
+			}
+			else {
+				error("LHS of Assing was a Pointer, but RHS was not.");
 				return null;
 			}
 		}
