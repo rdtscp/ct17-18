@@ -373,10 +373,6 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 			ArrayType arrayExprType = (ArrayType)exprType;
 			return arrayExprType.arrayType.accept(this);
 		}
-		else if (exprType instanceof PointerType) {
-			PointerType arrayExprType = (PointerType)exprType;
-			return arrayExprType.type.accept(this);
-		}
 		else {
 			error("ArrayAccessExpr attempts to reference an expression which cannot be an array.");
 			return null;
@@ -434,6 +430,13 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 				// Fetch the types of the parameters.
 				Type argType   = fce.exprs.get(i).accept(this);
 				Type paramType = funDecl.params.get(i).type.accept(this);
+
+				if (paramType instanceof PointerType) {
+
+				}
+				else if (paramType instanceof StructType) {
+
+				}
 
 				// Handle cases where the argument type might be a pointer or an array.
 				if (argType instanceof ArrayType) {
@@ -507,7 +510,8 @@ public class TypeCheckVisitor extends BaseSemanticVisitor<Type> {
 
     @Override
     public Type visitStrLiteral(StrLiteral sl) {
-		return new ArrayType(BaseType.CHAR, Integer.toString(sl.val.length() + 1)).accept(this);
+		return new PointerType(BaseType.CHAR);
+		// return new ArrayType(BaseType.CHAR, Integer.toString(sl.val.length() + 1)).accept(this);
     }
 
     @Override
