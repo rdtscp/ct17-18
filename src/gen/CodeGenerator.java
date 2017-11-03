@@ -36,7 +36,9 @@ public class CodeGenerator implements ASTVisitor<Register> {
     }
 
 
-
+    /* lastState marks if we were printing .data or .text last; 0 = .data, 1 = .text */
+    private int lastState = 0;
+    private int strNum = 0;
 
 
     private PrintWriter writer; // use this writer to output the assembly instructions
@@ -51,19 +53,22 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     @Override
     public Register visitProgram(Program p) {
+
+        writer.print("\t\t.text\n\n");
+        writer.print("j main\n\n");
         // Create functions for printing:
+        writer.print("print_i:\n\tli\t$v0, 1\n\tsyscall\n\tjr $ra");
+        writer.print("\n\nprint_s:\n\tli\t$v0, 4\n\tsyscall\n\tjr $ra");
         
         // Find the main function first, and declare
         for (FunDecl funDecl: p.funDecls) {
+            // Generate MIPS for the main function declaration.
             if (funDecl.name.equals("main")) {
-                writer.print("\n\n");
                 funDecl.accept(this);
             }
+            // Write out the exit execution code.
             writer.print("\n\tli\t$v0, 10\n\tsyscall");
         }
-        writer.print("\n\nprint_i:\n\tli\t$v0, 1");
-        writer.print("\n\tsyscall");
-        writer.print("\n\tjr $ra\n\n");
         // Declare the rest of the functions.
         for (FunDecl funDecl: p.funDecls) {
             if (!funDecl.name.equals("main")) {
@@ -76,8 +81,9 @@ public class CodeGenerator implements ASTVisitor<Register> {
     @Override
     public Register visitFunDecl(FunDecl fd) {
         System.out.println("Generating MIPS for FunDecl: " + fd.name);
-        writer.print(fd.name + ":");
+        writer.print("\n\n" + fd.name + ":");
         fd.block.accept(this);
+        
         return null;
     }
 
@@ -100,9 +106,15 @@ public class CodeGenerator implements ASTVisitor<Register> {
         for (int i = 0; i < fce.exprs.size(); i++) {
             VarDecl currArg = fce.fd.params.get(i);
             Expr  currParam = fce.exprs.get(i);
+            System.out.println("Printing funCallExpr " + currParam);
             if (currArg.type == BaseType.INT) {
                 writer.print("\n\taddi $a" + i + ", $zero, ");
                 currParam.accept(this);
+            }
+            else if (currParam instanceof StrLiteral) {
+                StrLiteral string = (StrLiteral)currParam;
+                writer.print("\n\t\t.data\n\tstr" + strNum + ":\t.asciiz \"" + string.val + "\"\n\t\t.text");
+                writer.print("\n\tla $a0, str"+strNum);
             }
         }
         writer.print("\n");
@@ -195,6 +207,8 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     @Override
     public Register visitStrLiteral(StrLiteral sl) {
+
+
 		return null;
     }
 
