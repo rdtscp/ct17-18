@@ -484,7 +484,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
             }
             else {
                 // We have: x || y
-                writer.print("OR " + operand1.toString() + ", " + operand1.toString + ", " + operand2.toString());
+                writer.print("OR " + operand1.toString() + ", " + operand1.toString() + ", " + operand2.toString());
                 freeRegister(operand2);
                 return operand1;
             }
@@ -502,6 +502,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
             else if (op1Null) {
                 IntLiteral const16_1 = (IntLiteral)bo.expr1;
                 operand1 = getRegister();
+                writer.print("LI " + operand1.toString() + ", " + const16_1.val);
             }
             else if (op2Null) {
 
