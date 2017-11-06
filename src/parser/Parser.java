@@ -830,9 +830,9 @@ public class Parser {
         else if (accept(TokenClass.CHAR_LITERAL)) {
             String val = expect(TokenClass.CHAR_LITERAL).data;
             if (accept(TokenClass.DOT, TokenClass.LSBR)) {
-                return expectPostExp(new ChrLiteral(val.charAt(0)));
+                return expectPostExp(new ChrLiteral(val));
             }
-            return new ChrLiteral(val.charAt(0));
+            return new ChrLiteral(val);
         }
         else if (accept(TokenClass.STRING_LITERAL)) {
             String val = expect(TokenClass.STRING_LITERAL).data;

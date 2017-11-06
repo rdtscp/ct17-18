@@ -1,9 +1,10 @@
 package ast;
 
 public class ChrLiteral extends Expr {
-    public final char val;
+    public final String val;
     
-    public ChrLiteral(char val){
+    public ChrLiteral(String val){
+        // System.out.println("New char literal: " + val);
         this.val = val;
     }
 
