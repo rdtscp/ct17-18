@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.EmptyStackException;
 import java.util.Stack;
+import java.util.HashMap;
 
 public class CodeGenerator implements ASTVisitor<Register> {
 
@@ -40,6 +41,8 @@ public class CodeGenerator implements ASTVisitor<Register> {
     private int lastState = 0;
     private int strNum = 0;
 
+    private HashMap<String, Register> varMappings = new HashMap<String, Register>();
+
 
     private PrintWriter writer; // use this writer to output the assembly instructions
 
@@ -58,7 +61,8 @@ public class CodeGenerator implements ASTVisitor<Register> {
         writer.print("j main\n\n");
         // Create functions for printing:
         writer.print("print_i:\n\tli\t$v0, 1\t# Print int cmd code.\n\tsyscall\t\t# Print int now.\n\tjr $ra\t\t# Return to caller.");
-        // writer.print("\n\nprint_s:\n\tli\t$v0, 4\n\tsyscall\n\tjr $ra");
+        writer.print("\n\nprint_s:\n\tli\t$v0, 4\n\tsyscall\n\tjr $ra");
+        writer.print("\n\nprint_c:\n\tli\t$v0, 11\n\tsyscall\n\tjr $ra");
         
         // Find the main function first, and declare
         for (FunDecl funDecl: p.funDecls) {
@@ -112,7 +116,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
             }
             // Handle the case where neither operands are literals.
             else {
-                writer.print("ADD " + operand1.toString() + ", " + operand1.toString() + ", " + operand2.toString());
+                writer.print("\n\tADD " + operand1.toString() + ", " + operand1.toString() + ", " + operand2.toString());
                 return operand1;
             }
         }
@@ -437,12 +441,12 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 if (op1Null) {
                     IntLiteral const16_1 = (IntLiteral)bo.expr1;
                     operand1 = getRegister();
-                    writer.print("\n\tLI " + operand1.toString() + ", " + "'" + const16_1.val + "'");
+                    writer.print("\n\tLI " + operand1.toString() + ", " + const16_1.val);
                 }
                 if (op2Null) {
                     IntLiteral const16_2 = (IntLiteral)bo.expr2;
                     operand2 = getRegister();
-                    writer.print("\n\tLI " + operand2.toString() + ", " + "'" + const16_2.val + "'");                    
+                    writer.print("\n\tLI " + operand2.toString() + ", " + const16_2.val);                    
                 }
                 // Get the difference between these two numbers.
                 writer.print("\n\tSUB " + operand1.toString() + ", " + operand1.toString() + ", " + operand2.toString());
@@ -517,12 +521,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
     }
 
     @Override
-    public Register visitIntLiteral(IntLiteral il) {
-        return null;
-    }
-
-
-    @Override
     public Register visitFunDecl(FunDecl fd) {
         writer.print("\n\n" + fd.name + ":");
         fd.block.accept(this);
@@ -531,7 +529,30 @@ public class CodeGenerator implements ASTVisitor<Register> {
     }
 
     
-
+    @Override
+	public Register visitAssign(Assign a) {
+        Register thisVar = null;
+        if (a.expr2 instanceof IntLiteral) {
+            IntLiteral num = (IntLiteral)a.expr2;
+            thisVar = getRegister();
+            writer.print("\n\tLI " + thisVar.toString() + ", " + num.val);
+        }
+        else if (a.expr2 instanceof ChrLiteral) {
+            ChrLiteral ltr = (ChrLiteral)a.expr2;
+            thisVar = getRegister();
+            writer.print("\n\tLI " + thisVar.toString() + ", '" + ltr.val + "'");
+        }
+        else {
+            thisVar = a.expr2.accept(this);
+        }
+        
+        if (a.expr1 instanceof VarExpr) {
+            VarExpr var = (VarExpr)a.expr1;
+            System.out.println("Saving: " + var.ident + " -> " + thisVar);
+            varMappings.put(var.ident, thisVar);
+        }
+        return thisVar;
+	}
     
     
     @Override
@@ -541,9 +562,9 @@ public class CodeGenerator implements ASTVisitor<Register> {
             // Get the current parameter being passed, and the argument expected.
             VarDecl currArg = fce.fd.params.get(i);
             Expr  currParam = fce.exprs.get(i);
-            
+            System.out.println("currParam: " + currParam);
             /* Match the type of the current argument of the function being called. */
-            if (currArg.type == BaseType.INT) {
+            if (currParam instanceof IntLiteral) {
                 // This argument is an integer, an integer will either exist as a literal, or within a Register.
                 // Accept this argument, to retrieve its Register.
                 Register paramReg = currParam.accept(this);
@@ -555,6 +576,9 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 StrLiteral string = (StrLiteral)currParam;
                 writer.print("\n\t\t.data\n\tstr" + strNum + ":\t.asciiz \"" + string.val + "\"\n\t\t.text");
                 writer.print("\n\tla $a0, str"+strNum);
+            }
+            else {
+                writer.print("\n\tMOVE $a" + i + ", " + currParam.accept(this));
             }
         }
         writer.print("\n");
@@ -572,7 +596,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
         for (Stmt stmt: b.stmts) {
             stmt.accept(this);
         }
-		return null;
+        return null;
     }
 
 
@@ -595,9 +619,8 @@ public class CodeGenerator implements ASTVisitor<Register> {
     }
 
     @Override
-    public Register visitVarExpr(VarExpr v) {
-        // TODO: to complete
-        return null;
+    public Register visitVarExpr(VarExpr v) {   
+        return varMappings.get(v.ident);
     }
 
     /* ******************* */
@@ -619,11 +642,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 		return null;
 	}
 
-	@Override
-	public Register visitAssign(Assign a) {
-        Register output = a.expr2.accept(this);
-        return output;
-	}
+	
 
 
 
@@ -696,5 +715,11 @@ public class CodeGenerator implements ASTVisitor<Register> {
 	public Register visitPointerType(PointerType pt) {
 		// To be completed...
 		return null;
-	}
+    }
+    
+    @Override
+    public Register visitIntLiteral(IntLiteral il) {
+        return null;
+    }
+
 }
