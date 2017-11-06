@@ -575,7 +575,11 @@ public class CodeGenerator implements ASTVisitor<Register> {
             else if (currParam instanceof StrLiteral) {
                 StrLiteral string = (StrLiteral)currParam;
                 writer.print("\n\t\t.data\n\tstr" + strNum + ":\t.asciiz \"" + string.val + "\"\n\t\t.text");
-                writer.print("\n\tla $a0, str"+strNum);
+                writer.print("\n\tLA $a0, str"+strNum);
+            }
+            else if (currParam instanceof ChrLiteral) {
+                ChrLiteral ltr = (ChrLiteral)currParam;
+                writer.print("\n\tLI $a0, '" + ltr.val + "'");
             }
             else {
                 writer.print("\n\tMOVE $a" + i + ", " + currParam.accept(this));
