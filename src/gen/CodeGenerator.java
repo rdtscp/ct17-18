@@ -42,7 +42,11 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     // Used so that it is easy to see how much memory a structType will use.
     private HashMap<String, StructTypeDecl> structTypeDecls = new HashMap<String, StructTypeDecl>();
-    private int strNum = 0;             // Tracks StrLiteral's so they can be declared unique.
+    
+    private 
+
+    // Track String literals.
+    private int strNum = 0;
     
     // To track current function.
     private FunDecl currFunDecl;
@@ -108,6 +112,8 @@ public class CodeGenerator implements ASTVisitor<Register> {
         currFunDecl = null;
         return null;
     }
+
+    /* Stmt Methods */
 
     @Override
 	public Register visitBlock(Block b) {
@@ -176,27 +182,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
         return null;
     }
     
-
-
-
-
-    @Override
-    public Register visitFunCallExpr(FunCallExpr fce) {
-        // @TEMP Will handle only the print functions.
-        writer.print("\n\tMOVE $a0, " + fce.exprs.get(0).accept(this));
-        writer.print("\n\tjal " + fce.ident);
-        return Register.v0;
-	}
-
-    
-
-    
-    
-    
-
-
-
-
+    /* Expr Methods */
 
     @Override
     public Register visitBinOp(BinOp bo) {
@@ -448,6 +434,58 @@ public class CodeGenerator implements ASTVisitor<Register> {
         }
         return null;
     }
+
+    @Override
+    public Register visitChrLiteral(ChrLiteral cl) {
+        Register output = getRegister();
+        writer.print("\n\tLI " + output + ", '" + cl.val + "'");
+        return output;
+	}
+
+    // FieldAccessExpr
+
+    @Override
+    public Register visitFunCallExpr(FunCallExpr fce) {
+        // @TEMP Will handle only the print functions.
+        writer.print("\n\tMOVE $a0, " + fce.exprs.get(0).accept(this));
+        writer.print("\n\tjal " + fce.ident);
+        return Register.v0;
+	}
+
+    @Override
+    public Register visitIntLiteral(IntLiteral il) {
+        Register output = getRegister();
+        writer.print("\n\tLI " + output + ", " + il.val);
+        return output;
+    }
+
+    // SizeOfExpr
+
+    @Override
+    public Register visitStrLiteral(StrLiteral sl) {
+        Register output = getRegister();
+        writer.print("\n\t\t.data");
+        writer.print("\nstr" + strNum + ":\t.asciiz \"" + sl.val + "\"");
+        writer.print("\n.text");
+        writer.print("\n\tLA " + output + ", str" + strNum);
+        strNum++;
+		return output;
+    }
+    
+    // TypecastExpr
+
+    // ValueAtExpr
+
+    @Override
+    public Register visitVarExpr(VarExpr v) {
+        return null;
+    }
+
+
+
+
+
+    
     
     
     
@@ -470,48 +508,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
         return null;
     }
 
-    @Override
-    public Register visitVarExpr(VarExpr v) {
-        return null;
-    }
-
-    /* ******************* */
-
-    
-
-	
-
-	
-    @Override
-    public Register visitStrLiteral(StrLiteral sl) {
-        Register output = getRegister();
-        writer.print("\n\t\t.data");
-        writer.print("\nstr" + strNum + ":\t.asciiz \"" + sl.val + "\"");
-        writer.print("\n.text");
-        writer.print("\n\tLA " + output + ", str" + strNum);
-        strNum++;
-		return output;
-    }
-
-    @Override
-    public Register visitIntLiteral(IntLiteral il) {
-        Register output = getRegister();
-        writer.print("\n\tLI " + output + ", " + il.val);
-        return output;
-    }
-
-    @Override
-    public Register visitChrLiteral(ChrLiteral cl) {
-        Register output = getRegister();
-        writer.print("\n\tLI " + output + ", '" + cl.val + "'");
-        return output;
-	}
-	
-
-	
-
-
-
 	@Override
     public Register visitArrayAccessExpr(ArrayAccessExpr aae) {
 		return null;
@@ -521,8 +517,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
     public Register visitFieldAccessExpr(FieldAccessExpr fae) {
         return null;
     }
-
-	
 	
 	@Override
     public Register visitTypecastExpr(TypecastExpr te) {
@@ -534,8 +528,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
 		return null;
     }
 
-    
-
     @Override
     public Register visitSizeOfExpr(SizeOfExpr soe) {
         return null;
@@ -546,25 +538,13 @@ public class CodeGenerator implements ASTVisitor<Register> {
         return null;
     }
 
-	
-
-
-
-	/**************************\
-			   Not Used
-	\**************************/
-
-	
 	@Override
 	public Register visitArrayType(ArrayType at) {
 		// To be completed...
 		return null;
 	}
 
-    @Override
-    public Register visitOp(Op o) {
-        return null;
-	}
+    
 
 	@Override
 	public Register visitStructType(StructType st) {
@@ -577,7 +557,12 @@ public class CodeGenerator implements ASTVisitor<Register> {
 		// To be completed...
 		return null;
     }
-    
-    
+
+    /* Not Used */
+
+    @Override
+    public Register visitOp(Op o) {
+        return null;
+	}
 
 }
