@@ -122,7 +122,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 	public Register visitAssign(Assign a) {
         Register lhs = a.expr1.accept(this);
         Register rhs = a.expr1.accept(this);
-        writer.print("MOVE " + lhs + ", " + rhs);
+        writer.print("\n\tMOVE " + lhs + ", " + rhs);
         return null;
     }
 
@@ -150,6 +150,32 @@ public class CodeGenerator implements ASTVisitor<Register> {
         
 		return null;
 	}
+
+    @Override
+	public Register visitReturn(Return r) {
+        if (r.expr != null) {
+            Register output = r.expr.accept(this);
+            return output;
+        }
+		return null;
+    }
+    
+    @Override
+	public Register visitWhile(While w) {
+        Register condition = w.expr.accept(this);
+        String whileName = currFunDecl.name + "_while" + currWhile;
+        writer.print("\n\tBNEZ " + condition + ", " + whileName + "_t");
+        writer.print("\n\tBEQZ " + condition + ", " + whileName + "_f");
+        currWhile++;
+        writer.print("\n" + whileName + "_t:");
+        w.stmt.accept(this);
+        condition = w.expr.accept(this);
+        writer.print("\n\tBNEZ " + condition + ", " + whileName + "_t");
+        writer.print("\n\tBEQZ " + condition + ", " + whileName + "_f");
+        writer.print("\n" + whileName + "_f:");
+        return null;
+    }
+    
 
 
 
@@ -456,17 +482,11 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     
 
-	@Override
-	public Register visitWhile(While w) {
-		return null;
-	}
+	
 
 	
 
-	@Override
-	public Register visitReturn(Return r) {
-		return null;
-	}
+	
 
 	
 
