@@ -457,10 +457,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
 
 
-    @Override
-    public Register visitBaseType(BaseType bt) {
-        return null;
-    }
+    
 
     @Override
     public Register visitStructTypeDecl(StructTypeDecl st) {
@@ -485,7 +482,30 @@ public class CodeGenerator implements ASTVisitor<Register> {
 	
 
 	
+    @Override
+    public Register visitStrLiteral(StrLiteral sl) {
+        Register output = getRegister();
+        writer.print("\n\t\t.data");
+        writer.print("\nstr" + strNum + ":\t.asciiz \"" + sl.val + "\"");
+        writer.print("\n.text");
+        writer.print("\n\tLA " + output + ", str" + strNum);
+        strNum++;
+		return output;
+    }
 
+    @Override
+    public Register visitIntLiteral(IntLiteral il) {
+        Register output = getRegister();
+        writer.print("\n\tLI " + output + ", " + il.val);
+        return output;
+    }
+
+    @Override
+    public Register visitChrLiteral(ChrLiteral cl) {
+        Register output = getRegister();
+        writer.print("\n\tLI " + output + ", '" + cl.val + "'");
+        return output;
+	}
 	
 
 	
@@ -514,31 +534,17 @@ public class CodeGenerator implements ASTVisitor<Register> {
 		return null;
     }
 
-    @Override
-    public Register visitStrLiteral(StrLiteral sl) {
-		return null;
-    }
-
-    @Override
-    public Register visitIntLiteral(IntLiteral il) {
-        Register output = getRegister();
-        writer.print("\n\tLI " + output + ", " + il.val);
-        return output;
-    }
-
-    @Override
-    public Register visitChrLiteral(ChrLiteral cl) {
-        Register output = getRegister();
-        writer.print("\n\tLI " + output + ", '" + cl.val + "'");
-        return output;
-	}
+    
 
     @Override
     public Register visitSizeOfExpr(SizeOfExpr soe) {
         return null;
     }    
 
-
+    @Override
+    public Register visitBaseType(BaseType bt) {
+        return null;
+    }
 
 	
 
