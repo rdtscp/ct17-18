@@ -158,8 +158,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
     @Override
     public Register visitBinOp(BinOp bo) {
         Register output   = getRegister();
-        Register operand1 = bo.expr1.accept(this);
-        Register operand2 = bo.expr2.accept(this);
         // Different operations can handle different operand types.
         if (bo.op == Op.ADD) {
             // If this BinOp is just two IntLiterals, we can do the calculation here.
@@ -168,11 +166,11 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 IntLiteral const16_1 = (IntLiteral)bo.expr1;
                 IntLiteral const16_2 = (IntLiteral)bo.expr2;
                 writer.print("\n\tLI " + output + ", " + (const16_1.val + const16_2.val));
-                freeRegister(operand1);
-                freeRegister(operand2);
                 return output;
             }
             else {
+                Register operand1 = bo.expr1.accept(this);
+                Register operand2 = bo.expr2.accept(this);
                 writer.print("\n\tADD " + output + ", " + operand1 + ", " + operand2);
                 freeRegister(operand1);
                 freeRegister(operand2);
@@ -184,11 +182,11 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 IntLiteral const16_1 = (IntLiteral)bo.expr1;
                 IntLiteral const16_2 = (IntLiteral)bo.expr2;
                 writer.print("\n\tLI " + output + ", " + (const16_1.val - const16_2.val));
-                freeRegister(operand1);
-                freeRegister(operand2);
                 return output;
             }
             else {
+                Register operand1 = bo.expr1.accept(this);
+                Register operand2 = bo.expr2.accept(this);
                 writer.print("\n\tSUB " + output + ", " + operand1 + ", " + operand2);
                 freeRegister(operand1);
                 freeRegister(operand2);
@@ -200,11 +198,11 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 IntLiteral const16_1 = (IntLiteral)bo.expr1;
                 IntLiteral const16_2 = (IntLiteral)bo.expr2;
                 writer.print("\n\tLI " + output + ", " + (const16_1.val * const16_2.val));
-                freeRegister(operand1);
-                freeRegister(operand2);
                 return output;
             }
             else {
+                Register operand1 = bo.expr1.accept(this);
+                Register operand2 = bo.expr2.accept(this);
                 writer.print("\n\tMUL " + output + ", " + operand1 + ", " + operand2);
                 freeRegister(operand1);
                 freeRegister(operand2);
@@ -216,11 +214,11 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 IntLiteral const16_1 = (IntLiteral)bo.expr1;
                 IntLiteral const16_2 = (IntLiteral)bo.expr2;
                 writer.print("\n\tLI " + output + ", " + (const16_1.val / const16_2.val));
-                freeRegister(operand1);
-                freeRegister(operand2);
                 return output;
             }
             else {
+                Register operand1 = bo.expr1.accept(this);
+                Register operand2 = bo.expr2.accept(this);
                 writer.print("\n\tDIV " + operand1 + ", " + operand2);
                 freeRegister(operand1);
                 freeRegister(operand2);
@@ -233,11 +231,11 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 IntLiteral const16_1 = (IntLiteral)bo.expr1;
                 IntLiteral const16_2 = (IntLiteral)bo.expr2;
                 writer.print("\n\tLI " + output + ", " + (const16_1.val % const16_2.val));
-                freeRegister(operand1);
-                freeRegister(operand2);
                 return output;
             }
             else {
+                Register operand1 = bo.expr1.accept(this);
+                Register operand2 = bo.expr2.accept(this);
                 writer.print("\n\tDIV " + operand1 + ", " + operand2);
                 freeRegister(operand1);
                 freeRegister(operand2);
@@ -252,11 +250,11 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 int result;
                 if (const16_1.val > const16_2.val) result = 1; else result = 0;
                 writer.print("\n\tLI " + output + ", " + result);
-                freeRegister(operand1);
-                freeRegister(operand2);
                 return output;
             }
             else {
+                Register operand1 = bo.expr1.accept(this);
+                Register operand2 = bo.expr2.accept(this);
                 writer.print("\n\tSLT " + output + ", " + operand2 + ", " + operand1);
                 freeRegister(operand1);
                 freeRegister(operand2);
@@ -270,11 +268,11 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 int result;
                 if (const16_1.val < const16_2.val) result = 1; else result = 0;
                 writer.print("\n\tLI " + output + ", " + result);
-                freeRegister(operand1);
-                freeRegister(operand2);
                 return output;
             }
             else {
+                Register operand1 = bo.expr1.accept(this);
+                Register operand2 = bo.expr2.accept(this);
                 writer.print("\n\tSLT " + output + ", " + operand1 + ", " + operand2);
                 freeRegister(operand1);
                 freeRegister(operand2);
@@ -288,12 +286,12 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 int result;
                 if (const16_1.val >= const16_2.val) result = 1; else result = 0;  
                 writer.print("\n\tLI " + output + ", " + result);
-                freeRegister(operand1);
-                freeRegister(operand2);
                 return output;
             }
             // @TODO
             else {
+                Register operand1 = bo.expr1.accept(this);
+                Register operand2 = bo.expr2.accept(this);
                 writer.print("\n\tSLT " + output + ", " + operand2 + ", " + operand1);
                 freeRegister(operand1);
                 freeRegister(operand2);
@@ -307,13 +305,13 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 int result;
                 if (const16_1.val <= const16_2.val) result = 1; else result = 0;
                 writer.print("\n\tLI " + output + ", " + result);
-                freeRegister(operand1);
-                freeRegister(operand2);
                 return output;
             }
             // @TODO
             else {
-                writer.print("\n\tSLT " + output + ", " + operand2 + ", " + operand1);
+                Register operand1 = bo.expr1.accept(this);
+                Register operand2 = bo.expr2.accept(this);
+                writer.print("\n\tSLT " + output + ", " + operand1 + ", " + operand2);
                 freeRegister(operand1);
                 freeRegister(operand2);
                 return output;
@@ -326,8 +324,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 int result;
                 if (const16_1.val != const16_2.val) result = 1; else result = 0;  
                 writer.print("\n\tLI " + output + ", " + result);
-                freeRegister(operand1);
-                freeRegister(operand2);
                 return output;
             }
             if (bo.expr1 instanceof IntLiteral && bo.expr2 instanceof IntLiteral) {
@@ -336,47 +332,12 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 int result;
                 if (const16_1.val != const16_2.val) result = 1; else result = 0;  
                 writer.print("\n\tLI " + output + ", " + result);
-                freeRegister(operand1);
-                freeRegister(operand2);
                 return output;
             }
             // @TODO
             else {
-                /* 
-                
-                // Get the difference between these two numbers.
-                writer.print("\n\tSUB " + operand1.toString() + ", " + operand1.toString() + ", " + operand2.toString());
-                
-                // Create a register with just the value one.
-                Register valOne = getRegister();
-                writer.print("\n\tLI " + valOne.toString() + ", " + "1");
-
-                // If the difference between the 2 numbers is zero, they are equal, so return a register with 0.
-                writer.print("\n\tMOVZ " + operand2.toString() + ", $zero, " + operand1.toString());
-                // If the difference between the 2 numbers is non-zero, they are not equal, so return a register with 1.
-                writer.print("\n\tMOVN " + operand2.toString() + ", " + valOne.toString() + ", " + operand1.toString()); 
-                freeRegister(valOne);
-                freeRegister(operand1);
-                return operand2;
-
-
-
-                // Get the difference between these two numbers.
-                writer.print("\n\tSUB " + operand1.toString() + ", " + operand1.toString() + ", " + operand2.toString());
-                
-                // Create a register with just the value one.
-                Register valOne = getRegister();
-                writer.print("\n\tLI " + valOne.toString() + ", " + "1");
-
-                // If the difference between the 2 numbers is zero, they are equal, so return a register with 0.
-                writer.print("\n\tMOVZ " + operand2.toString() + ", $zero, " + operand1.toString());
-                // If the difference between the 2 numbers is non-zero, they are not equal, so return a register with 1.
-                writer.print("\n\tMOVN " + operand2.toString() + ", " + valOne.toString() + ", " + operand1.toString()); 
-                freeRegister(valOne);
-                freeRegister(operand1);
-                return operand2;
-                
-                */
+                Register operand1 = bo.expr1.accept(this);
+                Register operand2 = bo.expr2.accept(this);
                 writer.print("\n\tSLT " + output + ", " + operand2 + ", " + operand1);
                 freeRegister(operand1);
                 freeRegister(operand2);
@@ -390,8 +351,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 int result;
                 if (const16_1.val != const16_2.val) result = 1; else result = 0;  
                 writer.print("\n\tLI " + output + ", " + result);
-                freeRegister(operand1);
-                freeRegister(operand2);
                 return output;
             }
             if (bo.expr1 instanceof IntLiteral && bo.expr2 instanceof IntLiteral) {
@@ -400,12 +359,12 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 int result;
                 if (const16_1.val != const16_2.val) result = 1; else result = 0;  
                 writer.print("\n\tLI " + output + ", " + result);
-                freeRegister(operand1);
-                freeRegister(operand2);
                 return output;
             }
             // @TODO
             else {
+                Register operand1 = bo.expr1.accept(this);
+                Register operand2 = bo.expr2.accept(this);
                 writer.print("\n\tSLT " + output + ", " + operand2 + ", " + operand1);
                 freeRegister(operand1);
                 freeRegister(operand2);
@@ -419,11 +378,11 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 int result;
                 if (const16_1.val == 1 || const16_2.val == 1) result = 1; else result = 0;
                 writer.print("\n\tLI " + output + ", " + result);
-                freeRegister(operand1);
-                freeRegister(operand2);
                 return output;
             }
             else {
+                Register operand1 = bo.expr1.accept(this);
+                Register operand2 = bo.expr2.accept(this);
                 writer.print("\n\tOR " + output + ", " + operand1 + ", " + operand2);
                 freeRegister(operand1);
                 freeRegister(operand2);
@@ -437,8 +396,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 int result;
                 if (const16_1.val == 1 && const16_2.val == 1) result = 1; else result = 0;
                 writer.print("\n\tLI " + output + ", " + result);
-                freeRegister(operand1);
-                freeRegister(operand2);
                 return output;
             }
             // @TODO
@@ -526,8 +483,17 @@ public class CodeGenerator implements ASTVisitor<Register> {
     }
 
     @Override
+    public Register visitIntLiteral(IntLiteral il) {
+        Register output = getRegister();
+        writer.print("\n\tLI " + output + ", " + il.val);
+        return output;
+    }
+
+    @Override
     public Register visitChrLiteral(ChrLiteral cl) {
-        return null;
+        Register output = getRegister();
+        writer.print("\n\tLI " + output + ", '" + cl.val + "'");
+        return output;
 	}
 
     @Override
@@ -569,11 +535,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
 		return null;
     }
     
-    @Override
-    public Register visitIntLiteral(IntLiteral il) {
-        Register output = getRegister();
-        writer.print("\n\tLI " + output + ", " + il.val);
-        return output;
-    }
+    
 
 }
