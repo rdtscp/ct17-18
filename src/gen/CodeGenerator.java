@@ -8,6 +8,9 @@ import java.io.PrintWriter;
 import java.util.EmptyStackException;
 import java.util.Stack;
 import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.*;
+
 
 public class CodeGenerator implements ASTVisitor<Register> {
 
@@ -36,13 +39,15 @@ public class CodeGenerator implements ASTVisitor<Register> {
         freeRegs.push(reg);
     }
 
-
-    /* lastState marks if we were printing .data or .text last; 0 = .data, 1 = .text */
-    private int lastState = 0;
+    private int currNumParams = 0;
     private int strNum = 0;
+    private boolean isFunDecl = false;
 
-    private HashMap<String, Register> varMappings = new HashMap<String, Register>();
+    private HashMap<String, Register> varMappings = new HashMap<String, Register>();    // Tracks which register represents which variable.
+    private HashMap<String, Register> registersUsed = new HashMap<String, Register>();  // Tracks which registers are in use by current scope.
+    private Stack<Stack <Register>> progStates = new Stack<Stack <Register>>();         // Tracks all states on the stack.
 
+    private HashMap<String, StructTypeDecl> structTypeDecls = new HashMap<String, StructTypeDecl>();
 
     private PrintWriter writer; // use this writer to output the assembly instructions
 
@@ -56,22 +61,34 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     @Override
     public Register visitProgram(Program p) {
-
-        writer.print("\t\t.text\n");
-        writer.print("j main\n\n");
-        // Create functions for printing:
-        writer.print("print_i:\n\tli\t$v0, 1\t# Print int cmd code.\n\tsyscall\t\t# Print int now.\n\tjr $ra\t\t# Return to caller.");
-        writer.print("\n\nprint_s:\n\tli\t$v0, 4\n\tsyscall\n\tjr $ra");
-        writer.print("\n\nprint_c:\n\tli\t$v0, 11\n\tsyscall\n\tjr $ra");
+        writer.print("\t\t.data");
         
-        // Find the main function first, and declare
+        // Create the HashMap of StructTypeDecls.
+        for (StructTypeDecl std: p.structTypeDecls) {
+            StructType structType = (StructType)std.structType;
+            structTypeDecls.put(structType.identifier, std);
+        }
+
+        // Allocate memory on the heap for global variables.
+        for (VarDecl vd: p.varDecls) {
+            writer.print("\n" + vd.ident + "\t.space " + vd.num_bytes);
+        }
+
+        /* Create functions for printing, and a jump to main to start execution. */
+        writer.print("\n\n\t\t.text\n");
+        writer.print("j main\n\n");
+        writer.print("print_i:\n\tlw $a0, ($sp)\n\tli\t$v0, 1\t# Print int cmd code.\n\tsyscall\t\t# Print int now.\n\tjr $ra\t\t# Return to caller.");
+        writer.print("\n\nprint_s:\n\tlw $a0, ($sp)\n\tli\t$v0, 4\n\tsyscall\n\tjr $ra");
+        writer.print("\n\nprint_c:\n\tlw $a0, ($sp)\n\tli\t$v0, 11\n\tsyscall\n\tjr $ra");
+        
+        // Find the main function first, and declare it.
         for (FunDecl funDecl: p.funDecls) {
             // Generate MIPS for the main function declaration.
             if (funDecl.name.equals("main")) {
                 funDecl.accept(this);
+                // Write out the exit execution code.
+                writer.print("\n\tli\t$v0, 10\t# Exit cmd code.\n\tsyscall\t\t# Exit program.");
             }
-            // Write out the exit execution code.
-            writer.print("\n\tli\t$v0, 10\t# Exit cmd code.\n\tsyscall\t\t# Exit program.");
         }
         // Declare the rest of the functions.
         for (FunDecl funDecl: p.funDecls) {
@@ -81,6 +98,89 @@ public class CodeGenerator implements ASTVisitor<Register> {
         }
         return null;
     }
+
+    @Override
+    public Register visitFunDecl(FunDecl fd) {
+        Stack<Register> storedRegs = new Stack<Register>();
+        // Declare this function.
+        writer.print("\n\n" + fd.name + ":");
+
+        // Store return address.
+        writer.print("\n\t# SAVING RET ADDR TO STACK");
+        writer.print("\n\tADDI $sp, $sp, -4");
+        writer.print("\n\tSW $ra, ($sp)");
+
+        // Store all Register states to the stack.
+        writer.print("\n\t# SAVING STATE TO STACK");
+        writer.print("\n\tADDI $sp, $sp, -" + (Register.tmpRegs.size() * 4));
+        int offset = Register.tmpRegs.size() * 4 - 4;
+        for (Register currReg: Register.tmpRegs) {
+            writer.print("\n\tSW " + currReg + ", " + offset + "($sp)");
+            offset += -4;
+            storedRegs.push(currReg);
+        }
+        writer.print("\n\t# SAVED STATE TO STACK");
+        
+        // Generate code for this function.
+        fd.block.accept(this);
+
+        offset = 0;
+        // Re-instate Register states from stack.
+        writer.print("\n\t# RE-INSTATING STATE FROM STACK");
+        Register currReg;
+        while (storedRegs.size() > 0) {
+            currReg = storedRegs.pop();
+            writer.print("\n\tLW " + currReg + ", " + offset + "($sp)");
+            offset += 4;
+        }
+        writer.print("\n\t# RE-INSTATED STATE");
+        assert storedRegs.size() == 0;
+        return null;
+    }
+
+    @Override
+	public Register visitBlock(Block b) {
+        // Turn each statement into a code block.
+        // b.varDecls
+        for (Stmt stmt: b.stmts) {
+            stmt.accept(this);
+        }
+        return null;
+    }
+
+    @Override
+	public Register visitAssign(Assign a) {
+        Register thisVar = null;
+        if (a.expr2 instanceof IntLiteral) {
+            IntLiteral num = (IntLiteral)a.expr2;
+            thisVar = getRegister();
+            writer.print("\n\tLI " + thisVar.toString() + ", " + num.val);
+        }
+        else if (a.expr2 instanceof ChrLiteral) {
+            ChrLiteral ltr = (ChrLiteral)a.expr2;
+            thisVar = getRegister();
+            writer.print("\n\tLI " + thisVar.toString() + ", '" + ltr.val + "'");
+        }
+        else {
+            thisVar = a.expr2.accept(this);
+        }
+        
+        if (a.expr1 instanceof VarExpr) {
+            VarExpr var = (VarExpr)a.expr1;
+            System.out.println("Saving: " + var.ident + " -> " + thisVar);
+            varMappings.put(var.ident, thisVar);
+        }
+        return thisVar;
+    }
+    
+    @Override
+    public Register visitExprStmt(ExprStmt es) {
+		return es.expr.accept(this);
+    }
+
+
+
+
 
     @Override
     public Register visitBinOp(BinOp bo) {
@@ -117,6 +217,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
             // Handle the case where neither operands are literals.
             else {
                 writer.print("\n\tADD " + operand1.toString() + ", " + operand1.toString() + ", " + operand2.toString());
+                varMappings.values().remove(operand1);
                 return operand1;
             }
         }
@@ -220,7 +321,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 IntLiteral const16_2 = (IntLiteral)bo.expr2;
 
                 operand1 = getRegister();
-                if (const16_1.val > const16_2.val) writer.print("\n\tLI " + operand1.toString() + ", 1");
+                if (const16_1.val > const16_2.val) writer.print("\n\tLI " + operand1.toString() + ", 1\t# Value 1 Register");
                 else writer.print("\n\tLI " + operand1.toString() + ", 0");
                 return operand1;
             }
@@ -252,7 +353,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
             }
             else {
                 // We have: x > y
-                writer.print("SLT " + operand1.toString() + ", " + operand2.toString() + ", " + operand1.toString());
+                writer.print("\n\tSLT " + operand1.toString() + ", " + operand2.toString() + ", " + operand1.toString());
                 freeRegister(operand2);
                 return operand1;
             }
@@ -263,7 +364,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 IntLiteral const16_2 = (IntLiteral)bo.expr2;
 
                 operand1 = getRegister();
-                if (const16_1.val < const16_2.val) writer.print("\n\tLI " + operand1.toString() + ", 1");
+                if (const16_1.val < const16_2.val) writer.print("\n\tLI " + operand1.toString() + ", 1\t# Value 1 Register");
                 else writer.print("\n\tLI " + operand1.toString() + ", 0");
                 return operand1;
             }
@@ -298,7 +399,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 IntLiteral const16_2 = (IntLiteral)bo.expr2;
 
                 operand1 = getRegister();
-                if (const16_1.val >= const16_2.val) writer.print("\n\tLI " + operand1.toString() + ", 1");
+                if (const16_1.val >= const16_2.val) writer.print("\n\tLI " + operand1.toString() + ", 1\t# Value 1 Register");
                 else writer.print("\n\tLI " + operand1.toString() + ", 0");
                 return operand1;
             }
@@ -309,7 +410,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 IntLiteral const16_2 = (IntLiteral)bo.expr2;
 
                 operand1 = getRegister();
-                if (const16_1.val <= const16_2.val) writer.print("\n\tLI " + operand1.toString() + ", 1");
+                if (const16_1.val <= const16_2.val) writer.print("\n\tLI " + operand1.toString() + ", 1\t# Value 1 Register");
                 else writer.print("\n\tLI " + operand1.toString() + ", 0");
                 return operand1;
             }
@@ -323,7 +424,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
                     ChrLiteral const16_2 = (ChrLiteral)bo.expr2;
     
                     operand1 = getRegister();
-                    if (const16_1.val != const16_2.val) writer.print("\n\tLI " + operand1.toString() + ", 1");
+                    if (const16_1.val != const16_2.val) writer.print("\n\tLI " + operand1.toString() + ", 1\t# Value 1 Register");
                     else writer.print("\n\tLI " + operand1.toString() + ", 0");
                     return operand1;
                 }
@@ -359,7 +460,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
                     IntLiteral const16_2 = (IntLiteral)bo.expr2;
     
                     operand1 = getRegister();
-                    if (const16_1.val != const16_2.val) writer.print("\n\tLI " + operand1.toString() + ", 1");
+                    if (const16_1.val != const16_2.val) writer.print("\n\tLI " + operand1.toString() + ", 1\t# Value 1 Register");
                     else writer.print("\n\tLI " + operand1.toString() + ", 0");
                     return operand1;
                 }
@@ -398,7 +499,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
                     ChrLiteral const16_2 = (ChrLiteral)bo.expr2;
     
                     operand1 = getRegister();
-                    if (const16_1.val == const16_2.val) writer.print("\n\tLI " + operand1.toString() + ", 1");
+                    if (const16_1.val == const16_2.val) writer.print("\n\tLI " + operand1.toString() + ", 1\t# Value 1 Register");
                     else writer.print("\n\tLI " + operand1.toString() + ", 0");
                     return operand1;
                 }
@@ -417,7 +518,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 
                 // Create a register with just the value one.
                 Register valOne = getRegister();
-                writer.print("\n\tLI " + valOne.toString() + ", " + "1");
+                writer.print("\n\tLI " + valOne.toString() + ", 1\t# Value 1 Register");
 
                 // If the difference between the 2 numbers is zero, they are equal, so return a register with 0.
                 writer.print("\n\tMOVZ " + operand2.toString() + ", " + valOne.toString() + ", " + operand1.toString());
@@ -434,7 +535,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
                     IntLiteral const16_2 = (IntLiteral)bo.expr2;
     
                     operand1 = getRegister();
-                    if (const16_1.val == const16_2.val) writer.print("\n\tLI " + operand1.toString() + ", 1");
+                    if (const16_1.val == const16_2.val) writer.print("\n\tLI " + operand1.toString() + ", 1\t# Value 1 Register");
                     else writer.print("\n\tLI " + operand1.toString() + ", 0");
                     return operand1;
                 }
@@ -453,7 +554,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 
                 // Create a register with just the value one.
                 Register valOne = getRegister();
-                writer.print("\n\tLI " + valOne.toString() + ", " + "1");
+                writer.print("\n\tLI " + valOne.toString() + ", 1\t# Value 1 Register");
 
                 // If the difference between the 2 numbers is zero, they are equal, so return a register with 0.
                 writer.print("\n\tMOVZ " + operand2.toString() + ", " + valOne.toString() + ", " + operand1.toString());
@@ -519,89 +620,125 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
 		return null;
     }
-
-    @Override
-    public Register visitFunDecl(FunDecl fd) {
-        writer.print("\n\n" + fd.name + ":");
-        fd.block.accept(this);
-        
-        return null;
-    }
-
-    
-    @Override
-	public Register visitAssign(Assign a) {
-        Register thisVar = null;
-        if (a.expr2 instanceof IntLiteral) {
-            IntLiteral num = (IntLiteral)a.expr2;
-            thisVar = getRegister();
-            writer.print("\n\tLI " + thisVar.toString() + ", " + num.val);
-        }
-        else if (a.expr2 instanceof ChrLiteral) {
-            ChrLiteral ltr = (ChrLiteral)a.expr2;
-            thisVar = getRegister();
-            writer.print("\n\tLI " + thisVar.toString() + ", '" + ltr.val + "'");
-        }
-        else {
-            thisVar = a.expr2.accept(this);
-        }
-        
-        if (a.expr1 instanceof VarExpr) {
-            VarExpr var = (VarExpr)a.expr1;
-            System.out.println("Saving: " + var.ident + " -> " + thisVar);
-            varMappings.put(var.ident, thisVar);
-        }
-        return thisVar;
-	}
     
     
     @Override
     public Register visitFunCallExpr(FunCallExpr fce) { 
-        // Load all expected arguments into the appropriate registers.
+        /* --- Push all arguments onto the stack. --- */
+        
+        // Point the FramePointer at the top of the new stack frame.
+        writer.print("\n\tMOVE $fp, $sp");
+        
+        // Allocate memory on stack for each of the arguments.
         for (int i = 0; i < fce.exprs.size(); i++) {
             // Get the current parameter being passed, and the argument expected.
             VarDecl currArg = fce.fd.params.get(i);
             Expr  currParam = fce.exprs.get(i);
-            System.out.println("currParam: " + currParam);
-            /* Match the type of the current argument of the function being called. */
+
+            /* --- Deal with this parameter differently based on its type. --- */
+            
+            // Dealing with an int literal.
             if (currParam instanceof IntLiteral) {
-                // This argument is an integer, an integer will either exist as a literal, or within a Register.
-                // Accept this argument, to retrieve its Register.
-                Register paramReg = currParam.accept(this);
-                // If this argument does not return a Register, then it must be an IntLiteral.
-                if (paramReg == null) writer.print("\n\tADDI $a" + i + ", $zero, "  + ((IntLiteral)currParam).val);
-                else writer.print("\n\tADD $a" + i + ", $zero, "  + paramReg.toString());
+                // Make space on stack for this parameter.
+                writer.print("\n\tADDI $sp, $sp, -4");
+                // Get a register to store this parameter in.
+                Register paramReg = getRegister();
+                // Load this int literal into a register > stack.
+                writer.print("\n\tADDI " + paramReg + ", $zero, " + ((IntLiteral)currParam).val);
+                writer.print("\n\tSW " + paramReg + ", ($sp)");
+                // Free this register.
+                freeRegister(paramReg);
             }
+            // Dealing with a String literal.
             else if (currParam instanceof StrLiteral) {
-                StrLiteral string = (StrLiteral)currParam;
-                writer.print("\n\t\t.data\n\tstr" + strNum + ":\t.asciiz \"" + string.val + "\"\n\t\t.text");
-                writer.print("\n\tLA $a0, str"+strNum);
+                // Make space on the stack for this parameter.
+                writer.print("\n\tADDI $sp, $sp, -4");
+                // Get a register to store this parameter in.
+                Register paramReg = getRegister();
+                // Since this is a string literal, declare this string.
+                writer.print("\n\t\t.data\n\tstr" + strNum + ":\t.asciiz \"" + ((StrLiteral)currParam).val + "\"\n\t\t.text");
+                // Load this string literals address into a register > stack, and increment the strNum counter.
+                writer.print("\n\tLA " + paramReg + ", str"+strNum); strNum++;
+                writer.print("\n\tSW " + paramReg + ", ($sp)");
+                // Free this register.
+                freeRegister(paramReg);
             }
+            // Dealing with a char literal.
             else if (currParam instanceof ChrLiteral) {
-                ChrLiteral ltr = (ChrLiteral)currParam;
-                writer.print("\n\tLI $a0, '" + ltr.val + "'");
+                // Make space on the stack for this parameter.
+                writer.print("\n\tADDI $sp, $sp, -4");
+                // Get a register to store this parameter in.
+                Register paramReg = getRegister();
+                // Load this char literal into a register > stack.
+                writer.print("\n\tLI " + paramReg + ", '" + ((ChrLiteral)currParam).val + "'");
+                writer.print("\n\tSW " + paramReg + ", ($sp)");
+                // Free this register.
+                freeRegister(paramReg);
+            }
+            // Dealing with a variable.
+            else if (currParam instanceof VarExpr) {
+                Register paramReg;
+                VarExpr var = (VarExpr)currParam;
+                if (var.type instanceof BaseType) {
+                    // Make space on the stack for this parameter.
+                    writer.print("\n\tADDI $sp, $sp, -4");
+                    paramReg = varMappings.get(var.ident);
+                    writer.print("\n\tSW " + paramReg + ", ($sp)");
+                }
+                if (var.type instanceof ArrayType) {
+
+                }
+                if (var.type instanceof StructType) {
+
+                }
+                if (var.type instanceof PointerType) {
+
+                }
             }
             else {
-                writer.print("\n\tMOVE $a" + i + ", " + currParam.accept(this));
+                Register paramReg = currParam.accept(this);
+                // Make space on the stack for this parameter.
+                writer.print("\n\tADDI $sp, $sp, -4");
+                // Store this register on the stack.
+                writer.print("\n\tSW " + paramReg + ", ($sp)");
+                // Free this register.
+                freeRegister(paramReg);
             }
+            // // Dealing with a variable.
+            // else if (currParam instanceof VarExpr) {
+            //     Register paramReg = currParam.accept(this);
+            //     // Make space on the stack for this parameter.
+            //     writer.print("\n\tADDI $sp, $sp, -4");
+            //     // Store this register on the stack.
+            //     writer.print("\n\tSW " + paramReg + ", ($sp)");
+            //     // Free this register.
+            //     freeRegister(paramReg);
+            // }
+            // // Dealing with a field access.
+            // else if (currParam instanceof FieldAccessExpr) {
+
+            // }
+            // // Dealing with an array access.
+            // else if (currParam instanceof ArrayAccessExpr) {
+
+            // }
+            // // @TODO: ValueAtExpr, TypecastExpr, FunCallExpr
+            // // Else dealing with: BinOp, SizeOfExpr - which are both ints.
+            // else {
+            //     writer.print("\n\tMOVE $a" + i + ", " + currParam.accept(this));
+            // }
         }
+
+
+
         writer.print("\n");
         writer.print("\tjal " + fce.ident);
 
-        return null;
+        return Register.v0;
 	}
 
-    @Override
-    public Register visitExprStmt(ExprStmt es) {
-		return es.expr.accept(this);
-    }
-    @Override
-	public Register visitBlock(Block b) {
-        for (Stmt stmt: b.stmts) {
-            stmt.accept(this);
-        }
-        return null;
-    }
+    
+    
 
 
 
@@ -618,13 +755,13 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     @Override
     public Register visitVarDecl(VarDecl vd) {
-        // TODO: to complete
         return null;
     }
 
     @Override
-    public Register visitVarExpr(VarExpr v) {   
-        return varMappings.get(v.ident);
+    public Register visitVarExpr(VarExpr v) {
+        Register output = varMappings.get(v.ident);
+        return output;
     }
 
     /* ******************* */
