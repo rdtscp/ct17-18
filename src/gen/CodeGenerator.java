@@ -42,8 +42,9 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     // Used so that it is easy to see how much memory a structType will use.
     private HashMap<String, StructTypeDecl> structTypeDecls = new HashMap<String, StructTypeDecl>();
-    
-    private 
+
+    // Track Global variables.
+    private ArrayList<String> globalVars = new ArrayList<String>();
 
     // Track String literals.
     private int strNum = 0;
@@ -76,6 +77,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
         // Allocate memory on the heap for global variables.
         for (VarDecl vd: p.varDecls) {
             writer.print("\n" + vd.ident + ":\t.space " + vd.num_bytes);
+            globalVars.add(vd.ident);
         }
 
         /* Create functions for printing, and a jump to main to start execution. */
@@ -126,9 +128,14 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     @Override
 	public Register visitAssign(Assign a) {
-        Register lhs = a.expr1.accept(this);
-        Register rhs = a.expr1.accept(this);
-        writer.print("\n\tMOVE " + lhs + ", " + rhs);
+        if (a.expr1 instanceof VarExpr) {
+            VarExpr lhsVar = (VarExpr)a.expr1;
+            // @TODO First check the Stacks scope.
+            if (globalVars.contains(lhsVar.ident)) {
+                Register rhs = a.expr2.accept(this);
+                writer.print("\n\tSW " + rhs + ", " + lhsVar.ident);
+            }
+        }
         return null;
     }
 
@@ -478,6 +485,12 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     @Override
     public Register visitVarExpr(VarExpr v) {
+        // @TODO First check Stack scope.
+        if (globalVars.contains(v.ident)) {
+            Register output = getRegister();
+            writer.print("\n\tLW " + output + ", " + v.ident);
+            return output;
+        }
         return null;
     }
 
