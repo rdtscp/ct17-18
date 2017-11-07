@@ -134,6 +134,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
             if (globalVars.contains(lhsVar.ident)) {
                 Register rhs = a.expr2.accept(this);
                 writer.print("\n\tSW " + rhs + ", " + lhsVar.ident);
+                freeRegister(rhs);
             }
         }
         return null;
@@ -168,7 +169,9 @@ public class CodeGenerator implements ASTVisitor<Register> {
 	public Register visitReturn(Return r) {
         if (r.expr != null) {
             Register output = r.expr.accept(this);
-            return output;
+            writer.print("\n\tMOVE $v0, " + output);
+            freeRegister(output);
+            return Register.v0;
         }
 		return null;
     }
@@ -328,6 +331,8 @@ public class CodeGenerator implements ASTVisitor<Register> {
             else {
                 Register operand1 = bo.expr1.accept(this);
                 Register operand2 = bo.expr2.accept(this);
+                // Want to know is op1 >= op2
+
                 writer.print("\n\tSLT " + output + ", " + operand2 + ", " + operand1);
                 freeRegister(operand1);
                 freeRegister(operand2);
@@ -358,7 +363,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 ChrLiteral const16_1 = (ChrLiteral)bo.expr1;
                 ChrLiteral const16_2 = (ChrLiteral)bo.expr2;
                 int result;
-                if (const16_1.val != const16_2.val) result = 1; else result = 0;  
+                if (!const16_1.val.equals(const16_2.val)) result = 1; else result = 0;  
                 writer.print("\n\tLI " + output + ", " + result);
                 return output;
             }
@@ -370,13 +375,19 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 writer.print("\n\tLI " + output + ", " + result);
                 return output;
             }
-            // @TODO
             else {
                 Register operand1 = bo.expr1.accept(this);
                 Register operand2 = bo.expr2.accept(this);
-                writer.print("\n\tSLT " + output + ", " + operand2 + ", " + operand1);
+                
+                Register valOne = getRegister();
+                writer.print("\n\tLI " + valOne + ", 1");
+
+                writer.print("\n\tSUB " + operand1 + ", " + operand1 + ", " + operand2);
+                writer.print("\n\tMOVZ " + output + ", $zero " + operand1);
+                writer.print("\n\tMOVN " + output + ", " + valOne + ", " + output);
                 freeRegister(operand1);
                 freeRegister(operand2);
+                freeRegister(valOne);
                 return output;
             }
         }
@@ -385,7 +396,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 ChrLiteral const16_1 = (ChrLiteral)bo.expr1;
                 ChrLiteral const16_2 = (ChrLiteral)bo.expr2;
                 int result;
-                if (const16_1.val == const16_2.val) result = 1; else result = 0;  
+                if (const16_1.val.equals(const16_2.val)) result = 1; else result = 0;  
                 writer.print("\n\tLI " + output + ", " + result);
                 return output;
             }
@@ -397,13 +408,19 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 writer.print("\n\tLI " + output + ", " + result);
                 return output;
             }
-            // @TODO
             else {
                 Register operand1 = bo.expr1.accept(this);
                 Register operand2 = bo.expr2.accept(this);
-                writer.print("\n\tSLT " + output + ", " + operand2 + ", " + operand1);
+                Register valOne = getRegister();
+                writer.print("\n\tLI " + valOne + ", 1");
+
+                writer.print("\n\tSUB " + operand1 + ", " + operand1 + ", " + operand2);
+                writer.print("\n\tMOVN " + output + ",$zero , " + operand1);
+                writer.print("\n\tMOVZ " + output + ", " + valOne + ", " + operand1);
+                
                 freeRegister(operand1);
                 freeRegister(operand2);
+                freeRegister(valOne);
                 return output;
             }
         }
