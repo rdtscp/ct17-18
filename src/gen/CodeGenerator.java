@@ -43,7 +43,11 @@ public class CodeGenerator implements ASTVisitor<Register> {
     // Used so that it is easy to see how much memory a structType will use.
     private HashMap<String, StructTypeDecl> structTypeDecls = new HashMap<String, StructTypeDecl>();
     private int strNum = 0;             // Tracks StrLiteral's so they can be declared unique.
+    
+    // To track current function.
     private FunDecl currFunDecl;
+    private int currWhile = 0;
+    private int currIf    = 0;
     
     private PrintWriter writer; // use this writer to output the assembly instructions
 
@@ -130,7 +134,20 @@ public class CodeGenerator implements ASTVisitor<Register> {
     @Override
 	public Register visitIf(If i) {
         Register condition = i.expr.accept(this);
-        writer.print("\n\t" + currFunDecl.name + "_if_");
+        String ifName = currFunDecl.name + "_if" + currIf;
+        currIf++;
+        writer.print("\n\tBNEZ " + condition + ", " + ifName + "_t");
+        writer.print("\n\tBEQZ " + condition + ", " + ifName + "_f");
+        writer.print("\n" + ifName + "_t:");
+        i.stmt1.accept(this);
+        writer.print("\n\tJ " + ifName + "_cont");
+        writer.print("\n" + ifName + "_f:");
+        if (i.stmt2 != null) {
+            i.stmt2.accept(this);
+            writer.print("\n\tJ " + ifName + "_cont");
+        }
+        writer.print("\n" + ifName + "_cont:");
+        
 		return null;
 	}
 
@@ -349,7 +366,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 ChrLiteral const16_1 = (ChrLiteral)bo.expr1;
                 ChrLiteral const16_2 = (ChrLiteral)bo.expr2;
                 int result;
-                if (const16_1.val != const16_2.val) result = 1; else result = 0;  
+                if (const16_1.val == const16_2.val) result = 1; else result = 0;  
                 writer.print("\n\tLI " + output + ", " + result);
                 return output;
             }
@@ -357,7 +374,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 IntLiteral const16_1 = (IntLiteral)bo.expr1;
                 IntLiteral const16_2 = (IntLiteral)bo.expr2;
                 int result;
-                if (const16_1.val != const16_2.val) result = 1; else result = 0;  
+                if (const16_1.val == const16_2.val) result = 1; else result = 0;  
                 writer.print("\n\tLI " + output + ", " + result);
                 return output;
             }
