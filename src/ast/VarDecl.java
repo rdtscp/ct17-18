@@ -6,11 +6,12 @@ public class VarDecl implements ASTNode {
     public int num_bytes;
     public FunDecl parentFunc;
     public int fpOffset;
+    public int spOffset;
 
     public VarDecl(Type type, String ident) {
 	    this.type       = type;
         this.ident      = ident;
-        this.fpOffset   = -1; // Not a param by default.
+        this.fpOffset   = 0;
     }
 
     public <T> T accept(ASTVisitor<T> v) {
