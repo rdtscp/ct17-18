@@ -171,7 +171,7 @@ void selectmove(int player) {
   while(selected) {
     print_s((char*)"Player ");print_i(player);print_s((char*)" select move (e.g. a2)>");
     row = read_c(); col = read_i();
-    read_c(); // consume enter
+
     mark = get_mark(player);
     success = set(row,col,mark);
       if (success == 0) {
@@ -255,6 +255,7 @@ int won(char mark) {
 void main() {
   int playing; int player;
   char mark; char yesno;
+
   empty = ' ';
   playing = 1;
   reset();
@@ -279,12 +280,10 @@ void main() {
       yesno = read_c();
       if (yesno == 'y') {
         playing = 1;
-	read_c(); // consume enter
 	reset();
       } else {
         if (yesno == 'Y') {
 	  playing = 1;
-	  read_c(); // consume enter
 	  reset();
 	}
       }
