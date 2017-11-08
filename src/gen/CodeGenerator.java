@@ -38,23 +38,24 @@ public class CodeGenerator implements ASTVisitor<Register> {
     private void freeRegister(Register reg) {
         freeRegs.push(reg);
     }
+    
+    private PrintWriter writer; // use this writer to output the assembly instructions
 
 
     // Used so that it is easy to see how much memory a structType will use.
     private HashMap<String, StructTypeDecl> structTypeDecls = new HashMap<String, StructTypeDecl>();
-
+    
     // Track Global variables.
     private ArrayList<String> globalVars = new ArrayList<String>();
 
     // Track String literals.
     private int strNum = 0;
+
+    // Track the Call Stack
+    private Stack<VarDecl> callStack = new Stack<VarDecl>();
     
     // To track current function.
     private FunDecl currFunDecl;
-    private int currWhile = 0;
-    private int currIf    = 0;
-    
-    private PrintWriter writer; // use this writer to output the assembly instructions
 
 
     public void emitProgram(Program program, File outputFile) throws FileNotFoundException {
@@ -83,7 +84,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
         /* Create functions for printing, and a jump to main to start execution. */
         writer.print("\n\n\t\t.text");
         writer.print("\nj main");
-        writer.print("\n\nprint_i:\n\tADDI $sp, $sp, 4\n\tli\t$v0, 1\t# Print int cmd code.\n\tsyscall\t\t# Print int now.\n\tADDI $sp, $sp, 4\n\tjr $ra\t\t# Return to caller.");
+        writer.print("\n\nprint_i:\n\tli\t$v0, 1\t# Print int cmd code.\n\tsyscall\t\t# Print int now.\n\tjr $ra\t\t# Return to caller.");
         writer.print("\n\nprint_s:\n\tli\t$v0, 4\n\tsyscall\n\tADD $sp, $sp, 4\n\tjr $ra");
         writer.print("\n\nprint_c:\n\tli\t$v0, 11\n\tsyscall\n\tjr $ra");
         
@@ -110,6 +111,10 @@ public class CodeGenerator implements ASTVisitor<Register> {
         currFunDecl = fd;
         // Declare this function.
         writer.print("\n\n" + fd.name + ":");
+        // Store the return address on the stack.
+        writer.print("\n\tADDI $sp, $sp, -4");
+        writer.print("\n\tSW $ra, ($sp)");
+        // Generate this functions code.
         fd.block.accept(this);
         currFunDecl = null;
         return null;
@@ -119,6 +124,15 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     @Override
 	public Register visitBlock(Block b) {
+        // Allocate space on stack for the local variables.
+        for (VarDecl vd: b.varDecls) {
+            // Get the number of bytes to allocate this variable.
+            int num_bytes_alloc = vd.num_bytes;
+            // Move down the stack by specified number of bytes.
+            writer.print("\n\tADDI $sp, $sp, -" + num_bytes_alloc + "\t# Allocating: " + vd.ident + " " + num_bytes_alloc + "Bytes.");     System.out.println("Allocating Var: " + vd.ident + " " + num_bytes_alloc + "B on the stack.");
+            // Push this VarDecl onto our CallStack tracker.
+            callStack.push(vd);
+        }
         // Generate code for all of this block.
         for (Stmt s: b.stmts) {
             s.accept(this);
@@ -129,11 +143,35 @@ public class CodeGenerator implements ASTVisitor<Register> {
     @Override
 	public Register visitAssign(Assign a) {
         if (a.expr1 instanceof VarExpr) {
-            VarExpr lhsVar = (VarExpr)a.expr1;
-            // @TODO First check the Stacks scope.
-            if (globalVars.contains(lhsVar.ident)) {
+
+            VarDecl lhsVd    = ((VarExpr)a.expr1).vd;
+            VarDecl stackVar = null;
+            /* Get the offset into the stack for this variable. */
+            // First reverse the Stack.
+            Stack<VarDecl> iterableCallStack = (Stack<VarDecl>)callStack.clone();
+            Collections.reverse(iterableCallStack);
+
+            // Traversing from bottom of stack upwards.
+            int sp_offset = 0;
+            for (VarDecl vd: iterableCallStack) {
+                // If this VarDecl exists on the stack, under this function name.
+                if (vd.ident.equals(lhsVd.ident) && vd.parentFunc.name.equals(currFunDecl.name)) {
+                    stackVar = vd;
+                    break;
+                }
+                else {
+                    sp_offset += vd.num_bytes;
+                }
+            }
+            // If this var exists on the stack.
+            if (stackVar != null) {
                 Register rhs = a.expr2.accept(this);
-                writer.print("\n\tSW " + rhs + ", " + lhsVar.ident);
+                writer.print("\n\tSW " + rhs + ", " + sp_offset + "($sp)");
+                freeRegister(rhs);
+            }
+            else {
+                Register rhs = a.expr2.accept(this);
+                writer.print("\n\tSW " + rhs + ", " + lhsVd.ident);
                 freeRegister(rhs);
             }
         }
@@ -148,8 +186,8 @@ public class CodeGenerator implements ASTVisitor<Register> {
     @Override
 	public Register visitIf(If i) {
         Register condition = i.expr.accept(this);
-        String ifName = currFunDecl.name + "_if" + currIf;
-        currIf++;
+        String ifName = currFunDecl.name + "_if" + currFunDecl.currIf;
+        currFunDecl.currIf++;
         writer.print("\n\tBNEZ " + condition + ", " + ifName + "_t");
         writer.print("\n\tBEQZ " + condition + ", " + ifName + "_f");
         writer.print("\n" + ifName + "_t:");
@@ -179,10 +217,10 @@ public class CodeGenerator implements ASTVisitor<Register> {
     @Override
 	public Register visitWhile(While w) {
         Register condition = w.expr.accept(this);
-        String whileName = currFunDecl.name + "_while" + currWhile;
+        String whileName = currFunDecl.name + "_while" + currFunDecl.currWhile;
         writer.print("\n\tBNEZ " + condition + ", " + whileName + "_t");
         writer.print("\n\tBEQZ " + condition + ", " + whileName + "_f");
-        currWhile++;
+        currFunDecl.currWhile++;
         writer.print("\n" + whileName + "_t:");
         w.stmt.accept(this);
         condition = w.expr.accept(this);
@@ -471,9 +509,15 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     @Override
     public Register visitFunCallExpr(FunCallExpr fce) {
+
         // @TEMP Will handle only the print functions.
-        writer.print("\n\tMOVE $a0, " + fce.exprs.get(0).accept(this));
-        writer.print("\n\tjal " + fce.ident);
+        if (fce.exprs.size() > 0) {
+            writer.print("\n\tMOVE $a0, " + fce.exprs.get(0).accept(this));
+            writer.print("\n\tjal " + fce.ident);
+        }
+        else {
+            writer.print("\n\tjal " + fce.ident);
+        }
         return Register.v0;
 	}
 
@@ -503,19 +547,34 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     @Override
     public Register visitVarExpr(VarExpr v) {
-        // @TODO First check Stack scope.
-        if (globalVars.contains(v.ident)) {
+        Stack<VarDecl> iterableCallStack = (Stack<VarDecl>)callStack.clone();
+        Collections.reverse(iterableCallStack);
+        VarDecl stackVar = null;
+
+        // Traversing from bottom of stack upwards.
+        int sp_offset = 0;
+        for (VarDecl vd: iterableCallStack) {
+            // If this VarDecl exists on the stack, under this function name.
+            if (vd.ident.equals(v.ident) && vd.parentFunc.name.equals(currFunDecl.name)) {
+                stackVar = vd;
+                break;
+            }
+            else {
+                sp_offset += vd.num_bytes;
+            }
+        }
+        // If this var exists on the stack.
+        if (stackVar != null) {
+            Register output = getRegister();
+            writer.print("\n\tLW " + output + ", " + sp_offset + "($sp)");
+            return output;
+        }
+        else {
             Register output = getRegister();
             writer.print("\n\tLW " + output + ", " + v.ident);
             return output;
         }
-        return null;
     }
-
-
-
-
-
     
     
     
@@ -532,7 +591,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
     public Register visitStructTypeDecl(StructTypeDecl st) {
         return null;
     }
-
 
     @Override
     public Register visitVarDecl(VarDecl vd) {
@@ -553,7 +611,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
     public Register visitTypecastExpr(TypecastExpr te) {
 		return null;
 	}
-	
+
 	@Override
     public Register visitValueAtExpr(ValueAtExpr vae) {
 		return null;
@@ -562,7 +620,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
     @Override
     public Register visitSizeOfExpr(SizeOfExpr soe) {
         return null;
-    }    
+    }
 
     @Override
     public Register visitBaseType(BaseType bt) {
