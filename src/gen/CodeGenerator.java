@@ -87,26 +87,23 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
         // print_i()
         writer.print("\n\nprint_i:");
-        writer.print("\n\tLW $a0, ($sp)");
+        writer.print("\n\tLW $a0, ($fp)");
         writer.print("\n\tli\t$v0, 1\t# Print int cmd code.");
         writer.print("\n\tsyscall\t\t# Print int now.");
-        writer.print("\n\tADDI $sp, $sp, 4");
         writer.print("\n\tjr $ra\t\t# Return to caller.");
 
         // print_c()
         writer.print("\n\nprint_c:");
-        writer.print("\n\tLW $a0, ($sp)");
+        writer.print("\n\tLW $a0, ($fp)");
         writer.print("\n\tli\t$v0, 11\t# Print char cmd code.");
         writer.print("\n\tsyscall\t\t# Print char now.");
-        writer.print("\n\tADDI $sp, $sp, 4");
         writer.print("\n\tjr $ra\t\t# Return to caller.");
 
         // print_s()
         writer.print("\n\nprint_s:");
-        writer.print("\n\tLW $a0, ($sp)");
+        writer.print("\n\tLW $a0, ($fp)");
         writer.print("\n\tli\t$v0, 4\t# Print str cmd code.");
         writer.print("\n\tsyscall\t\t# Print str now.");
-        writer.print("\n\tADDI $sp, $sp, 4");
         writer.print("\n\tjr $ra\t\t# Return to caller.");
         
         // Find the main function first, and declare it.
@@ -129,6 +126,12 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     @Override
     public Register visitFunDecl(FunDecl fd) {
+        System.out.println(" ///--- GENERATING CODE FOR " + fd.name + " --- \\\\\\");
+        System.out.println("Call Stack for: " + fd.name + " on ENTER {");
+        for (VarDecl vd: callStack) {
+            System.out.println("\t - Variable: " + vd.ident + " With Parent: " + vd.parentFunc.name);
+        }
+        System.out.println("}");
         currFunDecl = fd;
         // Declare this function.
         writer.print("\n\n" + fd.name + ":");
@@ -139,7 +142,14 @@ public class CodeGenerator implements ASTVisitor<Register> {
         }
         // Generate this functions code.
         fd.block.accept(this);
-        System.out.println("FunDecl: " + fd.name + " used " + fd.stackUsage + "B on Stack.");
+
+        System.out.println("Call Stack for: " + fd.name + " on EXIT {");
+        for (VarDecl vd: callStack) {
+            System.out.println("\t - Variable: " + vd.ident + " With Parent: " + vd.parentFunc.name);
+        }
+        System.out.println("}");
+        
+        //System.out.println("FunDecl: " + fd.name + " used " + fd.stackUsage + "B on Stack.");
         if (!fd.name.equals("main")) {
             // Clear the stack, and retrieve the return address.
             writer.print("\n\tADDI $sp, $sp, " + fd.stackUsage + "\t# Move up the stack past all the params.");
@@ -160,7 +170,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
             // Get the number of bytes to allocate this variable.
             int num_bytes_alloc = vd.num_bytes;
             // Move down the stack by specified number of bytes.
-            writer.print("\n\tADDI $sp, $sp, -" + num_bytes_alloc + "\t# Allocating: " + vd.ident + " " + num_bytes_alloc + "Bytes.");     System.out.println("Allocating Var: " + vd.ident + " " + num_bytes_alloc + "B on the stack.");
+            writer.print("\n\tADDI $sp, $sp, -" + num_bytes_alloc + "\t# Allocating: " + vd.ident + " " + num_bytes_alloc + "Bytes.");     System.out.println("  - Allocating Var: " + vd.ident + " " + num_bytes_alloc + "B on the stack.");
             // Push this VarDecl onto our CallStack tracker, and increment this func's stack usage.
             currFunDecl.stackUsage += num_bytes_alloc;
             callStack.push(vd);
@@ -543,33 +553,46 @@ public class CodeGenerator implements ASTVisitor<Register> {
     public Register visitFunCallExpr(FunCallExpr fce) {
         // Swap out the current FunDecl so that the parameters
         // are declared within the callee's scope.
-        FunDecl temp = currFunDecl;
-        currFunDecl = fce.fd;
-        // Get a register for each param and push it onto the stack.
-        for (Expr param: fce.exprs) {
-            Register paramReg = param.accept(this);
+        FunDecl running = currFunDecl;
+        FunDecl calling = fce.fd;
+        currFunDecl = calling;
+        
+        int stackUsage = 0;
+        
+        
+        // Get the register for each param, and save the register to the stack. Push the VarDecl onto CallStack.
+        int num_params = fce.fd.params.size();
+        for (int i = (num_params - 1); i >= 0; i--) {
+            VarDecl vd = fce.fd.params.get(i);
+            currFunDecl = running;
+            Register paramReg = fce.exprs.get(i).accept(this);
+            currFunDecl = calling;
             writer.print("\n\tADDI $sp, $sp, -4");
             writer.print("\n\tSW " + paramReg + ", ($sp)");
+            vd.parentFunc = currFunDecl;
+            vd.fpOffset = i * 4;
+            stackUsage += 4;
+            callStack.push(vd);
         }
+
+        // Push current FP to stack.
+        Register temp = getRegister();
+        writer.print("\n\tMOVE " + temp + ", $sp");
+        writer.print("\n\tADDI $sp, $sp, -4");
+        writer.print("\n\tSW $fp ($sp)");
+        writer.print("\n\tMOVE $fp, " + temp);
+        freeRegister(temp);
+
         // Jump to function.
         writer.print("\n\tJAL " + fce.ident);
 
+        // Re-instate $fp & $sp
+        writer.print("\n\tLW $fp, ($sp)");
+        writer.print("\n\tADDI $sp, $sp, 4");
         // Clean up stack usage.
-        // if (fce.ident.equals("print_i") || fce.ident.equals("print_c") || fce.ident.equals("print_s")) {
-        //     writer.print("\n\tADDI $sp, $sp, 4")
-        // }
-        if (fce.exprs.size() > 0) {
-            int bytes_to_clear = 0;
-            for (VarDecl vd: callStack) {
-                if (vd.parentFunc.name.equals(fce.fd.name)) {
-                    bytes_to_clear += vd.num_bytes;
-                }
-            }
-            writer.print("\n\tADDI $sp, $sp, " + bytes_to_clear + "\t# Clear up params on Stack.");
-        }
-
+        writer.print("\n\tADDI $sp, $sp, " + stackUsage + "\t# Clear up params on Stack.");
         // Return the current function back to one we are currently in.
-        currFunDecl = temp;
+        currFunDecl = running;
         return Register.v0;
 	}
 
@@ -605,7 +628,10 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
         // Traversing from bottom of stack upwards.
         int sp_offset = 0;
+        System.out.println(" --- In func[" + currFunDecl.name + "] looking for var[" + v.ident + "]");
+        System.out.println("\t * Looking to see if referenced VarExpr exists in stack.");
         for (VarDecl vd: iterableCallStack) {
+            System.out.println("\t\t - : " + vd.ident + " < " + vd.parentFunc.name);
             // If this VarDecl exists on the stack, under this function name.
             if (vd.ident.equals(v.ident) && vd.parentFunc.name.equals(currFunDecl.name)) {
                 stackVar = vd;
@@ -617,11 +643,14 @@ public class CodeGenerator implements ASTVisitor<Register> {
         }
         // If this var exists on the stack.
         if (stackVar != null) {
+            System.out.println("\t :: Did exist on stack");
             Register output = getRegister();
-            writer.print("\n\tLW " + output + ", " + sp_offset + "($sp)");
+            if (stackVar.fpOffset >= 0) writer.print("\n\tLW " + output + ", " + stackVar.fpOffset + "($fp)");
+            else writer.print("\n\tLW " + output + ", " + sp_offset + "($sp)");            
             return output;
         }
         else {
+            System.out.println("\t :: Did NOT exist on stack");
             Register output = getRegister();
             writer.print("\n\tLW " + output + ", " + v.ident);
             return output;
