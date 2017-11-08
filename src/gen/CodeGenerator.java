@@ -112,10 +112,19 @@ public class CodeGenerator implements ASTVisitor<Register> {
         // Declare this function.
         writer.print("\n\n" + fd.name + ":");
         // Store the return address on the stack.
-        writer.print("\n\tADDI $sp, $sp, -4");
-        writer.print("\n\tSW $ra, ($sp)");
+        if (!fd.name.equals("main")) {
+            writer.print("\n\tADDI $sp, $sp, -4");
+            writer.print("\n\tSW $ra, ($sp)");
+        }
         // Generate this functions code.
         fd.block.accept(this);
+        System.out.println("FunDecl: " + fd.name + " used " + fd.stackUsage + "B on Stack.");
+        if (!fd.name.equals("main")) {
+            // Clear the stack, and retrieve the return address.
+            writer.print("\n\tADDI $sp, $sp, " + fd.stackUsage);
+            writer.print("\n\tLW $ra, ($sp)");
+            writer.print("\n\tJR $ra");
+        }
         currFunDecl = null;
         return null;
     }
@@ -130,7 +139,8 @@ public class CodeGenerator implements ASTVisitor<Register> {
             int num_bytes_alloc = vd.num_bytes;
             // Move down the stack by specified number of bytes.
             writer.print("\n\tADDI $sp, $sp, -" + num_bytes_alloc + "\t# Allocating: " + vd.ident + " " + num_bytes_alloc + "Bytes.");     System.out.println("Allocating Var: " + vd.ident + " " + num_bytes_alloc + "B on the stack.");
-            // Push this VarDecl onto our CallStack tracker.
+            // Push this VarDecl onto our CallStack tracker, and increment this func's stack usage.
+            currFunDecl.stackUsage += num_bytes_alloc;
             callStack.push(vd);
         }
         // Generate code for all of this block.
