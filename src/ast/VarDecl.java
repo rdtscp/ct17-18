@@ -4,6 +4,7 @@ public class VarDecl implements ASTNode {
     public final Type type;
     public final String ident;
     public int num_bytes;
+    public FunDecl parentFunc;
 
     public VarDecl(Type type, String ident) {
 	    this.type  = type;
