@@ -332,8 +332,8 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 Register operand1 = bo.expr1.accept(this);
                 Register operand2 = bo.expr2.accept(this);
                 // Want to know is op1 >= op2
-
-                writer.print("\n\tSLT " + output + ", " + operand2 + ", " + operand1);
+                writer.print("\n\tSLT " + output + ", " + operand1 + ", " + operand2);
+                writer.print("\n\tNOT " + output + ", " + output);
                 freeRegister(operand1);
                 freeRegister(operand2);
                 return output;
@@ -352,7 +352,8 @@ public class CodeGenerator implements ASTVisitor<Register> {
             else {
                 Register operand1 = bo.expr1.accept(this);
                 Register operand2 = bo.expr2.accept(this);
-                writer.print("\n\tSLT " + output + ", " + operand1 + ", " + operand2);
+                writer.print("\n\tSLT " + output + ", " + operand2 + ", " + operand1);
+                writer.print("\n\tNOT " + output + ", " + output);
                 freeRegister(operand1);
                 freeRegister(operand2);
                 return output;
