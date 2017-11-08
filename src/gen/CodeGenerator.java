@@ -84,9 +84,30 @@ public class CodeGenerator implements ASTVisitor<Register> {
         /* Create functions for printing, and a jump to main to start execution. */
         writer.print("\n\n\t\t.text");
         writer.print("\nj main");
-        writer.print("\n\nprint_i:\n\tli\t$v0, 1\t# Print int cmd code.\n\tsyscall\t\t# Print int now.\n\tjr $ra\t\t# Return to caller.");
-        writer.print("\n\nprint_s:\n\tli\t$v0, 4\n\tsyscall\n\tADD $sp, $sp, 4\n\tjr $ra");
-        writer.print("\n\nprint_c:\n\tli\t$v0, 11\n\tsyscall\n\tjr $ra");
+
+        // print_i()
+        writer.print("\n\nprint_i:");
+        writer.print("\n\tLW $a0, ($sp)");
+        writer.print("\n\tli\t$v0, 1\t# Print int cmd code.");
+        writer.print("\n\tsyscall\t\t# Print int now.");
+        writer.print("\n\tADDI $sp, $sp, 4");
+        writer.print("\n\tjr $ra\t\t# Return to caller.");
+
+        // print_c()
+        writer.print("\n\nprint_c:");
+        writer.print("\n\tLW $a0, ($sp)");
+        writer.print("\n\tli\t$v0, 11\t# Print char cmd code.");
+        writer.print("\n\tsyscall\t\t# Print char now.");
+        writer.print("\n\tADDI $sp, $sp, 4");
+        writer.print("\n\tjr $ra\t\t# Return to caller.");
+
+        // print_s()
+        writer.print("\n\nprint_s:");
+        writer.print("\n\tLW $a0, ($sp)");
+        writer.print("\n\tli\t$v0, 4\t# Print str cmd code.");
+        writer.print("\n\tsyscall\t\t# Print str now.");
+        writer.print("\n\tADDI $sp, $sp, 4");
+        writer.print("\n\tjr $ra\t\t# Return to caller.");
         
         // Find the main function first, and declare it.
         for (FunDecl funDecl: p.funDecls) {
@@ -121,8 +142,9 @@ public class CodeGenerator implements ASTVisitor<Register> {
         System.out.println("FunDecl: " + fd.name + " used " + fd.stackUsage + "B on Stack.");
         if (!fd.name.equals("main")) {
             // Clear the stack, and retrieve the return address.
-            writer.print("\n\tADDI $sp, $sp, " + fd.stackUsage);
+            writer.print("\n\tADDI $sp, $sp, " + fd.stackUsage + "\t# Move up the stack past all the params.");
             writer.print("\n\tLW $ra, ($sp)");
+            writer.print("\n\tADDI $sp, $sp, 4\t# Consumed the last $ra");
             writer.print("\n\tJR $ra");
         }
         currFunDecl = null;
@@ -519,15 +541,35 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     @Override
     public Register visitFunCallExpr(FunCallExpr fce) {
+        // Swap out the current FunDecl so that the parameters
+        // are declared within the callee's scope.
+        FunDecl temp = currFunDecl;
+        currFunDecl = fce.fd;
+        // Get a register for each param and push it onto the stack.
+        for (Expr param: fce.exprs) {
+            Register paramReg = param.accept(this);
+            writer.print("\n\tADDI $sp, $sp, -4");
+            writer.print("\n\tSW " + paramReg + ", ($sp)");
+        }
+        // Jump to function.
+        writer.print("\n\tJAL " + fce.ident);
 
-        // @TEMP Will handle only the print functions.
+        // Clean up stack usage.
+        // if (fce.ident.equals("print_i") || fce.ident.equals("print_c") || fce.ident.equals("print_s")) {
+        //     writer.print("\n\tADDI $sp, $sp, 4")
+        // }
         if (fce.exprs.size() > 0) {
-            writer.print("\n\tMOVE $a0, " + fce.exprs.get(0).accept(this));
-            writer.print("\n\tjal " + fce.ident);
+            int bytes_to_clear = 0;
+            for (VarDecl vd: callStack) {
+                if (vd.parentFunc.name.equals(fce.fd.name)) {
+                    bytes_to_clear += vd.num_bytes;
+                }
+            }
+            writer.print("\n\tADDI $sp, $sp, " + bytes_to_clear + "\t# Clear up params on Stack.");
         }
-        else {
-            writer.print("\n\tjal " + fce.ident);
-        }
+
+        // Return the current function back to one we are currently in.
+        currFunDecl = temp;
         return Register.v0;
 	}
 
