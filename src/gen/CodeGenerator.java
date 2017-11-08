@@ -45,18 +45,16 @@ public class CodeGenerator implements ASTVisitor<Register> {
     // Used so that it is easy to see how much memory a structType will use.
     private HashMap<String, StructTypeDecl> structTypeDecls = new HashMap<String, StructTypeDecl>();
     
-    // Track Global variables.
-    private ArrayList<String> globalVars = new ArrayList<String>();
+    // Track Variables stored on Stack & Heap.
+    private ArrayList<String> heapAllocs = new ArrayList<String>();
+    private ArrayList<VarDecl> stackAllocs = new ArrayList<VarDecl>();
 
     // Track String literals.
     private int strNum = 0;
 
-    // Track the Call Stack
-    private Stack<VarDecl> callStack = new Stack<VarDecl>();
-    
     // To track current function.
     private FunDecl currFunDecl;
-
+    private int fpOffset = -4;
 
     public void emitProgram(Program program, File outputFile) throws FileNotFoundException {
         writer = new PrintWriter(outputFile);
@@ -78,7 +76,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
         // Allocate memory on the heap for global variables.
         for (VarDecl vd: p.varDecls) {
             writer.print("\n" + vd.ident + ":\t.space " + vd.num_bytes);
-            globalVars.add(vd.ident);
+            heapAllocs.add(vd.ident);
         }
 
         /* Create functions for printing, and a jump to main to start execution. */
@@ -126,12 +124,12 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     @Override
     public Register visitFunDecl(FunDecl fd) {
-        System.out.println(" ///--- GENERATING CODE FOR " + fd.name + " --- \\\\\\");
-        System.out.println("Call Stack for: " + fd.name + " on ENTER {");
-        for (VarDecl vd: callStack) {
-            System.out.println("\t - Variable: " + vd.ident + " With Parent: " + vd.parentFunc.name);
+        // Add the parameters of this function to the StackAllocs.
+        for (VarDecl vd: fd.params) {
+            // Tie the VarDecl to the FunDecl. Don't increment stack usage for params as caller handles params.
+            vd.parentFunc = fd;
+            stackAllocs.add(vd);
         }
-        System.out.println("}");
         currFunDecl = fd;
         // Declare this function.
         writer.print("\n\n" + fd.name + ":");
@@ -142,14 +140,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
         }
         // Generate this functions code.
         fd.block.accept(this);
-
-        System.out.println("Call Stack for: " + fd.name + " on EXIT {");
-        for (VarDecl vd: callStack) {
-            System.out.println("\t - Variable: " + vd.ident + " With Parent: " + vd.parentFunc.name);
-        }
-        System.out.println("}");
         
-        //System.out.println("FunDecl: " + fd.name + " used " + fd.stackUsage + "B on Stack.");
         if (!fd.name.equals("main")) {
             // Clear the stack, and retrieve the return address.
             writer.print("\n\tADDI $sp, $sp, " + fd.stackUsage + "\t# Move up the stack past all the params.");
@@ -157,7 +148,9 @@ public class CodeGenerator implements ASTVisitor<Register> {
             writer.print("\n\tADDI $sp, $sp, 4\t# Consumed the last $ra");
             writer.print("\n\tJR $ra");
         }
+        // Reset the current FunDecl and $sp Offset for variables.
         currFunDecl = null;
+        fpOffset = -4;
         return null;
     }
 
@@ -167,13 +160,15 @@ public class CodeGenerator implements ASTVisitor<Register> {
 	public Register visitBlock(Block b) {
         // Allocate space on stack for the local variables.
         for (VarDecl vd: b.varDecls) {
-            // Get the number of bytes to allocate this variable.
-            int num_bytes_alloc = vd.num_bytes;
             // Move down the stack by specified number of bytes.
-            writer.print("\n\tADDI $sp, $sp, -" + num_bytes_alloc + "\t# Allocating: " + vd.ident + " " + num_bytes_alloc + "Bytes.");     System.out.println("  - Allocating Var: " + vd.ident + " " + num_bytes_alloc + "B on the stack.");
+            writer.print("\n\tADDI $sp, $sp, -" + vd.num_bytes + "\t# Allocating: " + vd.ident + " " + vd.num_bytes + " Bytes.");
+            // Set the offset of this Var on stack, and decrement for the next.
+            vd.fpOffset = fpOffset;
+            fpOffset -= vd.num_bytes;
             // Push this VarDecl onto our CallStack tracker, and increment this func's stack usage.
-            currFunDecl.stackUsage += num_bytes_alloc;
-            callStack.push(vd);
+            currFunDecl.stackUsage += vd.num_bytes;
+            stackAllocs.add(vd);
+            System.out.println("visitBlock\t--- Var[" + vd.ident + "<" + currFunDecl.name + "] has fpOffset: " + vd.fpOffset);
         }
         // Generate code for all of this block.
         for (Stmt s: b.stmts) {
@@ -185,32 +180,26 @@ public class CodeGenerator implements ASTVisitor<Register> {
     @Override
 	public Register visitAssign(Assign a) {
         if (a.expr1 instanceof VarExpr) {
-
+            // Get the VarDecl for this var.
             VarDecl lhsVd    = ((VarExpr)a.expr1).vd;
-            VarDecl stackVar = null;
-            /* Get the offset into the stack for this variable. */
-            // First reverse the Stack.
-            Stack<VarDecl> iterableCallStack = (Stack<VarDecl>)callStack.clone();
-            Collections.reverse(iterableCallStack);
 
-            // Traversing from bottom of stack upwards.
-            int sp_offset = 0;
-            for (VarDecl vd: iterableCallStack) {
-                // If this VarDecl exists on the stack, under this function name.
+            /* Determine if this Var exists in stack or heap. */
+            VarDecl stackVar = null;
+            // Look through our stack allocations.
+            for (VarDecl vd: stackAllocs) {
+                // If this VarDecl exists on the stack, under this function name => save it, and stop searching.
                 if (vd.ident.equals(lhsVd.ident) && vd.parentFunc.name.equals(currFunDecl.name)) {
                     stackVar = vd;
                     break;
-                }
-                else {
-                    sp_offset += vd.num_bytes;
                 }
             }
             // If this var exists on the stack.
             if (stackVar != null) {
                 Register rhs = a.expr2.accept(this);
-                writer.print("\n\tSW " + rhs + ", " + sp_offset + "($sp)");
+                writer.print("\n\tSW " + rhs + ", " + stackVar.fpOffset + "($fp)");
                 freeRegister(rhs);
             }
+            // Else this var exists in the heap.
             else {
                 Register rhs = a.expr2.accept(this);
                 writer.print("\n\tSW " + rhs + ", " + lhsVd.ident);
@@ -556,7 +545,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
         FunDecl running = currFunDecl;
         FunDecl calling = fce.fd;
         currFunDecl = calling;
-        
         int stackUsage = 0;
         
         
@@ -569,10 +557,11 @@ public class CodeGenerator implements ASTVisitor<Register> {
             currFunDecl = calling;
             writer.print("\n\tADDI $sp, $sp, -4");
             writer.print("\n\tSW " + paramReg + ", ($sp)");
+            // Update this Stack declared Var's info.
             vd.parentFunc = currFunDecl;
             vd.fpOffset = i * 4;
+            System.out.println("visitFunCallExpr\t--- Var[" + vd.ident + "<" + currFunDecl.name + "] has fpOffset: " + vd.fpOffset);
             stackUsage += 4;
-            callStack.push(vd);
         }
 
         // Push current FP to stack.
@@ -622,31 +611,20 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     @Override
     public Register visitVarExpr(VarExpr v) {
-        Stack<VarDecl> iterableCallStack = (Stack<VarDecl>)callStack.clone();
-        Collections.reverse(iterableCallStack);
+        // Search our Stack allocated Vars for this var.
         VarDecl stackVar = null;
-
-        // Traversing from bottom of stack upwards.
-        int sp_offset = 0;
-        System.out.println(" --- In func[" + currFunDecl.name + "] looking for var[" + v.ident + "]");
-        System.out.println("\t * Looking to see if referenced VarExpr exists in stack.");
-        for (VarDecl vd: iterableCallStack) {
-            System.out.println("\t\t - : " + vd.ident + " < " + vd.parentFunc.name);
+        for (VarDecl vd: stackAllocs) {
             // If this VarDecl exists on the stack, under this function name.
             if (vd.ident.equals(v.ident) && vd.parentFunc.name.equals(currFunDecl.name)) {
+                System.out.println("visitVarExpr\t\t--- Var[" + vd.ident + "<" + currFunDecl.name + "] has fpOffset: " + vd.fpOffset);
                 stackVar = vd;
                 break;
-            }
-            else {
-                sp_offset += vd.num_bytes;
             }
         }
         // If this var exists on the stack.
         if (stackVar != null) {
-            System.out.println("\t :: Did exist on stack");
             Register output = getRegister();
-            if (stackVar.fpOffset >= 0) writer.print("\n\tLW " + output + ", " + stackVar.fpOffset + "($fp)");
-            else writer.print("\n\tLW " + output + ", " + sp_offset + "($sp)");            
+            writer.print("\n\tLW " + output + ", " + stackVar.fpOffset + "($fp)");
             return output;
         }
         else {
