@@ -327,7 +327,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 writer.print("\n\tLI " + output + ", " + result);
                 return output;
             }
-            // @TODO
             else {
                 Register operand1 = bo.expr1.accept(this);
                 Register operand2 = bo.expr2.accept(this);
@@ -348,7 +347,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 writer.print("\n\tLI " + output + ", " + result);
                 return output;
             }
-            // @TODO
             else {
                 Register operand1 = bo.expr1.accept(this);
                 Register operand2 = bo.expr2.accept(this);
@@ -452,9 +450,11 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 writer.print("\n\tLI " + output + ", " + result);
                 return output;
             }
-            // @TODO
             else {
-                return null;
+                Register operand1 = bo.expr1.accept(this);
+                Register operand2 = bo.expr2.accept(this);
+                writer.print("\n\tMUL " + output + ", " + operand1 + ", " + operand2);
+                return output;    
             }
         }
         return null;
