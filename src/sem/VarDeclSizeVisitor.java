@@ -8,6 +8,7 @@ public class VarDeclSizeVisitor extends BaseSemanticVisitor<Integer> {
 
     HashMap<String, Integer> structTypeSizes = new HashMap<String, Integer>();
     
+    FunDecl currFun;
 
 	@Override
 	public Integer visitProgram(Program p) {
@@ -28,17 +29,46 @@ public class VarDeclSizeVisitor extends BaseSemanticVisitor<Integer> {
     
     @Override
 	public Integer visitFunDecl(FunDecl fd) {
+        currFun = fd;
         for (VarDecl vd: fd.params) {
             Integer varSize = vd.accept(this);
             vd.num_bytes = varSize;
         }
+        fd.block.accept(this);
+        currFun = null;
 		return null;
 	}
 
 	@Override
 	public Integer visitVarDecl(VarDecl vd) {
-        return vd.type.accept(this);
+        vd.parentFunc = currFun;
+        Integer varSize = vd.type.accept(this);
+        while (varSize%4 != 0) varSize++;
+        return varSize;
     }
+
+    @Override
+	public Integer visitBlock(Block b) {
+        for (VarDecl vd: b.varDecls) {
+            Integer varSize = vd.accept(this);
+            vd.num_bytes = varSize;
+        }
+        for (Stmt s: b.stmts) {
+            s.accept(this);
+        }
+		return null;
+    }
+    
+    @Override
+    public Integer visitFunCallExpr(FunCallExpr fce) {
+        // FunDecl temp = currFun;
+        // currFun = fce.fd;
+        // for (Expr params: fce.exprs) {
+        //     exprs.accept(this);
+        // }
+        // currFun = temp;
+		return null;
+	}
     
     @Override
 	public Integer visitStructTypeDecl(StructTypeDecl std) {
@@ -84,24 +114,25 @@ public class VarDeclSizeVisitor extends BaseSemanticVisitor<Integer> {
 		return output;
 	}
 
+    
 
     
     
     
     
     
-	@Override
-	public Integer visitBlock(Block b) {
-		return null;
-	}
+	
 
 	@Override
 	public Integer visitWhile(While w) {
+        w.stmt.accept(this);
 		return null;
 	}
 
 	@Override
 	public Integer visitIf(If i) {
+        i.stmt1.accept(this);
+        if (i.stmt2 != null) i.stmt2.accept(this);
 		return null;
 	}
 
@@ -135,10 +166,7 @@ public class VarDeclSizeVisitor extends BaseSemanticVisitor<Integer> {
 		return null;
     }
 
-	@Override
-    public Integer visitFunCallExpr(FunCallExpr fce) {
-		return null;
-	}
+	
 	
 	@Override
     public Integer visitTypecastExpr(TypecastExpr te) {
