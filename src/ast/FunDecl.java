@@ -11,7 +11,8 @@ public class FunDecl implements ASTNode {
     public int currWhile = 0;
     public int currIf    = 0;
 
-    public int stackUsage = 0;
+    public int stackVarsUsage = 0;
+    public int stackArgsUsage = 0;
 
     public FunDecl(Type type, String name, List<VarDecl> params, Block block) {
 	    this.type = type;
