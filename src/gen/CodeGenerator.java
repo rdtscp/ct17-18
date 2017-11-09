@@ -88,18 +88,34 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
         /* Create functions for printing, and a jump to main to start execution. */
         writer.print("\n\n\t\t.text");
-        writer.print("\n\tLA $fp, 4($sp)");
-        writer.print("\n\tADDI $sp, $sp, -8");
-        writer.print("\nj main");
+        // Push current FP to stack.
+        writer.print("\n\n\t# Storing $fp on Stack and updating $fp for [main()]");
+        Register temp = getRegister();
+        writer.print("\n\tMOVE " + temp + ", $sp\t\t# Store addr[param0] i.e. next $fp");
+        writer.print("\n\tLI $fp, 1337\t\t# Fake $fp");
+        writer.print("\n\tADDI $sp, $sp, -4\t# Move down Stack.");
+        writer.print("\n\tSW $fp ($sp)\t\t#   -> Push curr $fp.");
+        writer.print("\n\tMOVE $fp, " + temp + "\t\t#   -> Curr $fp -> [param0]");
+        freeRegister(temp);
+        // Jump to main()
+        writer.print("\n\tJAL main");
+         // Write out the exit execution code.
+         writer.print("\n\tli\t$v0, 10\t\t\t# Exit cmd code.\n\tsyscall\t\t\t\t# Exit program.\n");
 
         // Print Stack
         writer.print("\nstackdump:");
-        writer.print("\n\tLW $a0, 16($sp)\n\tLI $v0, 1\n\tsyscall\n\tLI $a0, '\\n'\n\tLI $v0, 11\n\tsyscall\n\tLW $a0, 12($sp)");
-        writer.print("\n\tLI $v0, 1\n\tsyscall\n\tLI $a0, '\\n'\n\tLI $v0, 11\n\tsyscall\n\tLW $a0, 8($sp)\n\tLI $v0, 1\n\tsyscall");
-        writer.print("\n\tLI $a0, '\\n'\n\tLI $a0, '\\n'\n\tLI $v0, 11\n\tsyscall\n\tLW $a0, 4($sp)\n\tLI $v0, 1\n\tsyscall\n\tLI $a0, '\\n'");
-        writer.print("\n\tLI $v0, 11\n\tsyscall\n\tLW $a0, ($sp)\n\tLI $v0, 1\n\tsyscall\n\tLI $a0, '\\n'\n\tLI $v0, 11\n\tsyscall");
-        writer.print("\n\tLW $a0, -4($sp)\n\tLI $v0, 1\n\tsyscall\n\tLI $a0, '\\n'\n\tLI $v0, 11\n\tsyscall\n\tLI $a0, '\\n'");
+        writer.print("\n\tLI $a0, '-'\n\tLI $v0, 11\n\tsyscall\n\tLI $a0, '\\n'\n\tLI $v0, 11\n\tsyscall");
+        writer.print("\n\tLW $a0, ($fp)\n\tLI $v0, 1\n\tsyscall\n\tLI $a0, '\\n'\n\tLI $v0, 11\n\tsyscall\n\tLW $a0, -4($fp)");
+        writer.print("\n\tLI $v0, 1\n\tsyscall\n\tLI $a0, '\\n'\n\tLI $v0, 11\n\tsyscall\n\tLW $a0, -8($fp)\n\tLI $v0, 1\n\tsyscall");
+        writer.print("\n\tLI $a0, '\\n'\n\tLI $a0, '\\n'\n\tLI $v0, 11\n\tsyscall\n\tLW $a0, -12($fp)\n\tLI $v0, 1\n\tsyscall\n\tLI $a0, '\\n'");
+        writer.print("\n\tLI $v0, 11\n\tsyscall\n\tLW $a0, -16($fp)\n\tLI $v0, 1\n\tsyscall\n\tLI $a0, '\\n'\n\tLI $v0, 11\n\tsyscall");
+        writer.print("\n\tLW $a0, -20($fp)\n\tLI $v0, 1\n\tsyscall\n\tLI $a0, '\\n'\n\tLI $v0, 11\n\tsyscall\n\tLW $a0, -24($fp)\n\tLI $v0, 1");
+        writer.print("\n\tsyscall\n\tLI $a0, '\\n'\n\tLI $v0, 11\n\tsyscall\n\tLW $a0, -28($fp)\n\tLI $v0, 1\n\tsyscall\n\tLI $a0, '\\n'\n\tLI $v0, 11");
+        writer.print("\n\tsyscall\n\tLW $a0, -32($fp)\n\t\n\tLI $v0, 1\n\tsyscall\n\tLI $a0, '\\n'\n\tLI $v0, 11\n\tsyscall\n\tLW $a0, -36($fp)");
+        writer.print("\n\tLI $v0, 1\n\tsyscall\n\tLI $a0, '\\n'\n\tLI $v0, 11\n\tsyscall\n\tLW $a0, -40($fp)\n\tLI $v0, 1\n\tsyscall\n\tLI $a0, '\\n'");
+        writer.print("\n\tLI $v0, 11\n\tsyscall\n\tLI $a0, '\\n'");
         writer.print("\n\tLI $v0, 11\n\tsyscall\n\tJR $ra");
+        writer.print("\n\tLI $a0, '-'\n\tLI $v0, 11\n\tsyscall\n\tLI $a0, '\\n'\n\tLI $v0, 11\n\tsyscall");
 
         // read_i()
         writer.print("\n\nread_i:");
@@ -135,22 +151,11 @@ public class CodeGenerator implements ASTVisitor<Register> {
         // writer.print("\n\tADDI $sp, $sp, 4");
         writer.print("\n\tJR $ra\t\t# Return to caller.");
         
-        // Find the main function first, and declare it.
-        for (FunDecl funDecl: p.funDecls) {
-            // Generate MIPS for the main function declaration.
-            if (funDecl.name.equals("main")) {
-                fpOffset = 0;
-                funDecl.accept(this);
-                // Write out the exit execution code.
-                writer.print("\n\n\tli\t$v0, 10\t\t\t# Exit cmd code.\n\tsyscall\t\t\t\t# Exit program.");
-            }
-        }
-        // Declare the rest of the functions.
+        
+        // Declare the functions.
         for (FunDecl funDecl: p.funDecls) {
             fpOffset = -12;
-            if (!funDecl.name.equals("main")) {
-                funDecl.accept(this);
-            }
+            funDecl.accept(this);
         }
         return null;
     }
@@ -170,20 +175,16 @@ public class CodeGenerator implements ASTVisitor<Register> {
         // Declare this function.
         writer.print("\n\n" + fd.name + ":");
         // Store the return address on the stack.
-        if (!fd.name.equals("main")) {
-            writer.print("\n\tADDI $sp, $sp, -4\t# Move down Stack.");
-            writer.print("\n\tSW $ra, ($sp)\t\t#   -> Push RET-ADDR.");
-        }
+        writer.print("\n\tADDI $sp, $sp, -4\t# Move down Stack.");
+        writer.print("\n\tSW $ra, ($sp)\t\t#   -> Push RET-ADDR.");
         // Generate this functions code.
         fd.block.accept(this);
         
-        if (!fd.name.equals("main")) {
-            // Clear the stack, and retrieve the return address.
-            writer.print("\n\tADDI $sp, $sp, " + fd.stackVarsUsage + "\t# Move up Stack -> Past all {" + fd.stackVarsUsage/4 + "} allocated vars for [" + fd.name + "]");
-            writer.print("\n\tLW $ra, ($sp)\t\t# Load the RET-ADDR off the Stack.");
-            writer.print("\n\tADDI $sp, $sp, 4\t#   -> Move up Stack.");
-            writer.print("\n\tJR $ra\t\t\t\t#   -> Return to caller.");
-        }
+        // Clear the stack, and retrieve the return address.
+        writer.print("\n\tADDI $sp, $sp, " + fd.stackVarsUsage + "\t# Move up Stack -> Past all {" + fd.stackVarsUsage/4 + "} allocated vars for [" + fd.name + "]");
+        writer.print("\n\tLW $ra, ($sp)\t\t# Load the RET-ADDR off the Stack.");
+        writer.print("\n\tADDI $sp, $sp, 4\t#   -> Move up Stack.");
+        writer.print("\n\tJR $ra\t\t\t\t#   -> Return to caller.");
         // Reset the current FunDecl and $sp Offset for variables.
         currFunDecl = null;
         return null;
@@ -451,11 +452,16 @@ public class CodeGenerator implements ASTVisitor<Register> {
             else {
                 Register operand1 = bo.expr1.accept(this);
                 Register operand2 = bo.expr2.accept(this);
-                // Want to know is op1 >= op2
+                // want x >= y
+                // :>   z = x < y
+                // :>   z = z < 1
                 writer.print("\n\tSLT " + output + ", " + operand1 + ", " + operand2);
-                writer.print("\n\tNOT " + output + ", " + output);
+                Register valOne = getRegister();
+                writer.print("\n\tLI " + valOne + ", 1");
+                writer.print("\n\tSLT " + output + ", " + output + ", " + valOne);
                 freeRegister(operand1);
                 freeRegister(operand2);
+                freeRegister(valOne);
                 return output;
             }
         }
@@ -472,9 +478,12 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 Register operand1 = bo.expr1.accept(this);
                 Register operand2 = bo.expr2.accept(this);
                 writer.print("\n\tSLT " + output + ", " + operand2 + ", " + operand1);
-                writer.print("\n\tNOT " + output + ", " + output);
+                Register valOne = getRegister();
+                writer.print("\n\tLI " + valOne + ", 1");
+                writer.print("\n\tSLT " + output + ", " + output + ", " + valOne);
                 freeRegister(operand1);
                 freeRegister(operand2);
+                freeRegister(valOne);
                 return output;
             }
         }
@@ -631,10 +640,15 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
         // Re-instate $fp & $sp
         writer.print("\n\tLW $fp, ($sp)\t\t# Re-Instate the $fp");
+        writer.print("\n\tSW $zero, ($sp)");
         writer.print("\n\tADDI $sp, $sp, 4\t#   -> Move up Stack.");
 
         // Clean up params on stack.
-        writer.print("\n\tADDI $sp, $sp, " + (num_params * 4) + "\t# Clear up {" + num_params + "} params for [" + fce.ident + "()] on Stack.\n\t\t\t\t\t\t# $v0 is the return of [" + fce.ident + "()] if applicable.");
+        for (int i = 0; i < num_params; i++) {
+            writer.print("\n\tSW $zero, ($sp)");
+            writer.print("\n\tADDI $sp, $sp, 4");
+        }
+        // writer.print("\n\tADDI $sp, $sp, " + (num_params * 4) + "\t# Clear up {" + num_params + "} params for [" + fce.ident + "()] on Stack.\n\t\t\t\t\t\t# $v0 is the return of [" + fce.ident + "()] if applicable.");
         writer.print("\n\t# --- Stack restored after function call to: " + fce.ident + " --- #\n");
         // Return the current function back to one we are currently in.
         currFunDecl = callee;
