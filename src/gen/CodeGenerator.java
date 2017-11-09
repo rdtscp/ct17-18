@@ -29,13 +29,20 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     private Register getRegister() {
         try {
-            return freeRegs.pop();
+            Register out = freeRegs.pop();
+            if (out.toString().equals("$v0")) {
+                System.out.println("\n ALLOCATING $v0");
+            }
+            return out;
         } catch (EmptyStackException ese) {
             throw new RegisterAllocationError(); // no more free registers, bad luck!
         }
     }
 
     private void freeRegister(Register reg) {
+        if (reg == null) throw new RegisterAllocationError();
+        if (freeRegs.contains(reg)) throw new RegisterAllocationError();
+        if (reg == Register.v0) return;
         freeRegs.push(reg);
     }
     
@@ -54,7 +61,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     // To track current function.
     private FunDecl currFunDecl;
-    private int fpOffset = -4;
+    private int fpOffset = -12;
 
     public void emitProgram(Program program, File outputFile) throws FileNotFoundException {
         writer = new PrintWriter(outputFile);
@@ -81,40 +88,66 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
         /* Create functions for printing, and a jump to main to start execution. */
         writer.print("\n\n\t\t.text");
+        writer.print("\n\tLA $fp, 4($sp)");
+        writer.print("\n\tADDI $sp, $sp, -8");
         writer.print("\nj main");
+
+        // Print Stack
+        writer.print("\nstackdump:");
+        writer.print("\n\tLW $a0, 16($sp)\n\tLI $v0, 1\n\tsyscall\n\tLI $a0, '\\n'\n\tLI $v0, 11\n\tsyscall\n\tLW $a0, 12($sp)");
+        writer.print("\n\tLI $v0, 1\n\tsyscall\n\tLI $a0, '\\n'\n\tLI $v0, 11\n\tsyscall\n\tLW $a0, 8($sp)\n\tLI $v0, 1\n\tsyscall");
+        writer.print("\n\tLI $a0, '\\n'\n\tLI $a0, '\\n'\n\tLI $v0, 11\n\tsyscall\n\tLW $a0, 4($sp)\n\tLI $v0, 1\n\tsyscall\n\tLI $a0, '\\n'");
+        writer.print("\n\tLI $v0, 11\n\tsyscall\n\tLW $a0, ($sp)\n\tLI $v0, 1\n\tsyscall\n\tLI $a0, '\\n'\n\tLI $v0, 11\n\tsyscall");
+        writer.print("\n\tLW $a0, -4($sp)\n\tLI $v0, 1\n\tsyscall\n\tLI $a0, '\\n'\n\tLI $v0, 11\n\tsyscall\n\tLI $a0, '\\n'");
+        writer.print("\n\tLI $v0, 11\n\tsyscall\n\tJR $ra");
+
+        // read_i()
+        writer.print("\n\nread_i:");
+        writer.print("\n\tLI $v0, 5");
+        writer.print("\n\tsyscall");
+        writer.print("\n\tJR $ra");
+
+        // read_c()
+        writer.print("\n\nread_c:");
+        writer.print("\n\tLI $v0, 12");
+        writer.print("\n\tsyscall");
+        writer.print("\n\tJR $ra");
 
         // print_i()
         writer.print("\n\nprint_i:");
         writer.print("\n\tLW $a0, ($fp)");
-        writer.print("\n\tli\t$v0, 1\t# Print int cmd code.");
+        writer.print("\n\tLI $v0, 1\t# Print int cmd code.");
         writer.print("\n\tsyscall\t\t# Print int now.");
-        writer.print("\n\tjr $ra\t\t# Return to caller.");
+        writer.print("\n\tJR $ra\t\t# Return to caller.");
 
         // print_c()
         writer.print("\n\nprint_c:");
         writer.print("\n\tLW $a0, ($fp)");
-        writer.print("\n\tli\t$v0, 11\t# Print char cmd code.");
+        writer.print("\n\tLI $v0, 11\t# Print char cmd code.");
         writer.print("\n\tsyscall\t\t# Print char now.");
-        writer.print("\n\tjr $ra\t\t# Return to caller.");
+        writer.print("\n\tJR $ra\t\t# Return to caller.");
 
         // print_s()
         writer.print("\n\nprint_s:");
         writer.print("\n\tLW $a0, ($fp)");
-        writer.print("\n\tli\t$v0, 4\t# Print str cmd code.");
+        writer.print("\n\tLI $v0, 4\t# Print str cmd code.");
         writer.print("\n\tsyscall\t\t# Print str now.");
-        writer.print("\n\tjr $ra\t\t# Return to caller.");
+        // writer.print("\n\tADDI $sp, $sp, 4");
+        writer.print("\n\tJR $ra\t\t# Return to caller.");
         
         // Find the main function first, and declare it.
         for (FunDecl funDecl: p.funDecls) {
             // Generate MIPS for the main function declaration.
             if (funDecl.name.equals("main")) {
+                fpOffset = 0;
                 funDecl.accept(this);
                 // Write out the exit execution code.
-                writer.print("\n\tli\t$v0, 10\t# Exit cmd code.\n\tsyscall\t\t# Exit program.");
+                writer.print("\n\n\tli\t$v0, 10\t\t\t# Exit cmd code.\n\tsyscall\t\t\t\t# Exit program.");
             }
         }
         // Declare the rest of the functions.
         for (FunDecl funDecl: p.funDecls) {
+            fpOffset = -12;
             if (!funDecl.name.equals("main")) {
                 funDecl.accept(this);
             }
@@ -124,33 +157,35 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     @Override
     public Register visitFunDecl(FunDecl fd) {
-        // Add the parameters of this function to the StackAllocs.
-        for (VarDecl vd: fd.params) {
-            // Tie the VarDecl to the FunDecl. Don't increment stack usage for params as caller handles params.
-            vd.parentFunc = fd;
-            stackAllocs.add(vd);
-        }
+        // Mark what FunDecl we are inside.
         currFunDecl = fd;
+        // Add the parameters of this function to the StackAllocs.
+        int currFPoffset = 0;
+        for (VarDecl vd: fd.params) {
+            vd.parentFunc = fd;                                 // Tie this VarDecl to its FunDecl.
+            vd.fpOffset = currFPoffset; currFPoffset+=4;        // Increment the $fp offset for this arg/param.
+            fd.stackArgsUsage += vd.num_bytes;                  // Increment the number of Bytes this FunDecl uses.
+            stackAllocs.add(vd);                                // Add this VarDecl to our list of stackAlloc'd variables.
+        }
         // Declare this function.
         writer.print("\n\n" + fd.name + ":");
         // Store the return address on the stack.
         if (!fd.name.equals("main")) {
-            writer.print("\n\tADDI $sp, $sp, -4");
-            writer.print("\n\tSW $ra, ($sp)");
+            writer.print("\n\tADDI $sp, $sp, -4\t# Move down Stack.");
+            writer.print("\n\tSW $ra, ($sp)\t\t#   -> Push RET-ADDR.");
         }
         // Generate this functions code.
         fd.block.accept(this);
         
         if (!fd.name.equals("main")) {
             // Clear the stack, and retrieve the return address.
-            writer.print("\n\tADDI $sp, $sp, " + fd.stackUsage + "\t# Move up the stack past all the params.");
-            writer.print("\n\tLW $ra, ($sp)");
-            writer.print("\n\tADDI $sp, $sp, 4\t# Consumed the last $ra");
-            writer.print("\n\tJR $ra");
+            writer.print("\n\tADDI $sp, $sp, " + fd.stackVarsUsage + "\t# Move up Stack -> Past all {" + fd.stackVarsUsage/4 + "} allocated vars for [" + fd.name + "]");
+            writer.print("\n\tLW $ra, ($sp)\t\t# Load the RET-ADDR off the Stack.");
+            writer.print("\n\tADDI $sp, $sp, 4\t#   -> Move up Stack.");
+            writer.print("\n\tJR $ra\t\t\t\t#   -> Return to caller.");
         }
         // Reset the current FunDecl and $sp Offset for variables.
         currFunDecl = null;
-        fpOffset = -4;
         return null;
     }
 
@@ -164,12 +199,12 @@ public class CodeGenerator implements ASTVisitor<Register> {
             writer.print("\n\tADDI $sp, $sp, -" + vd.num_bytes + "\t# Allocating: " + vd.ident + " " + vd.num_bytes + " Bytes.");
             // Set the offset of this Var on stack, and decrement for the next.
             vd.fpOffset = fpOffset;
-            fpOffset -= vd.num_bytes;
+            fpOffset -= 4;
             // Push this VarDecl onto our CallStack tracker, and increment this func's stack usage.
-            currFunDecl.stackUsage += vd.num_bytes;
+            currFunDecl.stackVarsUsage+= vd.num_bytes;
             stackAllocs.add(vd);
-            System.out.println("visitBlock\t--- Var[" + vd.ident + "<" + currFunDecl.name + "] has fpOffset: " + vd.fpOffset);
         }
+        writer.print("\n");
         // Generate code for all of this block.
         for (Stmt s: b.stmts) {
             s.accept(this);
@@ -196,13 +231,15 @@ public class CodeGenerator implements ASTVisitor<Register> {
             // If this var exists on the stack.
             if (stackVar != null) {
                 Register rhs = a.expr2.accept(this);
-                writer.print("\n\tSW " + rhs + ", " + stackVar.fpOffset + "($fp)");
+                System.out.println(rhs + " assigned to " + a.expr2);
+                writer.print("\n\tSW " + rhs + ", " + stackVar.fpOffset + "($fp)\t\t# Storing " + rhs + " to Stack var [" + stackVar.ident + "]");
                 freeRegister(rhs);
             }
             // Else this var exists in the heap.
             else {
                 Register rhs = a.expr2.accept(this);
-                writer.print("\n\tSW " + rhs + ", " + lhsVd.ident);
+                System.out.println(rhs + " assigned to " + a.expr2);
+                writer.print("\n\tSW " + rhs + ", " + lhsVd.ident + "\t\t# Store " + rhs + " to [" + lhsVd.ident + "]");
                 freeRegister(rhs);
             }
         }
@@ -216,21 +253,32 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     @Override
 	public Register visitIf(If i) {
-        Register condition = i.expr.accept(this);
-        String ifName = currFunDecl.name + "_if" + currFunDecl.currIf;
+        Register condition  = i.expr.accept(this);
+        String ifName       = currFunDecl.name + "_if";
+        int    ifNum        = currFunDecl.currIf;
         currFunDecl.currIf++;
-        writer.print("\n\tBNEZ " + condition + ", " + ifName + "_t");
-        writer.print("\n\tBEQZ " + condition + ", " + ifName + "_f");
-        writer.print("\n" + ifName + "_t:");
-        i.stmt1.accept(this);
-        writer.print("\n\tJ " + ifName + "_cont");
-        writer.print("\n" + ifName + "_f:");
-        if (i.stmt2 != null) {
-            i.stmt2.accept(this);
-            writer.print("\n\tJ " + ifName + "_cont");
+        writer.print("\n\tBNEZ " + condition + ", " + ifName + ifNum + "_t");
+        writer.print("\n\tBEQZ " + condition + ", " + ifName + ifNum + "_f");
+
+        // Print (condition == true) case.
+        writer.print("\n" + ifName + ifNum + "_t:");        // Label this branch.
+        Register stmt1Reg = i.stmt1.accept(this);           // Generate code.
+        writer.print("\n\tJ " + ifName + ifNum + "_cont");  // Once done, jump to cont.
+
+        // Print (condition == false) case.
+        writer.print("\n" + ifName + ifNum + "_f:");        // Label this branch.
+        if (i.stmt2 != null) {                              // If there is an else stmt.
+            Register stmt2Reg = i.stmt2.accept(this);       // Generate the code.
+            if (stmt2Reg != null) freeRegister(stmt2Reg);
         }
-        writer.print("\n" + ifName + "_cont:");
-        
+        writer.print("\n\tJ " + ifName + ifNum + "_cont");  // Once done, jump to cont.
+
+        writer.print("\n" + ifName + ifNum + "_cont:");
+
+
+        // Free up registers.
+        freeRegister(condition);
+        if (stmt1Reg != null) freeRegister(stmt1Reg);
 		return null;
 	}
 
@@ -238,7 +286,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 	public Register visitReturn(Return r) {
         if (r.expr != null) {
             Register output = r.expr.accept(this);
-            writer.print("\n\tMOVE $v0, " + output);
+            writer.print("\n\tMOVE $v0, " + output + "\t\t#  Move " + output + " into output register.");
             freeRegister(output);
             return Register.v0;
         }
@@ -248,16 +296,20 @@ public class CodeGenerator implements ASTVisitor<Register> {
     @Override
 	public Register visitWhile(While w) {
         Register condition = w.expr.accept(this);
-        String whileName = currFunDecl.name + "_while" + currFunDecl.currWhile;
-        writer.print("\n\tBNEZ " + condition + ", " + whileName + "_t");
-        writer.print("\n\tBEQZ " + condition + ", " + whileName + "_f");
+        String whileName = currFunDecl.name + "_while";
+        int    whileNum  = currFunDecl.currWhile;
+        writer.print("\n\tBNEZ " + condition + ", " + whileName + whileNum + "_t");
+        writer.print("\n\tBEQZ " + condition + ", " + whileName + whileNum + "_f");
         currFunDecl.currWhile++;
-        writer.print("\n" + whileName + "_t:");
+        writer.print("\n" + whileName + whileNum + "_t:");
         w.stmt.accept(this);
         condition = w.expr.accept(this);
-        writer.print("\n\tBNEZ " + condition + ", " + whileName + "_t");
-        writer.print("\n\tBEQZ " + condition + ", " + whileName + "_f");
-        writer.print("\n" + whileName + "_f:");
+        writer.print("\n\tBNEZ " + condition + ", " + whileName + whileNum + "_t");
+        writer.print("\n\tBEQZ " + condition + ", " + whileName + whileNum + "_f");
+        writer.print("\n" + whileName + whileNum + "_f:");
+        writer.print("\n\tJ " + whileName + whileNum + "_cont");
+        writer.print("\n" + whileName + whileNum + "_cont:");
+        freeRegister(condition);
         return null;
     }
     
@@ -448,7 +500,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 Register operand2 = bo.expr2.accept(this);
                 
                 Register valOne = getRegister();
-                writer.print("\n\tLI " + valOne + ", 1");
+                writer.print("\n\tLI " + valOne + ", 1\t\t\t# Register to hold value 1.");
 
                 writer.print("\n\tSUB " + operand1 + ", " + operand1 + ", " + operand2);
                 writer.print("\n\tMOVZ " + output + ", $zero " + operand1);
@@ -477,18 +529,21 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 return output;
             }
             else {
+                writer.print("\n\t# HERE");
                 Register operand1 = bo.expr1.accept(this);
                 Register operand2 = bo.expr2.accept(this);
                 Register valOne = getRegister();
-                writer.print("\n\tLI " + valOne + ", 1");
+                System.out.println(operand1 + " == " + operand2);
+                writer.print("\n\tLI " + valOne + ", 1\t\t\t# Register to hold value 1.");
 
                 writer.print("\n\tSUB " + operand1 + ", " + operand1 + ", " + operand2);
                 writer.print("\n\tMOVN " + output + ",$zero , " + operand1);
-                writer.print("\n\tMOVZ " + output + ", " + valOne + ", " + operand1);
+                writer.print("\n\tMOVZ " + output + ", " + valOne + ", " + operand1 + "\t# " + output + " now holds if " + operand1 + " == " + operand2);
                 
                 freeRegister(operand1);
                 freeRegister(operand2);
                 freeRegister(valOne);
+                writer.print("\n\t# HERE");
                 return output;
             }
         }
@@ -523,6 +578,8 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 Register operand1 = bo.expr1.accept(this);
                 Register operand2 = bo.expr2.accept(this);
                 writer.print("\n\tMUL " + output + ", " + operand1 + ", " + operand2);
+                freeRegister(operand1);
+                freeRegister(operand2);
                 return output;    
             }
         }
@@ -542,53 +599,52 @@ public class CodeGenerator implements ASTVisitor<Register> {
     public Register visitFunCallExpr(FunCallExpr fce) {
         // Swap out the current FunDecl so that the parameters
         // are declared within the callee's scope.
-        FunDecl running = currFunDecl;
-        FunDecl calling = fce.fd;
-        currFunDecl = calling;
-        int stackUsage = 0;
+        FunDecl callee = currFunDecl;
+        FunDecl caller = fce.fd;
+        currFunDecl = caller;
         
-        
-        // Get the register for each param, and save the register to the stack. Push the VarDecl onto CallStack.
+        // Push params onto stack in rever order.
         int num_params = fce.fd.params.size();
+        //System.out.println("Visiting FunCallExpr[" + fce.ident + "] with {" + num_params + "} params");
+        writer.print("\n\n\t# --- About to call function: " + fce.ident + " --- #");
+        writer.print("\n\t# Pushing {" + num_params + "} Params on Stack for [" + fce.ident + "()]");
         for (int i = (num_params - 1); i >= 0; i--) {
-            VarDecl vd = fce.fd.params.get(i);
-            currFunDecl = running;
+            currFunDecl = callee;
             Register paramReg = fce.exprs.get(i).accept(this);
-            currFunDecl = calling;
-            writer.print("\n\tADDI $sp, $sp, -4");
-            writer.print("\n\tSW " + paramReg + ", ($sp)");
-            // Update this Stack declared Var's info.
-            vd.parentFunc = currFunDecl;
-            vd.fpOffset = i * 4;
-            System.out.println("visitFunCallExpr\t--- Var[" + vd.ident + "<" + currFunDecl.name + "] has fpOffset: " + vd.fpOffset);
-            stackUsage += 4;
+            currFunDecl = caller;
+            writer.print("\n\tADDI $sp, $sp, -4\t# Move down Stack.");
+            writer.print("\n\tSW " + paramReg + ", ($sp)\t\t#   -> Push Param.");
+            if (paramReg != null) freeRegister(paramReg);
         }
-
+        
         // Push current FP to stack.
+        writer.print("\n\n\t# Storing $fp on Stack and updating $fp for [" + fce.ident + "()]");
         Register temp = getRegister();
-        writer.print("\n\tMOVE " + temp + ", $sp");
-        writer.print("\n\tADDI $sp, $sp, -4");
-        writer.print("\n\tSW $fp ($sp)");
-        writer.print("\n\tMOVE $fp, " + temp);
+        writer.print("\n\tMOVE " + temp + ", $sp\t\t# Store addr[param0] i.e. next $fp");
+        writer.print("\n\tADDI $sp, $sp, -4\t# Move down Stack.");
+        writer.print("\n\tSW $fp ($sp)\t\t#   -> Push curr $fp.");
+        writer.print("\n\tMOVE $fp, " + temp + "\t\t#   -> Curr $fp -> [param0]");
         freeRegister(temp);
 
         // Jump to function.
-        writer.print("\n\tJAL " + fce.ident);
+        writer.print("\n\n\tJAL " + fce.ident + "\t\t\t#  CALL => " + fce.ident + "()\n");
 
         // Re-instate $fp & $sp
-        writer.print("\n\tLW $fp, ($sp)");
-        writer.print("\n\tADDI $sp, $sp, 4");
-        // Clean up stack usage.
-        writer.print("\n\tADDI $sp, $sp, " + stackUsage + "\t# Clear up params on Stack.");
+        writer.print("\n\tLW $fp, ($sp)\t\t# Re-Instate the $fp");
+        writer.print("\n\tADDI $sp, $sp, 4\t#   -> Move up Stack.");
+
+        // Clean up params on stack.
+        writer.print("\n\tADDI $sp, $sp, " + (num_params * 4) + "\t# Clear up {" + num_params + "} params for [" + fce.ident + "()] on Stack.\n\t\t\t\t\t\t# $v0 is the return of [" + fce.ident + "()] if applicable.");
+        writer.print("\n\t# --- Stack restored after function call to: " + fce.ident + " --- #\n");
         // Return the current function back to one we are currently in.
-        currFunDecl = running;
+        currFunDecl = callee;
         return Register.v0;
 	}
 
     @Override
     public Register visitIntLiteral(IntLiteral il) {
         Register output = getRegister();
-        writer.print("\n\tLI " + output + ", " + il.val);
+        writer.print("\n\tLI " + output + ", " + il.val + "\t\t\t# Load {" + il.val + "} into " + output);
         return output;
     }
 
@@ -597,9 +653,9 @@ public class CodeGenerator implements ASTVisitor<Register> {
     @Override
     public Register visitStrLiteral(StrLiteral sl) {
         Register output = getRegister();
-        writer.print("\n\t\t.data");
-        writer.print("\nstr" + strNum + ":\t.asciiz \"" + sl.val + "\"");
-        writer.print("\n.text");
+        writer.print("\n\t.data");
+        writer.print("\n\t\tstr" + strNum + ":\t.asciiz \"" + sl.val + "\"");
+        writer.print("\n\t.text");
         writer.print("\n\tLA " + output + ", str" + strNum);
         strNum++;
 		return output;
@@ -616,7 +672,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
         for (VarDecl vd: stackAllocs) {
             // If this VarDecl exists on the stack, under this function name.
             if (vd.ident.equals(v.ident) && vd.parentFunc.name.equals(currFunDecl.name)) {
-                System.out.println("visitVarExpr\t\t--- Var[" + vd.ident + "<" + currFunDecl.name + "] has fpOffset: " + vd.fpOffset);
                 stackVar = vd;
                 break;
             }
@@ -624,13 +679,12 @@ public class CodeGenerator implements ASTVisitor<Register> {
         // If this var exists on the stack.
         if (stackVar != null) {
             Register output = getRegister();
-            writer.print("\n\tLW " + output + ", " + stackVar.fpOffset + "($fp)");
+            writer.print("\n\tLW " + output + ", " + stackVar.fpOffset + "($fp)\t\t# Loading variable [" + stackVar.ident + "] into " + output);
             return output;
         }
         else {
-            System.out.println("\t :: Did NOT exist on stack");
             Register output = getRegister();
-            writer.print("\n\tLW " + output + ", " + v.ident);
+            writer.print("\n\tLW " + output + ", " + v.ident + "\t\t# Loading variable [" + v.ident + "] into " + output);
             return output;
         }
     }
