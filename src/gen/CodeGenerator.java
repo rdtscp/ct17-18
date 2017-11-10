@@ -853,7 +853,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 	
 	@Override
     public Register visitTypecastExpr(TypecastExpr te) {
-		return null;
+        return te.expr.accept(this);
 	}
 
 	@Override
