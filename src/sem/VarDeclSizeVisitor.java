@@ -74,11 +74,16 @@ public class VarDeclSizeVisitor extends BaseSemanticVisitor<Integer> {
 	public Integer visitStructTypeDecl(StructTypeDecl std) {
         String structType = std.structType.identifier;
         Integer structSize = 0;
+        Integer compactSize = 0;
         for (VarDecl vd: std.varDecls) {
-            Integer currField = vd.accept(this);
+            Integer currField = vd.type.accept(this);
+            compactSize+=currField;
+            
             while (currField%4 != 0) currField++;
             structSize += currField;
         }
+        std.compactSize = compactSize;
+        std.allocSize   = structSize;
         structTypeSizes.put(structType, structSize);
 		return structSize;
     }
