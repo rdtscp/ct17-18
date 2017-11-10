@@ -856,45 +856,9 @@ public class CodeGenerator implements ASTVisitor<Register> {
     }
     
     
-    
-    
-
-    
-    
-
-
-
-    
+    /* Not Used */
 
     @Override
-    public Register visitStructTypeDecl(StructTypeDecl st) {
-        return null;
-    }
-
-    @Override
-    public Register visitVarDecl(VarDecl vd) {
-        return null;
-    }
-
-	
-	
-	
-
-
-    @Override
-    public Register visitBaseType(BaseType bt) {
-        return null;
-    }
-
-	@Override
-	public Register visitArrayType(ArrayType at) {
-		// To be completed...
-		return null;
-	}
-
-    
-
-	@Override
 	public Register visitStructType(StructType st) {
 		// To be completed...
 		return null;
@@ -906,7 +870,26 @@ public class CodeGenerator implements ASTVisitor<Register> {
 		return null;
     }
 
-    /* Not Used */
+    @Override
+    public Register visitStructTypeDecl(StructTypeDecl st) {
+        return null;
+    }
+
+    @Override
+    public Register visitVarDecl(VarDecl vd) {
+        return null;
+    }
+
+    @Override
+    public Register visitBaseType(BaseType bt) {
+        return null;
+    }
+
+	@Override
+	public Register visitArrayType(ArrayType at) {
+		// To be completed...
+		return null;
+	}
 
     @Override
     public Register visitOp(Op o) {
