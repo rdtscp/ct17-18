@@ -302,6 +302,14 @@ public class CodeGenerator implements ASTVisitor<Register> {
             freeRegister(arrayAddr);
             freeRegister(index);
         }
+        else if (a.expr1 instanceof ValueAtExpr) {
+            ValueAtExpr vae = (ValueAtExpr)a.expr1;
+            Register location = vae.expr.accept(this);
+            Register value    = a.expr2.accept(this);
+            writer.print("\n\tSW " + value + ", (" + location + ")\t\t# Storing " + value + " at address " + location);
+            freeRegister(location);
+            freeRegister(value);
+        }
         return null;
     }
 
@@ -754,7 +762,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
     @Override
     public Register visitIntLiteral(IntLiteral il) {
         Register output = getRegister();
-        writer.print("\n\tLI " + output + ", " + il.val + "\t\t\t# Load {" + il.val + "} into " + output);
+        writer.print("\n\tLI " + output + ", " + il.val + "\t\t# Load {" + il.val + "} into " + output);
         return output;
     }
 
@@ -818,7 +826,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
         Register output = getRegister();
         System.out.println("VAE: " + output);
         Register addr = vae.expr.accept(this);
-        writer.print("\n\tLW " + output + ", (" + addr + ")");
+        writer.print("\n\tLW " + output + ", (" + addr + ")\t\t# Loading value at addr(" + addr + ")");
         freeRegister(addr);
 		return output;
     }
@@ -837,7 +845,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
         // If this var exists on the stack.
         if (stackVar != null) {
             Register output = getRegister();
-            writer.print("\n\tLW " + output + ", " + stackVar.fpOffset + "($fp)\t\t# Loading variable [" + stackVar.ident + "] into " + output);
+            writer.print("\n\tLW " + output + ", " + stackVar.fpOffset + "($fp)\t# Loading variable [" + stackVar.ident + "] into " + output);
             return output;
         }
         else {
