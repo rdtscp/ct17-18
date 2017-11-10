@@ -117,6 +117,14 @@ public class CodeGenerator implements ASTVisitor<Register> {
         writer.print("\n\tLI $v0, 11\n\tsyscall\n\tJR $ra");
         writer.print("\n\tLI $a0, '-'\n\tLI $v0, 11\n\tsyscall\n\tLI $a0, '\\n'\n\tLI $v0, 11\n\tsyscall");
 
+        // mcmalloc()
+        writer.print("\n\nmcmalloc:");
+        writer.print("\n\tLW $a0, ($fp)");
+        writer.print("\n\tLI $v0, 9");
+        writer.print("\n\tsyscall");
+        writer.print("\n\tJR $ra");
+
+
         // read_i()
         writer.print("\n\nread_i:");
         writer.print("\n\tLI $v0, 5");
