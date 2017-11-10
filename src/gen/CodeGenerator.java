@@ -286,6 +286,14 @@ public class CodeGenerator implements ASTVisitor<Register> {
             System.out.println("Field: " + fae.field + " Offset: " + structOffset);
 
         }
+        else if (a.expr1 instanceof ArrayAccessExpr) {
+            ArrayAccessExpr aae = (ArrayAccessExpr)a.expr1;
+            System.out.println("aae array: " + aae.array);
+            Register arrayAddr = aae.array.accept(this);
+            Register index = aae.index.accept(this);
+            freeRegister(arrayAddr);
+            freeRegister(index);
+        }
         return null;
     }
 
@@ -357,6 +365,11 @@ public class CodeGenerator implements ASTVisitor<Register> {
     }
     
     /* Expr Methods */
+
+    @Override
+    public Register visitArrayAccessExpr(ArrayAccessExpr aae) {
+		return null;
+    }
 
     @Override
     public Register visitBinOp(BinOp bo) {
@@ -737,7 +750,44 @@ public class CodeGenerator implements ASTVisitor<Register> {
         return output;
     }
 
-    // SizeOfExpr
+    @Override
+    public Register visitSizeOfExpr(SizeOfExpr soe) {
+        if (soe.type == BaseType.INT) {
+            Register output = getRegister();
+            writer.print("\n\tLI " + output + ", 4\t\t\t# sizeof(int)");
+            return output;
+        }
+        if (soe.type == BaseType.CHAR) {
+            Register output = getRegister();
+            writer.print("\n\tLI " + output + ", 1\t\t\t# sizeof(char)");
+            return output;
+        }
+        if (soe.type == BaseType.VOID) {
+            Register output = getRegister();
+            writer.print("\n\tLI " + output + ", 0\t\t\t# sizeof(void)");
+            return output;
+        }
+        if (soe.type instanceof PointerType) {
+            Register output = getRegister();
+            writer.print("\n\tLI " + output + ", 4\t\t\t# sizeof(PointerType)");
+            return output;
+        }
+        if (soe.type instanceof ArrayType) {
+            ArrayType at = (ArrayType)soe.type;
+            Register output = getRegister();
+            writer.print("\n\tLI " + output + ", " + at.size + "\t\t\t# sizeof(ArrayType)");
+            return output;
+        }
+        if (soe.type instanceof StructType) {
+            StructType st = (StructType)soe.type;
+            StructTypeDecl std = structTypeDecls.get(st.identifier);
+            Register output = getRegister();
+            System.out.println("StructType " + st.identifier + " has size: " + std.compactSize + " and alloc size: " + std.allocSize);
+            writer.print("\n\tLI " + output + ", " + std.compactSize + "\t\t# sizeof(StructType: " + st.identifier + ")");
+            return output;
+        }
+        return null;
+    }
 
     @Override
     public Register visitStrLiteral(StrLiteral sl) {
@@ -799,10 +849,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
         return null;
     }
 
-	@Override
-    public Register visitArrayAccessExpr(ArrayAccessExpr aae) {
-		return null;
-    }
+	
 	
 	@Override
     public Register visitTypecastExpr(TypecastExpr te) {
@@ -812,11 +859,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
 	@Override
     public Register visitValueAtExpr(ValueAtExpr vae) {
 		return null;
-    }
-
-    @Override
-    public Register visitSizeOfExpr(SizeOfExpr soe) {
-        return null;
     }
 
     @Override
