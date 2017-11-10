@@ -99,8 +99,8 @@ public class CodeGenerator implements ASTVisitor<Register> {
         freeRegister(temp);
         // Jump to main()
         writer.print("\n\tJAL main");
-         // Write out the exit execution code.
-         writer.print("\n\tli\t$v0, 10\t\t\t# Exit cmd code.\n\tsyscall\t\t\t\t# Exit program.\n");
+        // Write out the exit execution code.
+        writer.print("\n\tli\t$v0, 10\t\t\t# Exit cmd code.\n\tsyscall\t\t\t\t# Exit program.\n");
 
         // Print Stack
         writer.print("\nstackdump:");
@@ -233,7 +233,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
             if (stackVar != null) {
                 Register rhs = a.expr2.accept(this);
                 System.out.println(rhs + " assigned to " + a.expr2);
-                writer.print("\n\tSW " + rhs + ", " + stackVar.fpOffset + "($fp)\t\t# Storing " + rhs + " to Stack var [" + stackVar.ident + "]");
+                writer.print("\n\tSW " + rhs + ", " + stackVar.fpOffset + "($fp)\t# Storing " + rhs + " to Stack var [" + stackVar.ident + "]");
                 freeRegister(rhs);
             }
             // Else this var exists in the heap.
@@ -243,6 +243,48 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 writer.print("\n\tSW " + rhs + ", " + lhsVd.ident + "\t\t# Store " + rhs + " to [" + lhsVd.ident + "]");
                 freeRegister(rhs);
             }
+        }
+        else if (a.expr1 instanceof FieldAccessExpr) {
+            FieldAccessExpr fae = (FieldAccessExpr)a.expr1;
+            VarExpr       faeVE = (VarExpr)fae.struct;
+            VarDecl       faeVD = faeVE.vd;
+            StructType       st = (StructType)faeVD.type;
+            StructTypeDecl  std = structTypeDecls.get(st.identifier);
+            int    structOffset = 0;
+            for (VarDecl field: std.varDecls) {
+                if (field.ident.equals(fae.field)) break;
+                structOffset += 4;
+            }
+
+            VarDecl stackVar = null;
+            // Look through our stack allocations
+            for (VarDecl vd: stackAllocs) {
+                // If this VarDecl exists on the stack, under this function name => save it, and stop searching.
+                if (vd.ident.equals(faeVD.ident) && vd.parentFunc.name.equals(currFunDecl.name)) {
+                    stackVar = vd;
+                    break;
+                }
+            }
+            // If this var exists on the stack.
+            if (stackVar != null) {
+                Register rhs = a.expr2.accept(this);
+                writer.print("\n\tSW " + rhs + ", " + (stackVar.fpOffset - structOffset) + "($fp)\t# Storing " + rhs + " to Stack var [" + stackVar.ident + "." + fae.field + "]");
+                System.out.println("Field: " + fae.field + " exists with offset: " + stackVar.fpOffset + " and field offset: " + structOffset);
+                freeRegister(rhs);
+            }
+            // Else this var exists in the heap.
+            else {
+                Register rhs = a.expr2.accept(this);
+                Register heapAddr = getRegister();
+                writer.print("\n\tLA " + heapAddr + ", " + faeVD.ident);
+                writer.print("\n\tSW " + rhs + ", " + (0 - structOffset) + "("+ heapAddr +")\t# Storing " + rhs + " to Heap var [" + faeVD.ident + "." + fae.field + "]");
+                freeRegister(rhs);
+                freeRegister(heapAddr);
+            }
+            
+            
+            System.out.println("Field: " + fae.field + " Offset: " + structOffset);
+
         }
         return null;
     }
@@ -452,9 +494,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
             else {
                 Register operand1 = bo.expr1.accept(this);
                 Register operand2 = bo.expr2.accept(this);
-                // want x >= y
-                // :>   z = x < y
-                // :>   z = z < 1
                 writer.print("\n\tSLT " + output + ", " + operand1 + ", " + operand2);
                 Register valOne = getRegister();
                 writer.print("\n\tLI " + valOne + ", 1");
@@ -602,7 +641,43 @@ public class CodeGenerator implements ASTVisitor<Register> {
         return output;
 	}
 
-    // FieldAccessExpr
+    @Override
+    public Register visitFieldAccessExpr(FieldAccessExpr fae) {
+        VarExpr       faeVE = (VarExpr)fae.struct;
+        VarDecl       faeVD = faeVE.vd;
+        StructType       st = (StructType)faeVD.type;
+        StructTypeDecl  std = structTypeDecls.get(st.identifier);
+        int    structOffset = 0;
+        for (VarDecl field: std.varDecls) {
+            if (field.ident.equals(fae.field)) break;
+            structOffset += 4;
+        }
+
+        VarDecl stackVar = null;
+        // Look through our stack allocations
+        for (VarDecl vd: stackAllocs) {
+            // If this VarDecl exists on the stack, under this function name => save it, and stop searching.
+            if (vd.ident.equals(faeVD.ident) && vd.parentFunc.name.equals(currFunDecl.name)) {
+                stackVar = vd;
+                break;
+            }
+        }
+        // If this var exists on the stack.
+        if (stackVar != null) {
+            Register output = getRegister();
+            writer.print("\n\tLW " + output + ", " + (stackVar.fpOffset - structOffset) + "($fp)\t# Loading  Stack var [" + stackVar.ident + "." + fae.field + "] to " + output);
+            return output;
+        }
+        // Else this var exists in the heap.
+        else {
+            Register output = getRegister();
+            Register heapAddr = getRegister();
+            writer.print("\n\tLA " + heapAddr + ", " + faeVD.ident);
+            writer.print("\n\tLW " + output + ", " + (0 - structOffset) + "(" + heapAddr + ")\t# Loading  Heap var ["  + faeVD.ident +  "." + fae.field + "] to " + output);
+            freeRegister(heapAddr);
+            return output;
+        }
+    }
 
     @Override
     public Register visitFunCallExpr(FunCallExpr fce) {
@@ -727,11 +802,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
 	@Override
     public Register visitArrayAccessExpr(ArrayAccessExpr aae) {
 		return null;
-    }
-
-	@Override
-    public Register visitFieldAccessExpr(FieldAccessExpr fae) {
-        return null;
     }
 	
 	@Override
