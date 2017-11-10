@@ -800,9 +800,20 @@ public class CodeGenerator implements ASTVisitor<Register> {
 		return output;
     }
     
-    // TypecastExpr
+    @Override
+    public Register visitTypecastExpr(TypecastExpr te) {
+        return te.expr.accept(this);
+	}
 
-    // ValueAtExpr
+    @Override
+    public Register visitValueAtExpr(ValueAtExpr vae) {
+        Register output = getRegister();
+        System.out.println("VAE: " + output);
+        Register addr = vae.expr.accept(this);
+        writer.print("\n\tLW " + output + ", (" + addr + ")");
+        freeRegister(addr);
+		return output;
+    }
 
     @Override
     public Register visitVarExpr(VarExpr v) {
@@ -851,15 +862,8 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
 	
 	
-	@Override
-    public Register visitTypecastExpr(TypecastExpr te) {
-        return te.expr.accept(this);
-	}
+	
 
-	@Override
-    public Register visitValueAtExpr(ValueAtExpr vae) {
-		return null;
-    }
 
     @Override
     public Register visitBaseType(BaseType bt) {
