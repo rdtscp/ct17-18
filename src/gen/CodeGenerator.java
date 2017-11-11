@@ -32,6 +32,10 @@ public class CodeGenerator implements ASTVisitor<Register> {
     private Stack<Register> freeRegs = new Stack<Register>();
 
     public CodeGenerator() {
+        freeAllRegs();
+    }
+
+    private void freeAllRegs() {
         freeRegs.addAll(Register.tmpRegs);
     }
 
@@ -49,7 +53,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
     private void freeRegister(Register reg) {
         if (reg == null) return;
         if (reg == Register.v0) return;
-        if (freeRegs.contains(reg)) throw new RegisterAllocationError();
         freeRegs.push(reg);
     }
     
@@ -382,16 +385,17 @@ public class CodeGenerator implements ASTVisitor<Register> {
     @Override
 	public Register visitReturn(Return r) {
         writer.print("\n\t# --- Return Statement --- #");
-        writer.print("\n\tLW $ra, -8($fp)\t\t# Load ret address.");
         if (r.expr != null) {
             Register output = r.expr.accept(this);
             writer.print("\n\tMOVE $v0, " + output + "\t\t#  Move " + output + " into output register.");
+            writer.print("\n\tLW $ra, -8($fp)\t\t# Load ret address.");
             writer.print("\n\tADDI $sp, $fp, -4");
             writer.print("\n\tJR $ra");
             writer.print("\n\t# ------------------------ #");        
             freeRegister(output);
             return Register.v0;
         }
+        writer.print("\n\tLW $ra, -8($fp)\t\t# Load ret address.");
         writer.print("\n\tADDI $sp, $fp, -4");
         writer.print("\n\tJR $ra");
         writer.print("\n\t# ------------------------ #");
@@ -748,6 +752,18 @@ public class CodeGenerator implements ASTVisitor<Register> {
         FunDecl caller = fce.fd;
         currFunDecl = caller;
 
+        // Push Register state to stack.
+        Stack<Register> reinstate = (Stack<Register>)freeRegs.clone();
+        freeAllRegs();
+        Stack<Register> allRegs   = (Stack<Register>)freeRegs.clone();
+        
+        writer.print("\n\t# ~~~ Saving Reg State to Stack ~~~ #");
+        for (Register reg: allRegs) {
+            writer.print("\n\t ADDI $sp, $sp, -4");
+            writer.print("\n\t SW " + reg + "($sp)");
+        }
+        writer.print("\n\t# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #");
+
         int paramBytes = 0;
         
         // Push params onto stack in rever order.
@@ -765,26 +781,40 @@ public class CodeGenerator implements ASTVisitor<Register> {
         }
         
         // Push current FP to stack.
-        Register temp = getRegister();
-        writer.print("\n\n\t# Pushing $fp on Stack and updating $fp for [" + fce.ident + "()]");
-        writer.print("\n\tMOVE " + temp + ", $sp\t\t# Store addr[param0] i.e. next $fp");
-        writer.print("\n\tADDI $sp, $sp, -4\t# Move down Stack.");
-        writer.print("\n\tSW $fp ($sp)\t\t#   -> Push curr $fp.");
-        writer.print("\n\tMOVE $fp, " + temp + "\t\t#   -> Curr $fp -> [param0]");
-        freeRegister(temp);
+         Register temp = getRegister();
+         writer.print("\n\n\t# Pushing $fp on Stack and updating $fp for [" + fce.ident + "()]");
+         writer.print("\n\tMOVE " + temp + ", $sp\t\t# Store addr[param0] i.e. next $fp");
+         writer.print("\n\tADDI $sp, $sp, -4\t# Move down Stack.");
+         writer.print("\n\tSW $fp ($sp)\t\t#   -> Push curr $fp.");
+         writer.print("\n\tMOVE $fp, " + temp + "\t\t#   -> Curr $fp -> [param0]");
+         freeRegister(temp);
 
         // Jump to function.
         writer.print("\n\n\tJAL " + fce.ident + "\t\t\t#  CALL => " + fce.ident + "()\n");
 
         // Re-instate $fp & $sp
-        writer.print("\n\n\t# Popping $fp off Stack and re-instating $fp after [" + fce.ident + "()]");
-        writer.print("\n\tLW $fp, ($sp)\t\t# Re-Instate the $fp");
-        writer.print("\n\tADDI $sp, $sp, 4\t#   -> Move up Stack.");
+         writer.print("\n\n\t# Popping $fp off Stack and re-instating $fp after [" + fce.ident + "()]");
+         writer.print("\n\tLW $fp, ($sp)\t\t# Re-Instate the $fp");
+         writer.print("\n\tADDI $sp, $sp, 4\t#   -> Move up Stack.");
 
         // Clean up params on stack.
-        writer.print("\n\n\t# Popping {" + num_params + "} Params off Stack after [" + fce.ident + "()]");
-        writer.print("\n\tADDI $sp, $sp, " + paramBytes + "\t# Clean up args on stack.");
-        writer.print("\n\t# --- Stack restored after function call to: " + fce.ident + " --- #");
+         writer.print("\n\n\t# Popping {" + num_params + "} Params off Stack after [" + fce.ident + "()]");
+         writer.print("\n\tADDI $sp, $sp, " + paramBytes + "\t# Clean up args on stack.");
+         writer.print("\n\t# --- Stack restored after function call to: " + fce.ident + " --- #");
+
+
+        // Push Register state to stack.
+        freeAllRegs();
+        writer.print("\n\t# ~~~ Restoring Reg State from Stack ~~~ #");
+        Collections.reverse(allRegs);
+        for (Register reg: allRegs) {
+            writer.print("\n\t ADDI $sp, $sp, 4");
+            writer.print("\n\t LW " + reg + "($sp)");
+        }
+        writer.print("\n\t# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #");
+        freeRegs = reinstate;
+        
+
         // Return the current function back to one we are currently in.
         currFunDecl = callee;
         Register output = getRegister();
