@@ -203,6 +203,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
         // Generate this functions code.
         fd.block.accept(this);
         
+        writer.print("\n\tJ " + fd.name + "_ret");
         // Clear the stack, and retrieve the return address.
         writer.print("\n" + fd.name + "_ret:");
         writer.print("\n\tADDI $sp, $sp, " + fd.stackVarsUsage + "\t# Move up Stack -> Past all {" + fd.stackVarsUsage/4 + "} allocated vars for [" + fd.name + "]");
