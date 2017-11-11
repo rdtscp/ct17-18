@@ -81,6 +81,7 @@ void argIntPtr(int * num) {
 void argCharPtr(char * str) {
     print_c(*str);
     print_s(str);
+    print_s("string");
 }
 
 void argStructFooPtr(struct foo * obj) {
@@ -94,19 +95,13 @@ void argStructFoo2Ptr(struct foo2 * obj) {
 // Misc Tests
 
 void arrayTests() {
-
-    int arr1[5];
-    int arr2[5];
-
-
     int arr[5];
+    int arr2[5];
     int * arr_ptr[5];
 
     int num;
 
-
-    arr1 = arr2;
-
+    arr = arr2;
     num = arr[0];
     num = *arr_ptr[0];
 }
