@@ -1,16 +1,26 @@
 package gen;
 
 import ast.*;
+import sem.*;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.EmptyStackException;
 import java.util.Stack;
+
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.*;
 
+/*
+
+    Notes:
+    Need to create hierarchy of Scope, or pop stack otherwise reading from wrong scope.
+
+
+
+*/
 
 public class CodeGenerator implements ASTVisitor<Register> {
 
@@ -30,9 +40,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
     private Register getRegister() {
         try {
             Register out = freeRegs.pop();
-            if (out.toString().equals("$v0")) {
-                System.out.println("\n ALLOCATING $v0");
-            }
             return out;
         } catch (EmptyStackException ese) {
             throw new RegisterAllocationError(); // no more free registers, bad luck!
@@ -54,7 +61,12 @@ public class CodeGenerator implements ASTVisitor<Register> {
     
     // Track Variables stored on Stack & Heap.
     private ArrayList<String> heapAllocs = new ArrayList<String>();
-    private ArrayList<VarDecl> stackAllocs = new ArrayList<VarDecl>();
+
+    private Stack<ArrayList<VarDecl>> scopesStack= new Stack<ArrayList<VarDecl>>();;     // Stack of all stackAllocs Scopes.
+    private Scope currScope;
+    
+    // @DEBUG
+    String stackState = "";
 
     // Track String literals.
     private int strNum = 0;
@@ -72,6 +84,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     @Override
     public Register visitProgram(Program p) {
+        currScope = new Scope();
         writer.print("\t\t.data");
         
         // Create the HashMap of StructTypeDecls.
@@ -170,6 +183,8 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     @Override
     public Register visitFunDecl(FunDecl fd) {
+        currScope = new Scope(currScope);
+
         // Mark what FunDecl we are inside.
         currFunDecl = fd;
         // Add the parameters of this function to the StackAllocs.
@@ -178,22 +193,24 @@ public class CodeGenerator implements ASTVisitor<Register> {
             vd.parentFunc = fd;                                 // Tie this VarDecl to its FunDecl.
             vd.fpOffset = currFPoffset; currFPoffset+=4;        // Increment the $fp offset for this arg/param.
             fd.stackArgsUsage += vd.num_bytes;                  // Increment the number of Bytes this FunDecl uses.
-            stackAllocs.add(vd);                                // Add this VarDecl to our list of stackAlloc'd variables.
+            currScope.put(new Variable(vd, vd.ident));          // Add this VarDecl to current scopes list of stackAlloc'd variables.
         }
         // Declare this function.
-        writer.print("\n\n" + fd.name + ":");
+         writer.print("\n\n" + fd.name + ":");
         // Store the return address on the stack.
-        writer.print("\n\tADDI $sp, $sp, -4\t# Move down Stack.");
-        writer.print("\n\tSW $ra, ($sp)\t\t#   -> Push RET-ADDR.");
+         writer.print("\n\tADDI $sp, $sp, -4\t# Move down Stack.");
+         writer.print("\n\tSW $ra, ($sp)\t\t#   -> Push RET-ADDR.");
         // Generate this functions code.
         fd.block.accept(this);
         
         // Clear the stack, and retrieve the return address.
-        writer.print("\n\tADDI $sp, $sp, " + fd.stackVarsUsage + "\t# Move up Stack -> Past all {" + fd.stackVarsUsage/4 + "} allocated vars for [" + fd.name + "]");
-        writer.print("\n\tLW $ra, ($sp)\t\t# Load the RET-ADDR off the Stack.");
-        writer.print("\n\tADDI $sp, $sp, 4\t#   -> Move up Stack.");
-        writer.print("\n\tJR $ra\t\t\t\t#   -> Return to caller.");
-        // Reset the current FunDecl and $sp Offset for variables.
+         writer.print("\n\tADDI $sp, $sp, " + fd.stackVarsUsage + "\t# Move up Stack -> Past all {" + fd.stackVarsUsage/4 + "} allocated vars for [" + fd.name + "]");
+         writer.print("\n\tLW $ra, ($sp)\t\t# Load the RET-ADDR off the Stack.");
+         writer.print("\n\tADDI $sp, $sp, 4\t#   -> Move up Stack.");
+         writer.print("\n\tJR $ra\t\t\t\t#   -> Return to caller.");
+
+        // Reset the current FunDecl and the hierarchy of scopes.
+        currScope = currScope.outer;
         currFunDecl = null;
         return null;
     }
@@ -202,22 +219,25 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     @Override
 	public Register visitBlock(Block b) {
+        currScope = new Scope(currScope);
+        
         // Allocate space on stack for the local variables.
         for (VarDecl vd: b.varDecls) {
             // Move down the stack by specified number of bytes.
-            writer.print("\n\tADDI $sp, $sp, -" + vd.num_bytes + "\t# Allocating: " + vd.ident + " " + vd.num_bytes + " Bytes.");
+             writer.print("\n\tADDI $sp, $sp, -" + vd.num_bytes + "\t# Allocating: " + vd.ident + " " + vd.num_bytes + " Bytes.");
             // Set the offset of this Var on stack, and decrement for the next.
-            vd.fpOffset = fpOffset;
-            fpOffset -= 4;
+             vd.fpOffset = fpOffset;
+             fpOffset -= 4;
             // Push this VarDecl onto our CallStack tracker, and increment this func's stack usage.
-            currFunDecl.stackVarsUsage+= vd.num_bytes;
-            stackAllocs.add(vd);
+             currFunDecl.stackVarsUsage+= vd.num_bytes;
+            currScope.put(new Variable(vd, vd.ident));
         }
         writer.print("\n");
         // Generate code for all of this block.
         for (Stmt s: b.stmts) {
             s.accept(this);
         }
+        currScope = currScope.outer;
         return null;
     }
 
@@ -225,30 +245,21 @@ public class CodeGenerator implements ASTVisitor<Register> {
 	public Register visitAssign(Assign a) {
         if (a.expr1 instanceof VarExpr) {
             // Get the VarDecl for this var.
-            VarDecl lhsVd    = ((VarExpr)a.expr1).vd;
+            VarExpr v = (VarExpr)a.expr1;
 
-            /* Determine if this Var exists in stack or heap. */
-            VarDecl stackVar = null;
-            // Look through our stack allocations.
-            for (VarDecl vd: stackAllocs) {
-                // If this VarDecl exists on the stack, under this function name => save it, and stop searching.
-                if (vd.ident.equals(lhsVd.ident) && vd.parentFunc.name.equals(currFunDecl.name)) {
-                    stackVar = vd;
-                    break;
-                }
-            }
+            Symbol varSymbol = currScope.lookup(v.ident);
+
             // If this var exists on the stack.
-            if (stackVar != null) {
+            if (varSymbol != null) {
+                VarDecl stackVar = ((Variable)varSymbol).decl;
                 Register rhs = a.expr2.accept(this);
-                System.out.println(rhs + " assigned to " + a.expr2);
                 writer.print("\n\tSW " + rhs + ", " + stackVar.fpOffset + "($fp)\t# Storing " + rhs + " to Stack var [" + stackVar.ident + "]");
                 freeRegister(rhs);
             }
             // Else this var exists in the heap.
             else {
                 Register rhs = a.expr2.accept(this);
-                System.out.println(rhs + " assigned to " + a.expr2);
-                writer.print("\n\tSW " + rhs + ", " + lhsVd.ident + "\t\t# Store " + rhs + " to [" + lhsVd.ident + "]");
+                writer.print("\n\tSW " + rhs + ", " + v.ident + "\t\t# Store " + rhs + " to [" + v.ident + "]");
                 freeRegister(rhs);
             }
         }
@@ -264,20 +275,13 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 structOffset += 4;
             }
 
-            VarDecl stackVar = null;
-            // Look through our stack allocations
-            for (VarDecl vd: stackAllocs) {
-                // If this VarDecl exists on the stack, under this function name => save it, and stop searching.
-                if (vd.ident.equals(faeVD.ident) && vd.parentFunc.name.equals(currFunDecl.name)) {
-                    stackVar = vd;
-                    break;
-                }
-            }
+            Symbol varSymbol = currScope.lookup(faeVE.ident);
+            
             // If this var exists on the stack.
-            if (stackVar != null) {
+            if (varSymbol != null) {
+                VarDecl stackVar = ((Variable)varSymbol).decl;
                 Register rhs = a.expr2.accept(this);
                 writer.print("\n\tSW " + rhs + ", " + (stackVar.fpOffset - structOffset) + "($fp)\t# Storing " + rhs + " to Stack var [" + stackVar.ident + "." + fae.field + "]");
-                System.out.println("Field: " + fae.field + " exists with offset: " + stackVar.fpOffset + " and field offset: " + structOffset);
                 freeRegister(rhs);
             }
             // Else this var exists in the heap.
@@ -290,8 +294,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 freeRegister(heapAddr);
             }
             
-            
-            System.out.println("Field: " + fae.field + " Offset: " + structOffset);
 
         }
         else if (a.expr1 instanceof ArrayAccessExpr) {
@@ -320,6 +322,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     @Override
 	public Register visitIf(If i) {
+
         Register condition  = i.expr.accept(this);
         String ifName       = currFunDecl.name + "_if";
         int    ifNum        = currFunDecl.currIf;
@@ -610,7 +613,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
                 Register operand1 = bo.expr1.accept(this);
                 Register operand2 = bo.expr2.accept(this);
                 Register valOne = getRegister();
-                System.out.println(operand1 + " == " + operand2);
                 writer.print("\n\tLI " + valOne + ", 1\t\t\t# Register to hold value 1.");
 
                 writer.print("\n\tSUB " + operand1 + ", " + operand1 + ", " + operand2);
@@ -682,17 +684,11 @@ public class CodeGenerator implements ASTVisitor<Register> {
             structOffset += 4;
         }
 
-        VarDecl stackVar = null;
-        // Look through our stack allocations
-        for (VarDecl vd: stackAllocs) {
-            // If this VarDecl exists on the stack, under this function name => save it, and stop searching.
-            if (vd.ident.equals(faeVD.ident) && vd.parentFunc.name.equals(currFunDecl.name)) {
-                stackVar = vd;
-                break;
-            }
-        }
+        Symbol varSymbol = currScope.lookup(faeVE.ident);
+        
         // If this var exists on the stack.
-        if (stackVar != null) {
+        if (varSymbol != null) {
+            VarDecl stackVar = ((Variable)varSymbol).decl;
             Register output = getRegister();
             writer.print("\n\tLW " + output + ", " + (stackVar.fpOffset - structOffset) + "($fp)\t# Loading  Stack var [" + stackVar.ident + "." + fae.field + "] to " + output);
             return output;
@@ -718,7 +714,6 @@ public class CodeGenerator implements ASTVisitor<Register> {
         
         // Push params onto stack in rever order.
         int num_params = fce.fd.params.size();
-        //System.out.println("Visiting FunCallExpr[" + fce.ident + "] with {" + num_params + "} params");
         writer.print("\n\n\t# --- About to call function: " + fce.ident + " --- #");
         writer.print("\n\t# Pushing {" + num_params + "} Params on Stack for [" + fce.ident + "()]");
         for (int i = (num_params - 1); i >= 0; i--) {
@@ -833,24 +828,21 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     @Override
     public Register visitVarExpr(VarExpr v) {
-        // Search our Stack allocated Vars for this var.
-        VarDecl stackVar = null;
-        for (VarDecl vd: stackAllocs) {
-            // If this VarDecl exists on the stack, under this function name.
-            if (vd.ident.equals(v.ident) && vd.parentFunc.name.equals(currFunDecl.name)) {
-                stackVar = vd;
-                break;
-            }
-        }
+        Symbol varSymbol = currScope.lookup(v.ident);
+        
         // If this var exists on the stack.
-        if (stackVar != null) {
+        if (varSymbol != null) {
+            VarDecl stackVar = ((Variable)varSymbol).decl;
             Register output = getRegister();
-            writer.print("\n\tLW " + output + ", " + stackVar.fpOffset + "($fp)\t# Loading variable [" + stackVar.ident + "] into " + output);
+            writer.print("\n\tLW " + output + ", " + stackVar.fpOffset + "($fp)\t# Loading stack variable [" + stackVar.ident + "] into " + output);
+            // System.out.println("\t*** Existed on Stack ***");
             return output;
         }
         else {
+            // System.out.println("heap");
             Register output = getRegister();
-            writer.print("\n\tLW " + output + ", " + v.ident + "\t\t# Loading variable [" + v.ident + "] into " + output);
+            writer.print("\n\tLW " + output + ", " + v.ident + "\t\t# Loading heap variable [" + v.ident + "] into " + output);
+            // System.out.println("\tExisted on Heap.");
             return output;
         }
     }
