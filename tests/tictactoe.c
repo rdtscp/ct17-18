@@ -51,85 +51,67 @@ int full() {
 // Attempts to put mark in cell (row,col)
 // Returns 1 on success, otherwise -1 is returned when the cell is already occupied, and 0 when the move is not within the board range.
 int set(char row, int col, char mark) {
-  int r;
-  r = 1;
-  if (row == 'a') {
-     if (col == 1) {
-        if (a11 == empty)
-	    a11 = mark;
-	else
-	  r = -1;
-     } else {
-       if (col == 2) {
-         if (a12 == empty)
-           a12 = mark;
-	 else
-	   r = -1;
-       } else {
-         if (col == 3) {
-	   if (a13 == empty)
-              a13 = mark;
-	   else
-	     r = -1;
-         } else {
-           r = 0;
-         }
-       }
-    }
-  } else {
-    if (row == 'b') {
-       if (col == 1) {
-          if (a21 == empty)
-            a21 = mark;
-	  else
-	    r = -1;
-       } else {
-         if (col == 2) {
-	    if (a22 == empty)
-              a22 = mark;
-	    else
-	      r = -1;
-         } else {
-	    if (col == 3) {
-	      if (a23 == empty)
-                 a23 = mark;
-              else
-	       r = -1;
-            } else {
-	      r = 0;
-	    }
-	}
-      }
-    } else {
-     if (row == 'c') {
+    int r;
+    r = 1;
+    if (row == 'a') {
         if (col == 1) {
-	   if (a31 == empty)
-             a31 = mark;
-	   else
-	     r = -1;
+            if (a11 == empty) a11 = mark;
+            else r = -1;
         } else {
-           if (col == 2) {
-	      if (a32 == empty)
-                a32 = mark;
-              else
-	        r = -1;
-           } else {
-              if (col == 3) {
-	        if (a33 == empty)
-                   a33 = mark;
-		else
-		  r = -1;
-	      } else {
-	        r = 0;
-	      }
-          }
+            if (col == 2) {
+                if (a12 == empty) a12 = mark;
+                else r = -1;
+            } else {
+                if (col == 3) {
+	                  if (a13 == empty) a13 = mark;
+	                  else r = -1;
+                } else {
+                    r = 0;
+                }
+            }
         }
-     } else {
-       r = 0;
-     }
-   }
-  }
- return r;
+    } else {
+        if (row == 'b') {
+            if (col == 1) {
+                if (a21 == empty) a21 = mark;
+                else r = -1;
+            } else {
+                if (col == 2) {
+                    if (a22 == empty) a22 = mark;
+                    else r = -1;
+                } else {
+                    if (col == 3) {
+                        if (a23 == empty) a23 = mark;
+                        else r = -1;
+                    } else {
+                        r = 0;
+                    }
+                }
+            }
+        } else {
+            if (row == 'c') {
+                if (col == 1) {
+                    if (a31 == empty) a31 = mark;
+                    else r = -1;
+                } else {
+                    if (col == 2) {
+                        if (a32 == empty) a32 = mark;
+                        else r = -1;
+                    } else {
+                        if (col == 3) {
+                            if (a33 == empty) a33 = mark;
+                            else r = -1;
+                        } else {
+                            r = 0;
+                        }
+                    }
+                }
+            } else {
+                r = 0;
+            }
+        }
+    }
+    return r;
 }
 
 // Prints the game board to stdout
@@ -171,7 +153,8 @@ void selectmove(int player) {
   while(selected) {
     print_s("Player ");print_i(player);print_s(" select move (e.g. a2)>");
     row = read_c(); col = read_i();
-    read_c(); // consume enter
+    // read_c(); // consume enter
+
     mark = get_mark(player);
     success = set(row,col,mark);
       if (success == 0) {
@@ -258,8 +241,10 @@ void main() {
   empty = ' ';
   playing = 1;
   reset();
+  
   printGame();
   player = 1; // Begin with player one
+  
   while (playing) {
     selectmove(player);
     mark = get_mark(player);
@@ -275,19 +260,19 @@ void main() {
     }
     
     if (playing == 0) {
-      print_s("Play again? (y/n)> ");
-      yesno = read_c();
-      if (yesno == 'y') {
-        playing = 1;
-	read_c(); // consume enter
-	reset();
-      } else {
-        if (yesno == 'Y') {
-	  playing = 1;
-	  read_c(); // consume enter
-	  reset();
-	}
-      }
+        print_s("Play again? (y/n)> ");
+        yesno = read_c();
+        if (yesno == 'y') {
+            playing = 1;
+	          // read_c(); // consume enter
+	          reset();
+        } else {
+            if (yesno == 'Y') {
+	              playing = 1;
+	              // read_c(); // consume enter
+	              reset();
+	          }
+        }
     }
   }
 }
