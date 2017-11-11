@@ -2,6 +2,10 @@
 
 int main() {
     /* Output should be entirely 1's */
+    int num1;
+    int num2;
+    int num3;
+    int num4;
 
     print_s("assert 11111111111111111111111111111111 \n       =\n       ");
 
@@ -33,12 +37,21 @@ int main() {
     if (1 * 2 == 1) print_i(0);
     else print_i(1);
 
-    // DIV VALID
-    if (16 / 4 == 4) print_i(1);
+    // DIV
+    num1 = 16;
+    num2 = 4;
+    num3 = 1;
+    num4 = 0;
+    if (num1 / num2 == 4) print_i(1);
     else print_i(0);
-    // DIV INVALID
-    if (16 / 4 == 3) print_i(0);
+    if (num1 / num2 == 3) print_i(0);
     else print_i(1);
+    if (num4 / num3 == 0) print_i(1);
+    else print_i(1);
+    if (num2 / num1 == 0) print_i(1);
+    else print_i(0);
+    if (num3 / num3 == 1) print_i(1);
+    else print_i(0);
 
     // MOD VALID
     if (16%4 == 0) print_i(1);
