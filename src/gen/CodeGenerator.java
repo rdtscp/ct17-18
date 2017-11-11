@@ -47,9 +47,9 @@ public class CodeGenerator implements ASTVisitor<Register> {
     }
 
     private void freeRegister(Register reg) {
-        if (reg == null) throw new RegisterAllocationError();
-        if (freeRegs.contains(reg)) throw new RegisterAllocationError();
+        if (reg == null) return;
         if (reg == Register.v0) return;
+        if (freeRegs.contains(reg)) throw new RegisterAllocationError();
         freeRegs.push(reg);
     }
     
@@ -204,10 +204,11 @@ public class CodeGenerator implements ASTVisitor<Register> {
         fd.block.accept(this);
         
         // Clear the stack, and retrieve the return address.
-         writer.print("\n\tADDI $sp, $sp, " + fd.stackVarsUsage + "\t# Move up Stack -> Past all {" + fd.stackVarsUsage/4 + "} allocated vars for [" + fd.name + "]");
-         writer.print("\n\tLW $ra, ($sp)\t\t# Load the RET-ADDR off the Stack.");
-         writer.print("\n\tADDI $sp, $sp, 4\t#   -> Move up Stack.");
-         writer.print("\n\tJR $ra\t\t\t\t#   -> Return to caller.");
+        writer.print("\n" + fd.name + "_ret:");
+        writer.print("\n\tADDI $sp, $sp, " + fd.stackVarsUsage + "\t# Move up Stack -> Past all {" + fd.stackVarsUsage/4 + "} allocated vars for [" + fd.name + "]");
+        writer.print("\n\tLW $ra, ($sp)\t\t# Load the RET-ADDR off the Stack.");
+        writer.print("\n\tADDI $sp, $sp, 4\t#   -> Move up Stack.");
+        writer.print("\n\tJR $ra\t\t\t\t#   -> Return to caller.");
 
         // Reset the current FunDecl and the hierarchy of scopes.
         currScope = currScope.outer;
@@ -235,7 +236,8 @@ public class CodeGenerator implements ASTVisitor<Register> {
         writer.print("\n");
         // Generate code for all of this block.
         for (Stmt s: b.stmts) {
-            s.accept(this);
+            Register stmtReg = s.accept(this);
+            freeRegister(stmtReg);
         }
         currScope = currScope.outer;
         return null;
@@ -333,13 +335,14 @@ public class CodeGenerator implements ASTVisitor<Register> {
         // Print (condition == true) case.
         writer.print("\n" + ifName + ifNum + "_t:");        // Label this branch.
         Register stmt1Reg = i.stmt1.accept(this);           // Generate code.
+        
         writer.print("\n\tJ " + ifName + ifNum + "_cont");  // Once done, jump to cont.
 
         // Print (condition == false) case.
         writer.print("\n" + ifName + ifNum + "_f:");        // Label this branch.
         if (i.stmt2 != null) {                              // If there is an else stmt.
             Register stmt2Reg = i.stmt2.accept(this);       // Generate the code.
-            if (stmt2Reg != null) freeRegister(stmt2Reg);
+            freeRegister(stmt2Reg);
         }
         writer.print("\n\tJ " + ifName + ifNum + "_cont");  // Once done, jump to cont.
 
@@ -347,8 +350,8 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
 
         // Free up registers.
+        freeRegister(stmt1Reg);
         freeRegister(condition);
-        if (stmt1Reg != null) freeRegister(stmt1Reg);
 		return null;
 	}
 
@@ -357,9 +360,11 @@ public class CodeGenerator implements ASTVisitor<Register> {
         if (r.expr != null) {
             Register output = r.expr.accept(this);
             writer.print("\n\tMOVE $v0, " + output + "\t\t#  Move " + output + " into output register.");
+            writer.print("\n\tJ " + currFunDecl.name + "_ret");
             freeRegister(output);
             return Register.v0;
         }
+        writer.print("\n\tJ " + currFunDecl.name + "_ret");
 		return null;
     }
     
@@ -372,7 +377,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
         writer.print("\n\tBEQZ " + condition + ", " + whileName + whileNum + "_f");
         currFunDecl.currWhile++;
         writer.print("\n" + whileName + whileNum + "_t:");
-        w.stmt.accept(this);
+        Register temp = w.stmt.accept(this);
         condition = w.expr.accept(this);
         writer.print("\n\tBNEZ " + condition + ", " + whileName + whileNum + "_t");
         writer.print("\n\tBEQZ " + condition + ", " + whileName + whileNum + "_f");
@@ -380,6 +385,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
         writer.print("\n\tJ " + whileName + whileNum + "_cont");
         writer.print("\n" + whileName + whileNum + "_cont:");
         freeRegister(condition);
+        freeRegister(temp);
         return null;
     }
     
@@ -722,7 +728,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
             currFunDecl = caller;
             writer.print("\n\tADDI $sp, $sp, -4\t# Move down Stack.");
             writer.print("\n\tSW " + paramReg + ", ($sp)\t\t#   -> Push Param.");
-            if (paramReg != null) freeRegister(paramReg);
+            freeRegister(paramReg);
         }
         
         // Push current FP to stack.
