@@ -2,6 +2,7 @@
 
 int main() {
     int * x;
+    print_s("assert 1337666999 == ");
     x = (int*)mcmalloc(8);
 
     *x = 1337; 

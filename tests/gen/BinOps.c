@@ -3,6 +3,8 @@
 int main() {
     /* Output should be entirely 1's */
 
+    print_s("assert 11111111111111111111111111111111 \n       =\n       ");
+
     // EQ VALID
     if (1 == 1) print_i(1);
     else print_i(0);
