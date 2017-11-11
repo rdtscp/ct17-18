@@ -748,10 +748,12 @@ public class CodeGenerator implements ASTVisitor<Register> {
             writer.print("\n\tADDI $sp, $sp, 4");
         }
         // writer.print("\n\tADDI $sp, $sp, " + (num_params * 4) + "\t# Clear up {" + num_params + "} params for [" + fce.ident + "()] on Stack.\n\t\t\t\t\t\t# $v0 is the return of [" + fce.ident + "()] if applicable.");
-        writer.print("\n\t# --- Stack restored after function call to: " + fce.ident + " --- #\n");
+        writer.print("\n\t# --- Stack restored after function call to: " + fce.ident + " --- #");
         // Return the current function back to one we are currently in.
         currFunDecl = callee;
-        return Register.v0;
+        Register output = getRegister();
+        writer.print("\n\tMOVE " + output + ", $v0\t\t# Move output of this function into a clean Register.\n");
+        return output;
 	}
 
     @Override
