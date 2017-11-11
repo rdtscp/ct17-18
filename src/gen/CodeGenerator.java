@@ -808,8 +808,8 @@ public class CodeGenerator implements ASTVisitor<Register> {
         writer.print("\n\t# ~~~ Restoring Reg State from Stack ~~~ #");
         Collections.reverse(allRegs);
         for (Register reg: allRegs) {
-            writer.print("\n\t ADDI $sp, $sp, 4");
             writer.print("\n\t LW " + reg + "($sp)");
+            writer.print("\n\t ADDI $sp, $sp, 4");
         }
         writer.print("\n\t# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #");
         freeRegs = reinstate;
