@@ -243,6 +243,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
         writer.print("\n\t# --- NEW BLOCK --- #");
         int stackUsage = 0;
+        int fpOffsetUsed = 0;
         
         // Allocate space on stack for the local variables.
         for (VarDecl vd: b.varDecls) {
@@ -250,7 +251,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
             writer.print("\n\tADDI $sp, $sp, -" + vd.num_bytes + "\t# Allocating: " + vd.ident + " " + vd.num_bytes + " Bytes.");
             // Set the offset of this Var on stack, and decrement for the next.
             vd.fpOffset = fpOffset;
-            fpOffset -= 4;
+            fpOffset -= vd.num_bytes; fpOffsetUsed += vd.num_bytes;
             // Push this VarDecl onto our CallStack tracker, and increment this func's stack usage.
             currFunDecl.stackVarsUsage+= vd.num_bytes;
             stackUsage += vd.num_bytes;
@@ -265,7 +266,7 @@ public class CodeGenerator implements ASTVisitor<Register> {
         writer.print("\n\tADDI $sp, $sp, " + stackUsage + "\t# Clean up variables declared within this block.");
         
         writer.print("\n\t# --- END BLOCK --- #");
-
+        fpOffset += fpOffsetUsed;
         currScope = currScope.outer;
         return null;
     }
