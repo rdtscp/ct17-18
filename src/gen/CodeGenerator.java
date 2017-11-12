@@ -327,12 +327,34 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
         }
         else if (a.expr1 instanceof ArrayAccessExpr) {
-            ArrayAccessExpr aae = (ArrayAccessExpr)a.expr1;
-            System.out.println("aae array: " + aae.array);
-            Register arrayAddr = aae.array.accept(this);
+            ArrayAccessExpr aae = (ArrayAccessExpr)a.expr1;    System.out.println("aae array: " + aae.array);
+
+            // Get the value to assign, and the index to assign to.
+            Register rhs = a.expr2.accept(this);
             Register index = aae.index.accept(this);
-            freeRegister(arrayAddr);
+            
+            if (aae.array instanceof VarExpr) {
+                VarExpr arrVE = (VarExpr)aae.array;
+                VarDecl arrVD = arrVE.vd;
+                
+                // Get registers for storing the offset into this variable.
+                Register offsetReg = getRegister();
+                Register valFour = getRegister();
+                // Multiply the index by 4 to get the correct word in memory.
+                writer.print("\n\tLI " + valFour + ", 4\t\t# Holds static value 4.");
+                writer.print("\n\tMUL " + index + ", " + index + ", " + valFour + "\t# Calculate how far into this variable to find desired index(" + index + ").");
+
+                // Set the variable offset based on the $fp, then decrement using the arrays offset.
+                writer.print("\n\tADDI " + offsetReg + ", $fp, " + arrVD.fpOffset + "\t# Point " + offsetReg + " at the start of this array.");
+                writer.print("\n\tADD " + offsetReg + ", " + offsetReg + ", " + index + "\t# Point " + offsetReg + " at the desired index (" + index + ") of this array");
+                
+                // Store the value.
+                writer.print("\n\tSW " + rhs + ", (" + offsetReg + ")");
+                freeRegister(valFour);
+                freeRegister(offsetReg);
+            }
             freeRegister(index);
+            freeRegister(rhs);
         }
         else if (a.expr1 instanceof ValueAtExpr) {
             ValueAtExpr vae = (ValueAtExpr)a.expr1;
@@ -428,7 +450,31 @@ public class CodeGenerator implements ASTVisitor<Register> {
 
     @Override
     public Register visitArrayAccessExpr(ArrayAccessExpr aae) {
-		return null;
+        
+        Register output = getRegister();
+        Register index = aae.index.accept(this);
+
+        if (aae.array instanceof VarExpr) {
+            VarDecl arrVD = ((VarExpr)aae.array).vd;
+                
+            // Get registers for storing the offset into this variable.
+            Register offsetReg = getRegister();
+            Register valFour = getRegister();
+            // Multiply the index by 4 to get the correct word in memory.
+            writer.print("\n\tLI " + valFour + ", 4\t\t# Holds static value 4.");
+            writer.print("\n\tMUL " + index + ", " + index + ", " + valFour + "\t# Calculate how far into this variable to find desired index(" + index + ").");
+
+            // Set the variable offset based on the $fp, then decrement using the arrays offset.
+            writer.print("\n\tADDI " + offsetReg + ", $fp, " + arrVD.fpOffset + "\t# Point " + offsetReg + " at the start of this array.");
+            writer.print("\n\tADD " + offsetReg + ", " + offsetReg + ", " + index + "\t# Point " + offsetReg + " at the desired index (" + index + ") of this array");
+            
+            // Store the value.
+            writer.print("\n\tLW " + output + ", (" + offsetReg + ")");
+            freeRegister(valFour);
+            freeRegister(offsetReg);
+        }
+        freeRegister(index);
+        return output;
     }
 
     @Override
@@ -904,14 +950,11 @@ public class CodeGenerator implements ASTVisitor<Register> {
             VarDecl stackVar = ((Variable)varSymbol).decl;
             Register output = getRegister();
             writer.print("\n\tLW " + output + ", " + stackVar.fpOffset + "($fp)\t\t# Loading stack variable [" + stackVar.ident + "] into " + output);
-            // System.out.println("\t*** Existed on Stack ***");
             return output;
         }
         else {
-            // System.out.println("heap");
             Register output = getRegister();
             writer.print("\n\tLW " + output + ", " + v.ident + "\t\t# Loading heap variable [" + v.ident + "] into " + output);
-            // System.out.println("\tExisted on Heap.");
             return output;
         }
     }
