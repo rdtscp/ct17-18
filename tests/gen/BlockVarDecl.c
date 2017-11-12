@@ -1,20 +1,28 @@
+int x;
+
+int func2() {
+
+}
+
+int func(int x, int y) {
+    print_i(x);
+    print_i(y);
+}
 
 int main() {
     int x;
-    x = 50;
-    while (x) {
-        if (x > 0) {
-            int foo;
-            foo = 5;
-            print_i(foo);
-            {
-                int foo;
-                foo = 0;
-                print_i(foo);
-            }
-        }
-        print_i(x);print_c('\n');
-        x = x - 1;
+    x = 1;
+    print_i(x);
+    {
+        int x;
+        x = 2;
+        print_i(x);
     }
-    
+    print_i(x);
+    {
+        int x;
+        x = 3;
+        print_i(x);
+    }
+    print_i(x);
 }
