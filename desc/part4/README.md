@@ -8,8 +8,7 @@ The project counts for 30% of your grade: 15% for writing a simple dead code eli
 
 You will use Git to clone the LLVM sources and Cmake to generate the Makefiles to build LLVM on Linux. You need a minimum of Cmake 3.4 or later. The version of Cmake installed in /usr/bin on DICE is sufficient for LLVM.
 
-To get started, you will clone the LLVM and Clang sources into your home directory (or location of your choice). You will need about 1.6GB of 
-free disk space. We will use 'ug3-ct' as the name of the directory to clone into.
+To get started, you will clone the LLVM and Clang sources into your home directory (or location of your choice). You will need about 1.6GB of  free disk space to clone the sources. We will use 'ug3-ct' as the name of the directory to clone into.
 
 ```
 cd ~
@@ -23,10 +22,12 @@ You have been given an extra 30GB of space for this course. The Debug build of L
 
 Create a directory called 'build' where you will build LLVM. This directory can be located anywhere EXCEPT under your LLVM source directory. We will place it under 'ug3-ct' in this document.
 
+If you are using DICE, the correct version of Cmake is installed as 'cmake3'. If you are using your own machine you may need to install Cmake from http://cmake.org. After installation the name of the binary will be 'cmake'.
+
 ```
 mkdir build
 cd build
-cmake -DLLVM_TARGETS_TO_BUILD=X86 -DCMAKE_BUILD_TYPE=Debug ../llvm
+cmake3 -DLLVM_TARGETS_TO_BUILD=X86 -DCMAKE_BUILD_TYPE=Debug ../llvm
 ```
 
 After Cmake finishes creating the Makefiles the next step is to actually build LLVM. This can take anywhere from 15-45 minutes depending 
@@ -36,8 +37,7 @@ on your machine.
 make -j8
 ```
 
-After make finishes you will have a bin directory with the LLVM tools (clang, clang++, llc, etc). Try to compile a simple C example with 
-Clang to LLVM bitcode to make sure it works.
+After make finishes you will have a bin directory with the LLVM tools (clang, clang++, llc, etc). Try to compile a simple C example with Clang to LLVM bitcode to make sure it works.
 
 ```
 echo "int main() { return 1; }" > test.c
@@ -45,7 +45,7 @@ echo "int main() { return 1; }" > test.c
 cat test.ll
 ```
 
-Your test.ll should look SOMETHING like this (this output is from Mac OS X, Linux and Windows will be slightly different),
+Your test.ll should look SOMETHING like this (this output is from Mac OS X, Linux and Windows will be slightly different).
 
 ```
 ; ModuleID = 'test.c'
@@ -74,17 +74,14 @@ Congratulations you have just built LLVM!
 
 ## 1. Writing a Skeleton LLVM Pass
 
-You have LLVM and are able to compile C programs. The next step is to create a pass of your own. 
-Adrian Sampson at Cornell has put a simple skeleton pass online that you can use as a starting point. 
-Change to your home directory and clone Adrian's git repository with the code.
+You have LLVM and are able to compile C programs. The next step is to create a pass of your own. Adrian Sampson at Cornell has put a simple skeleton pass online that you can use as a starting point. Change to your home directory and clone Adrian's git repository with the code.
 
 ```
 cd ~
 git clone https://github.com/sampsyo/llvm-pass-skeleton.git
 ```
 
-Change to the directory for the skeleton pass and take a look at the source. It does nothing except 
-print the name of whatever function it encounters.
+Change to the directory for the skeleton pass and take a look at the source. It does nothing except print the name of whatever function it encounters.
 
 ```
 cd llvm-pass-skeleton
@@ -98,8 +95,7 @@ mkdir build
 cd build
 ```
 
-Before running Cmake and building the pass, you need to set LLVM_DIR to your LLVM build directory in 
-~/ug3-ct/build. Otherwise when you build the skeleton pass it will try to build with the version of LLVM that 
+Before running Cmake and building the pass, you need to set LLVM_DIR to your LLVM build directory, i.e. ~/ug3-ct/build. Otherwise when you build the skeleton pass it will try to build with the version of LLVM that
 is already installed on DICE and fail.
 
 ```
@@ -109,13 +105,11 @@ export LLVM_DIR=~/ug3-ct/build
 You're ready to create the Makefiles and build the pass.
 
 ```
-cmake ..
+cmake3 ..
 make
 ```
 
-There should be a shared library for your new pass in skeleton/libSkeletonPass.so. When you compile a 
-program with LLVM it will load your pass and automatically call it. You'll need a C file to use as a 
-test. You can use the test.c you created in Step 0 or create a new file.
+There should be a shared library for your new pass in skeleton/libSkeletonPass.so. When you compile a program with LLVM it will load your pass and automatically call it. You'll need a C file to use as a test. You can use the test.c you created in Step 0 or create a new file.
 
 ```
 ~/ug3-ct/build/bin/clang -Xclang -load -Xclang skeleton/libSkeletonPass.so ~/ug3-ct/build/test.c
@@ -128,8 +122,7 @@ Congratulations you've just created an LLVM pass and successfully executed it wi
 ## 2. Write a Pass to Count Instructions
 
 Use the skeleton pass above and the [lecture notes from 
-class](http://www.inf.ed.ac.uk/teaching/courses/ct/slides-16-17/llvm/4-lab3_intro.pdf) to write a simple pass to print the number of 
-instructions in a function. 
+class](http://www.inf.ed.ac.uk/teaching/courses/ct/slides-16-17/llvm/4-lab3_intro.pdf) to write a simple pass to print the number of instructions in a function.
 
 NOTE!! LLVM will run your pass on EACH function. You do not need to use any module iterators. Only function and basic block iterators.
 
@@ -146,8 +139,7 @@ using namespace llvm;
 using namespace std;
 ```
 
-For your project you only need the code from Slide 5. If you would like to try out the loop analysis code on Slide 17 you need to make the following 
-change. This is completely optional for your project.
+For your project you only need the code from Slide 5. If you would like to try out the loop analysis code on Slide 17 you need to make the following change. This is completely optional for your project.
 
 Slide 17: The getAnalysis() method to access the LoopInfo structure in runOnFunction() has changed. Here is the correct definition.
 
@@ -177,18 +169,13 @@ isInstructionTriviallyDead()
 eraseFromParent()
 ```
 
-You will use the LLVM iterators we discussed in class to find the dead instructions. It is illegal to remove an instruction while 
-you are iterating over them. You need to first identify the instructions that are dead and then in a second loop remove them. Use 
-the LLVM SmallVector data structure to store the dead instructions you find while iterating and a second loop to remove them. 
+You will use the LLVM iterators we discussed in class to find the dead instructions. It is illegal to remove an instruction while you are iterating over them. You need to first identify the instructions that are dead and then in a second loop remove them. Use the LLVM SmallVector data structure to store the dead instructions you find while iterating and a second loop to remove them.
 
 ```
 SmallVector<Instruction*, 64> Worklist;
 ```
 
-You need to run LLVM's 'mem2reg' pass before your DCE pass to convert the bitcode into a form that will work with your optimization. 
-Without running 'mem2reg' all instructions will store their destinations operands to the stack and load their source operands from 
-the stack. The memory instructions will block the ability for you to discover dead code. When you run 'mem2reg', you are converting 
-the stack allocated code in non-SSA form, into SSA form with virtual registers.
+You need to run LLVM's 'mem2reg' pass before your DCE pass to convert the bitcode into a form that will work with your optimization. Without running 'mem2reg' all instructions will store their destinations operands to the stack and load their source operands from the stack. The memory instructions will block the ability for you to discover dead code. When you run 'mem2reg', you are converting the stack allocated code in non-SSA form, into SSA form with virtual registers.
 
 Use the 'opt' tool to run 'mem2reg' before your DCE pass. Give your pass a command line option called 'mydce'.
 
@@ -199,8 +186,7 @@ Use the 'opt' tool to run 'mem2reg' before your DCE pass. Give your pass a comma
 
 ## 4. Implement Iterative Liveness Analysis
 
-For the last part of your project you will replace the isInstructionTriviallyDead() method from LLVM with your own method to identify dead code. This 
-relies on computing liveness which you learned about in [Lecture 15](http://www.inf.ed.ac.uk/teaching/courses/ct/slides-16-17/15-regalloc.pdf).
+For the last part of your project you will replace the isInstructionTriviallyDead() method from LLVM with your own method to identify dead code. This relies on computing liveness which you learned about in [Lecture 15](http://www.inf.ed.ac.uk/teaching/courses/ct/slides-16-17/15-regalloc.pdf).
 
 ## 5. Submitting Your Project
 
