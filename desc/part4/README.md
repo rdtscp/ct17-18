@@ -2,7 +2,7 @@
 The goal of part IV is to write a simple LLVM pass.
 If you have no previous experience with C++, we suggest that you take a look at these [C++ for Java programmers](https://www.cs.cmu.edu/afs/cs/academic/class/15494-s12/lectures/c++forjava.pdf) slides.
 
-The project counts for 30% of your grade: 15% for writing a simple dead code elimination pass using the skeleton code provided, and 15% for implementing liveness analysis and writing your own method to determine dead code.
+The project counts for 30% of your grade: 10% for writing a simple dead code elimination pass using the skeleton code provided, and 20% for implementing liveness analysis and writing your own method to determine dead code.
 
 ## 0. Setup
 
