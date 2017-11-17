@@ -18,7 +18,7 @@ git clone https://github.com/llvm-mirror/llvm
 git clone https://github.com/llvm-mirror/clang llvm/tools/clang
 ```
 
-You have been given an extra 30GB of space for this course. The Debug build of LLVM requires around 10GBs of disk space! Be careful not to fill up your home directory.
+You have been given an extra 30GB of space for this course. The Debug build of LLVM requires around 30GB of disk space! Be careful not to fill up your home directory. If you are using DICE use the 'RelWithDebInfo' cmake build type, which uses less space.
 
 Create a directory called 'build' where you will build LLVM. This directory can be located anywhere EXCEPT under your LLVM source directory. We will place it under 'ug3-ct' in this document.
 
@@ -27,21 +27,20 @@ If you are using DICE, the correct version of Cmake is installed as 'cmake3'. If
 ```
 mkdir build
 cd build
-cmake3 -DLLVM_TARGETS_TO_BUILD=X86 -DCMAKE_BUILD_TYPE=Debug ../llvm
+cmake3 -DLLVM_TARGETS_TO_BUILD=X86 -DCMAKE_BUILD_TYPE=RelWithDebInfo ../llvm
 ```
 
-After Cmake finishes creating the Makefiles the next step is to actually build LLVM. This can take anywhere from 15-45 minutes depending 
-on your machine.
+After Cmake finishes creating the Makefiles the next step is to actually build LLVM. This can take anywhere from 15-45 minutes depending on your machine.
 
 ```
-make -j8
+make -j4
 ```
 
 After make finishes you will have a bin directory with the LLVM tools (clang, clang++, llc, etc). Try to compile a simple C example with Clang to LLVM bitcode to make sure it works.
 
 ```
 echo "int main() { return 1; }" > test.c
-~/ug3-ct/build/bin/clang -c -S -emit-llvm test.c -o test.ll
+~/ug3-ct/build/bin/clang -c -S -emit-llvm -Xclang -disable-O0-optnone test.c -o test.ll
 cat test.ll
 ```
 
@@ -85,7 +84,7 @@ Change to the directory for the skeleton pass and take a look at the source. It 
 
 ```
 cd llvm-pass-skeleton
-less skeleton\Skeleton.cpp
+less skeleton/Skeleton.cpp
 ```
 
 Let's build the pass now. Create a build directory and change to the directory.
@@ -180,7 +179,7 @@ You need to run LLVM's 'mem2reg' pass before your DCE pass to convert the bitcod
 Use the 'opt' tool to run 'mem2reg' before your DCE pass. Give your pass a command line option called 'mydce'.
 
 ```
-~/ug3-ct/build/bin/clang -emit-llvm -S dead.c
+~/ug3-ct/build/bin/clang -S -emit-llvm -Xclang -disable-O0-optnone dead.c
 ~/ug3-ct/build/bin/opt -load skeleton/libSkeletonPass.so -mem2reg -mydce dead.ll
 ``` 
 
