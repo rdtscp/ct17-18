@@ -176,11 +176,11 @@ SmallVector<Instruction*, 64> Worklist;
 
 You need to run LLVM's 'mem2reg' pass before your DCE pass to convert the bitcode into a form that will work with your optimization. Without running 'mem2reg' all instructions will store their destinations operands to the stack and load their source operands from the stack. The memory instructions will block the ability for you to discover dead code. When you run 'mem2reg', you are converting the stack allocated code in non-SSA form, into SSA form with virtual registers.
 
-Use the 'opt' tool to run 'mem2reg' before your DCE pass. Give your pass a command line option called 'mydce'.
+Use the 'opt' tool to run 'mem2reg' before your DCE pass. Give your pass a command line option called 'skeletonpass'.
 
 ```
 ~/ug3-ct/build/bin/clang -S -emit-llvm -Xclang -disable-O0-optnone dead.c
-~/ug3-ct/build/bin/opt -load skeleton/libSkeletonPass.so -mem2reg -mydce dead.ll
+~/ug3-ct/build/bin/opt -load skeleton/libSkeletonPass.so -mem2reg -skeletonpass dead.ll
 ``` 
 
 ## 4. Implement Iterative Liveness Analysis
