@@ -183,6 +183,14 @@ Use the 'opt' tool to run 'mem2reg' before your DCE pass. Give your pass a comma
 ~/ug3-ct/build/bin/opt -load skeleton/libSkeletonPass.so -mem2reg -skeletonpass dead.ll
 ``` 
 
+Your pass should print the instruction counts before and after your dead code elimination routines. In order that we can automatically mark it, it should be of the form: 
+
+```
+DCE BEFORE: <instruction count>
+DCE AFTER: <instruction count>
+```
+
+
 ## 4. Implement Iterative Liveness Analysis
 
 For the last part of your project you will replace the isInstructionTriviallyDead() method from LLVM with your own method to identify dead code. This relies on computing liveness which you learned about in [Lecture 15](http://www.inf.ed.ac.uk/teaching/courses/ct/slides-16-17/15-regalloc.pdf).
