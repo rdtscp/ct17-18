@@ -1,7 +1,7 @@
 // Tic-tac-toe game
 // Written by Daniel Hillerström
 
-#include "io.h"
+#include "minic-stdlib.h"
 // Board layout
 char a11; char a12; char a13;
 char a21; char a22; char a23;
@@ -116,20 +116,20 @@ int set(char row, int col, char mark) {
 
 // Prints the game board to stdout
 void printGame() {
-  print_s("\n");
-  print_s("     1   2   3\n");
-  print_s("   +---+---+---+\n");
-  print_s("a  | ");print_c(a11);print_s(" | ");print_c(a12);print_s(" | ");print_c(a13);print_s(" |\n");
-  print_s("   +---+---+---+\n");
-  print_s("b  | ");print_c(a21);print_s(" | ");print_c(a22);print_s(" | ");print_c(a23);print_s(" |\n");
-  print_s("   +---+---+---+\n");
-  print_s("c  | ");print_c(a31);print_s(" | ");print_c(a32);print_s(" | ");print_c(a33);print_s(" |\n");
-  print_s("   +---+---+---+\n");
-  print_s("\n");
+  print_s((char*)"\n");
+  print_s((char*)"     1   2   3\n");
+  print_s((char*)"   +---+---+---+\n");
+  print_s((char*)"a  | ");print_c(a11);print_s((char*)" | ");print_c(a12);print_s((char*)" | ");print_c(a13);print_s((char*)" |\n");
+  print_s((char*)"   +---+---+---+\n");
+  print_s((char*)"b  | ");print_c(a21);print_s((char*)" | ");print_c(a22);print_s((char*)" | ");print_c(a23);print_s((char*)" |\n");
+  print_s((char*)"   +---+---+---+\n");
+  print_s((char*)"c  | ");print_c(a31);print_s((char*)" | ");print_c(a32);print_s((char*)" | ");print_c(a33);print_s((char*)" |\n");
+  print_s((char*)"   +---+---+---+\n");
+  print_s((char*)"\n");
 }
 
 void printWinner(int player) {
-  print_s("Player ");print_i(player);print_s(" has won!\n");
+  print_s((char*)"Player ");print_i(player);print_s((char*)" has won!\n");
 }
 
 int switchPlayer(int currentPlayer) {
@@ -151,17 +151,20 @@ void selectmove(int player) {
   char mark;
   selected = 1;
   while(selected) {
-    print_s("Player ");print_i(player);print_s(" select move (e.g. a2)>");
+    print_s((char*)"Player ");print_i(player);print_s((char*)" select move (e.g. a2)>");
     row = read_c(); col = read_i();
+<<<<<<< HEAD
     // read_c(); // consume enter
+=======
+>>>>>>> remotes/cdubach/ct-17-18/master
 
     mark = get_mark(player);
     success = set(row,col,mark);
       if (success == 0) {
-      	 print_s("That is not a valid move!\n");
+      	 print_s((char*)"That is not a valid move!\n");
       } else {
         if (success == -1)
-	  print_s("That move is not possible!\n");
+	  print_s((char*)"That move is not possible!\n");
         else
 	  selected = 0;
       }
@@ -238,6 +241,7 @@ int won(char mark) {
 void main() {
   int playing; int player;
   char mark; char yesno;
+
   empty = ' ';
   playing = 1;
   reset();
@@ -253,13 +257,14 @@ void main() {
       printWinner(player);
       playing = 0;
     } else if (full() == 1) {        // game board is full, it is a draw
-      print_s("It's a draw!\n");
+      print_s((char*)"It's a draw!\n");
       playing = 0;
     } else {
       player = switchPlayer(player); // give the turn to the opponent
     }
     
     if (playing == 0) {
+<<<<<<< HEAD
         print_s("Play again? (y/n)> ");
         yesno = read_c();
         if (yesno == 'y') {
@@ -273,6 +278,19 @@ void main() {
 	              reset();
 	          }
         }
+=======
+      print_s((char*)"Play again? (y/n)> ");
+      yesno = read_c();
+      if (yesno == 'y') {
+        playing = 1;
+	reset();
+      } else {
+        if (yesno == 'Y') {
+	  playing = 1;
+	  reset();
+	}
+      }
+>>>>>>> remotes/cdubach/ct-17-18/master
     }
   }
 }

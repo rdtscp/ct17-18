@@ -15,7 +15,7 @@ void print_c(char c) {
 
 char read_c() {
   char c;
-  fscanf(stdin, "%c", &c);
+  fscanf(stdin, " %c", &c);
   return c;
 }
 
