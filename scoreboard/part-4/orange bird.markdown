@@ -1,4 +1,4 @@
-# Results at time 2017-12-07T04-02-00+0000
+# Results at time 2017-12-07T15-04-51+0000
 
 Results for student *orange bird*
 
@@ -8,10 +8,10 @@ Results for student *orange bird*
 
 Test|Correct output|Instructions count before|Expected instruction count before|Instructions count after|Expected instruction count after
 :------|:-----:|------:|------:|------:|------:
-test01|True|2|1467120|2|2
+test01|True|2|2|2|2
 test02|True|3|3|3|2
 test03|True|12|12|12|12
-test04|True|13|1467120|13|13
+test04|True|13|13|13|13
 test05|True|8|8|8|8
 test06|True|10|10|10|10
 test07|True|10|10|10|9
