@@ -1,4 +1,4 @@
-# Results at time 2017-12-09T04-01-48+0000
+# Results at time 2017-12-09T16-01-56+0000
 
 Results for student *red camel*
 
@@ -14,11 +14,11 @@ test03|True|12|12|12|12
 test04|True|13|13|13|13
 test05|True|8|8|8|8
 test06|True|10|10|10|10
-test07|True|10|10|13|9
+test07|True|10|10|9|9
 test08|True|11|11|11|11
-test09|True|11|11|14|10
+test09|True|11|11|10|10
 test10|True|19|19|19|19
 test11|True|21|21|21|21
-test12|True|23|23|26|21
+test12|True|23|23|21|21
 
 
