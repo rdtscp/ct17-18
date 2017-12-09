@@ -1,4 +1,4 @@
-# Results at time 2017-12-08T16-06-00+0000
+# Results at time 2017-12-09T04-01-48+0000
 
 Results for student *red camel*
 
@@ -9,7 +9,7 @@ Results for student *red camel*
 Test|Correct output|Instructions count before|Expected instruction count before|Instructions count after|Expected instruction count after
 :------|:-----:|------:|------:|------:|------:
 test01|True|2|2|2|2
-test02|True|3|3|5|2
+test02|True|3|3|2|2
 test03|True|12|12|12|12
 test04|True|13|13|13|13
 test05|True|8|8|8|8
