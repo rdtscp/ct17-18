@@ -225,7 +225,8 @@ It is generally good engineering practice to exclude build directories from your
 
 When registering the pass with LLVM, it should be called `skeletonpass`. Otherwise, our scripts will not be able to call it. In other words, your pass registration code (in C++) should look like (SimpleDCE used as an example): 
 
-```char SimpleDCE::ID = 0;
+```
+char SimpleDCE::ID = 0;
 __attribute__((unused)) static RegisterPass<SimpleDCE>
     X("skeletonpass", "Simple dead code elimination"); // NOLINT
 
