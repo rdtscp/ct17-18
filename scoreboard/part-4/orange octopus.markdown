@@ -1,6 +1,26 @@
-# Results at time 2017-12-11T16-14-24+0000
+# Results at time 2017-12-13T17-48-25+0000
 
 Results for student *orange octopus*
+
+* * * 
+
+## Pass llvm-pass-my-dce
+
+Test|Correct output|Instructions count before|Expected instruction count before|Instructions count after|Expected instruction count after
+:------|:-----:|------:|------:|------:|------:
+test01|True|2|2|2|2
+test02|True|3|3|3|2
+test03|True|12|12|12|12
+test04|True|13|13|13|13
+test05|True|8|8|8|7
+test06|True|10|10|10|9
+test07|True|10|10|10|8
+test08|True|11|11|11|11
+test09|True|11|11|11|10
+test10|True|19|19|19|18
+test11|True|21|21|21|20
+test12|True|23|23|23|20
+
 
 * * * 
 
