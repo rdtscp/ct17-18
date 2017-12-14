@@ -1,4 +1,4 @@
-# Results at time 2017-12-13T17-56-34+0000
+# Results at time 2017-12-14T04-03-36+0000
 
 Results for student *green goldfish*
 
@@ -14,12 +14,12 @@ test03|True|12|12|12|12
 test04|True|13|13|13|13
 test05|True|8|8|8|7
 test06|True|10|10|10|9
-test07|True|10|10|10|8
+test07|True|10|10|9|8
 test08|True|11|11|11|11
-test09|True|11|11|11|10
+test09|True|11|11|10|10
 test10|True|19|19|19|18
 test11|True|21|21|21|20
-test12|True|23|23|23|20
+test12|True|23|23|21|20
 
 
 * * * 
