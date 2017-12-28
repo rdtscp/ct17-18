@@ -1,4 +1,4 @@
-# Results at time 2017-12-27T16-06-58+0000
+# Results at time 2017-12-28T04-05-56+0000
 
 Results for student *black giraffe*
 
@@ -20,5 +20,11 @@ test09|True|11|11|10|10
 test10|True|19|19|19|19
 test11|True|21|21|21|21
 test12|True|23|23|21|21
+test13|True|7|7|7|7
+test14|True|17|17|17|17
+test15|True|18|18|18|18
+test16|True|13|13|13|13
+test17|True|24|24|24|24
+test18|True|32|32|32|32
 
 
