@@ -1,4 +1,4 @@
-#define DEBUG_TYPE "simpleDCE"
+#define DEBUG_TYPE "skeletonpass"
 #include "llvm/Pass.h"
 #include "llvm/IR/Function.h"
 #include "llvm/Support/raw_ostream.h"
@@ -13,7 +13,6 @@ namespace {
         SimpleDCE() : FunctionPass(ID) {}
         virtual bool runOnFunction(Function &F) {
             errs() << "Function " << F.getName() << '\n';
-            opCounter.clear();
             return false;
         }
     };
