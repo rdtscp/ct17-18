@@ -5,3 +5,5 @@ part-4/CMakeFiles
 part-4/passes/llvm-pass-instr-count
 part-4/passes/llvm-pass-skeleton
 part-4/CMakeCache.txt
+part-4/passes/*/build
+.DS_Store
