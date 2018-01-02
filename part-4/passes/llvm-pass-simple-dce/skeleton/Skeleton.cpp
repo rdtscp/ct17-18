@@ -1,5 +1,6 @@
 #define DEBUG_TYPE "skeletonpass"
 #include "llvm/Pass.h"
+#include "llvm//Transforms/Utils/Local.h"
 #include "llvm/IR/Function.h"
 #include "llvm/Support/raw_ostream.h"
 #include <map>
@@ -12,10 +13,33 @@ namespace {
         static char ID;
         SimpleDCE() : FunctionPass(ID) {}
         virtual bool runOnFunction(Function &F) {
-            errs() << "Function " << F.getName() << '\n';
+            // Output Colours
+            char blue[] = { 0x1b, '[', '1', ';', '3', '4', 'm', 0 };
+            char normal[] = { 0x1b, '[', '0', ';', '3', '9', 'm', 0 };
+            
+            errs() << "\nFunction " << F.getName() << '\n';
+            for (Function::iterator bb = F.begin(), e = F.end(); bb != e; ++bb) {
+                for (BasicBlock::iterator i = bb->begin(), e = bb->end(); i != e; ++i) {
+                    Instruction *currInst= &*i;
+                    bool isDead = isInstructionTriviallyDead(currInst);
+                    
+                    if (isDead) {
+                        errs() << blue << "-->" << "\t";
+                        currInst->print(errs());
+                        errs() << normal << '\n';
+                    }
+                    else {
+                        errs() << "\t";
+                        currInst->print(errs());
+                        errs() << normal << '\n';
+                    }
+                }
+            }
+            errs() << '\n';            
             return false;
         }
     };
+    
 }
 char SimpleDCE::ID = 0;
 static RegisterPass<SimpleDCE> X("skeletonpass", "Simple dead code elimination");
