@@ -21,18 +21,13 @@ namespace {
             for (Function::iterator bb = F.begin(), e = F.end(); bb != e; ++bb) {
                 for (BasicBlock::iterator i = bb->begin(), e = bb->end(); i != e; ++i) {
                     Instruction *currInst= &*i;
-                    bool isDead = isInstructionTriviallyDead(currInst);
                     
-                    if (isDead) {
-                        errs() << blue << "-->" << "\t";
-                        currInst->print(errs());
-                        errs() << normal << '\n';
-                    }
-                    else {
-                        errs() << "\t";
-                        currInst->print(errs());
-                        errs() << normal << '\n';
-                    }
+                    bool isDead = isInstructionTriviallyDead(currInst);
+                    if (isDead) errs() << blue << "-->";
+                    
+                    errs() << "\t";
+                    currInst->print(errs());
+                    errs() << normal << '\n';
                 }
             }
             errs() << '\n';            
