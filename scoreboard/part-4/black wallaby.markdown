@@ -1,4 +1,4 @@
-# Results at time 2018-01-06T16-02-18+0000
+# Results at time 2018-01-08T16-10-24+0000
 
 Results for student *black wallaby*
 
@@ -8,24 +8,24 @@ Results for student *black wallaby*
 
 Test|Correct output|Instructions count before|Expected instruction count before|Instructions count after|Expected instruction count after
 :------|:-----:|------:|------:|------:|------:
-test01|True|2|2|2|2
-test02|True|3|3|2|2
-test03|True|12|12|12|12
-test04|True|13|13|13|13
-test05|True|8|8|8|7
-test06|True|10|10|10|9
-test07|True|10|10|9|8
-test08|True|11|11|11|11
-test09|True|11|11|10|10
-test10|True|19|19|19|18
-test11|True|21|21|21|20
-test12|True|23|23|21|20
-test13|True|7|7|7|7
-test14|True|17|17|17|17
-test15|True|18|18|18|18
-test16|True|13|13|13|13
-test17|True|24|24|24|23
-test18|True|32|32|32|32
+test01|True|2|2|1|2
+test02|True|3|3|1|2
+test03|True|12|12|11|12
+test04|True|13|13|11|13
+test05|True|8|8|7|7
+test06|True|10|10|8|9
+test07|True|10|10|8|8
+test08|True|11|11|10|11
+test09|True|11|11|9|10
+test10|True|19|19|18|18
+test11|True|21|21|20|20
+test12|True|23|23|20|20
+test13|True|7|7|4|7
+test14|True|17|17|13|17
+test15|True|18|18|13|18
+test16|True|13|13|11|13
+test17|True|24|24|21|23
+test18|True|32|32|26|32
 
 
 * * * 
