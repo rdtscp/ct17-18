@@ -1,4 +1,4 @@
-# Results at time 2018-01-10T11-10-42+0000
+# Results at time 2018-01-10T13-29-44+0000
 
 Results for student *CS man*
 
@@ -23,7 +23,7 @@ test12|True|23|23|20|20|0|0
 test13|True|7|7|7|7|1|1
 test14|True|17|17|17|17|2|2
 test15|True|18|18|18|18|2|2
-test16|True|13|13|13|13|0|0
+test16|True|17|17|17|17|2|2
 test17|True|24|24|23|23|1|1
 test18|True|32|32|32|32|3|3
 
@@ -49,7 +49,7 @@ test12|True|23|23|21|21|0|0
 test13|True|7|7|7|7|1|1
 test14|True|17|17|17|17|2|2
 test15|True|18|18|18|18|2|2
-test16|True|13|13|13|13|0|0
+test16|True|17|17|17|17|2|2
 test17|True|24|24|24|24|1|1
 test18|True|32|32|32|32|3|3
 
