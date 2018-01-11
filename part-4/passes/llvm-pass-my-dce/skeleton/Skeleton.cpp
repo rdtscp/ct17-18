@@ -56,14 +56,18 @@ namespace {
                         SmallVector<StringRef, 64> use_set;
                         SmallVector<StringRef, 64> def_set;
                         // Get the USE of this instruction.
+                        errs() << "\n\tUSE:";                        
                         for (Use &U : currInst->operands()) {
                             Value *v = U.get();
                             if (v->getName() != "") {
+                                errs() << "\n\t" << v->getName();
                                 use_set.push_back(v->getName());
                             }
                         }
                         // Get the DEF of this instruction.
                         if (currInst->getName() != "") {
+                            errs() << "\n\tDEF:";                            
+                            errs() << "\n\t" << currInst->getName();
                             def_set.push_back(currInst->getName());
                         }
 
@@ -153,10 +157,15 @@ namespace {
                     }
                 }
             }
+            errs() << "\n//------------- Removing Instructions ---------------\\\\";
             for (Instruction *i: Worklist) {
-                if (safeToRemove(i))
+                if (safeToRemove(i)) {
+                    errs() << "\n";
+                    i->print(errs());
                     i->eraseFromParent();
+                }
             }
+            errs() << "\n\\\\---------------------------------------------------//\n";
             return false;
         }
 
@@ -165,6 +174,7 @@ namespace {
             if (i->mayHaveSideEffects()) return false;
             if (isa<ReturnInst>(i) || isa<SwitchInst>(i) || isa<BranchInst>(i) || isa<IndirectBrInst>(i) || isa<CallInst>(i)) return false;
             if (isa<StoreInst>(i)) return false;
+            if (isa<LoadInst>(i)) return false;
             return true;
         }
 
