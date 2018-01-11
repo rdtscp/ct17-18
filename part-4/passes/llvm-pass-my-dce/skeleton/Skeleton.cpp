@@ -24,6 +24,8 @@ namespace {
             
             errs() << "\nFunction " << F.getName() << '\n';
 
+            SmallVector<StringRef, 64> phiVars;
+
             unitTest();
 
             // Find trivially dead instructions.
@@ -52,6 +54,16 @@ namespace {
                         errs() << "\n\nInst-" << inst_num;
                         // Get the current Instruction.
                         Instruction *currInst= &*i;
+
+                        // Handle PHI.
+                        if (isa<PHINode>(currInst)) {
+                            for (Use &U: currInst->operands()) {
+                                Value *v = U.get();
+                                if (v->getName() != "") {
+                                    phiVars.push_back(v->getName());
+                                }
+                            }
+                        }
 
                         SmallVector<StringRef, 64> use_set;
                         SmallVector<StringRef, 64> def_set;
@@ -159,7 +171,7 @@ namespace {
             }
             errs() << "\n//------------- Removing Instructions ---------------\\\\";
             for (Instruction *i: Worklist) {
-                if (safeToRemove(i)) {
+                if (safeToRemove(i, &phiVars)) {
                     errs() << "\n";
                     i->print(errs());
                     i->eraseFromParent();
@@ -169,12 +181,17 @@ namespace {
             return false;
         }
 
-        bool safeToRemove(Instruction *i) {
+        bool safeToRemove(Instruction *i, SmallVector<StringRef, 64> *phiVars) {
             if (i->isTerminator()) return false;
             if (i->mayHaveSideEffects()) return false;
             if (isa<ReturnInst>(i) || isa<SwitchInst>(i) || isa<BranchInst>(i) || isa<IndirectBrInst>(i) || isa<CallInst>(i)) return false;
             if (isa<StoreInst>(i)) return false;
             if (isa<LoadInst>(i)) return false;
+            if (isa<PHINode>(i)) return false;
+            // Don't remove instructions that store to a variable used in a PHI.
+            for (StringRef *phiVar = phiVars->begin(); phiVar != phiVars->end(); ++phiVar) {
+                if (i->getName() == phiVar->str()) return false;
+            }
             return true;
         }
 
