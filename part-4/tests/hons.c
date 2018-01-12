@@ -1,7 +1,7 @@
 // Tic-tac-toe game
 // Written by Daniel Hillerström
 
-#include "minic-stdlib.h"
+
 // Board layout
 char a11; char a12; char a13;
 char a21; char a22; char a23;
