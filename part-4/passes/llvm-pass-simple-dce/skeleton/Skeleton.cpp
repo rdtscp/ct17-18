@@ -41,11 +41,12 @@ namespace {
                 }
 
                 // Remove trivially dead instructions, and its operands.
-                errs() << "\n\nRemoving:\n\n" << blue;
-                for (Instruction *i: Worklist) {
-                    i->print(errs());
+                errs() << "\n\nRemoving " << Worklist.size() << " :\n\n" << blue;
+                for (int i=(Worklist.size() - 1); i >= 0; i--) {
+                    Instruction *currInst = Worklist[i];
+                    currInst->print(errs());
                     errs() << '\n';
-                    i->eraseFromParent();
+                    currInst->eraseFromParent();
                 }
                 Worklist.clear();
                 errs() << '\n';
