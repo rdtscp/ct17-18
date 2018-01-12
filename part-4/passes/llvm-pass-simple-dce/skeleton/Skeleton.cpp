@@ -23,7 +23,7 @@ namespace {
             do {
                 changed = false;
                 // Find trivially dead instructions.
-                for (Function::iterator bb = F.begin(), e = F.end(); bb != e; ++bb) {
+                for (auto bb = F.getBasicBlockList().rbegin(), e = F.getBasicBlockList().rend(); bb != e; ++bb) {
                     for (BasicBlock::reverse_iterator i = bb->rbegin(), e = bb->rend(); i != e; ++i) {
                         Instruction *currInst= &*i;
                         
