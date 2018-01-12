@@ -30,7 +30,6 @@ namespace {
         SmallVector<StringRef, 64> phiVars;              // List of Variables used in PHI instructions.
         
 
-
         static char ID;
         SimpleDCE() : FunctionPass(ID) {}
         virtual bool runOnFunction(Function &F) {
