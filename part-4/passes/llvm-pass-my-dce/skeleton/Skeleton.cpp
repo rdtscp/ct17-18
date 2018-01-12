@@ -30,7 +30,8 @@ namespace {
             do {
                 removing = false;
                 // Find trivially dead instructions.
-                for (Function::iterator bb = F.begin(), e = F.end(); bb != e; ++bb) {
+                // auto bblist = F.getBasicBlockList();
+                for (auto bb = F.getBasicBlockList().rbegin(), e = F.getBasicBlockList().rend(); bb != e; ++bb) {
                     errs() << "\n\n ----> Inside Block: " << bb->getName();
 
                     // Create IN and OUT sets for this BasicBlock's instructions.
@@ -184,16 +185,6 @@ namespace {
                     Instruction *currInst = Worklist[i];
                     if (isa<PHINode>(currInst)) {
                         phiVars = updatePHIVars(currInst, &phiVars);
-                        // for (Use &U: currInst->operands()) {
-                        //     Value *v = U.get();
-                        //     if (v->getName() != "") {
-                        //         for (StringRef safeVar: phiVars) {
-                        //             if (safeVar == v->getName()) {
-
-                        //             }phiVars.erase(&safeVar);
-                        //         }
-                        //     }
-                        // }
                     }
                     if (safeToRemove(currInst, &phiVars)) {
                         errs() << "\n" << blue;
