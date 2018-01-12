@@ -170,31 +170,38 @@ namespace {
                     printSets(&in_set, &out_set);
                     
                     // Remove dead instructions.
-                    int inst_num = 0;
-                    for (BasicBlock::iterator i = bb->begin(), e = bb->end(); i != e; ++i, inst_num++) {
+                    errs() << "\n\n//---- Marking Dead Instructions ----\\\\";
+                    int inst_num = bb->size() - 1;
+                    for (BasicBlock::reverse_iterator i = bb->rbegin(), e = bb->rend(); i != e; ++i, inst_num--) {
                         Instruction *currInst= &*i;
+                        errs() << "\n" << normal;
                         if (!setContains(currInst->getName().str(), &out_set[inst_num])) {
                             Worklist.push_back(currInst);
+                            errs() << blue;
+
                         }
+                        currInst->print(errs());                        
                     }
+                    errs() << normal << "\n\\\\-----------------------------------//";
+                    
                     in_set.clear();
                     out_set.clear();
                 }
                 errs() << "\n//------------- Removing [" << Worklist.size() << "] Instructions ---------------\\\\";
-                for (int i=(Worklist.size() - 1); i >= 0; i--) {
-                    Instruction *currInst = Worklist[i];
+                for (Instruction *currInst: Worklist) {
+                    // Instruction *currInst = Worklist[i];
                     if (isa<PHINode>(currInst)) {
                         phiVars = updatePHIVars(currInst, &phiVars);
                     }
+                    errs() << "\n";
                     if (safeToRemove(currInst, &phiVars)) {
-                        errs() << "\n" << blue;
+                        errs() << blue;
                         currInst->print(errs());
                         errs() << normal;
                         currInst->eraseFromParent();
                         removing = true;
                     }
                     else {
-                        errs() << "\n";
                         currInst->print(errs());
                     }
                 }
@@ -224,15 +231,15 @@ namespace {
         }
 
         bool safeToRemove(Instruction *i, SmallVector<StringRef, 64> *phiVars) {
-            if (i->isTerminator()) return false;
-            if (i->mayHaveSideEffects()) return false;
-            if (isa<ReturnInst>(i) || isa<SwitchInst>(i) || isa<BranchInst>(i) || isa<IndirectBrInst>(i) || isa<CallInst>(i)) return false;
-            if (isa<StoreInst>(i)) return false;
+            if (i->isTerminator()) { errs() << "isTerminator()\t\t"; return false; }
+            if (i->mayHaveSideEffects()) { errs() << "mayHaveSideEffects\t"; return false; }
+            if (isa<ReturnInst>(i) || isa<SwitchInst>(i) || isa<BranchInst>(i) || isa<IndirectBrInst>(i) || isa<CallInst>(i)) { errs() << "isa<OTHER>(i)\t\t";  return false; }
+            if (isa<StoreInst>(i)) { errs() << "isa<StoreInst>(i)\t\t";  return false; }
             // if (isa<LoadInst>(i)) return false;
             // if (isa<PHINode>(i)) return false;
             // Don't remove instructions that store to a variable used in a PHI.
             for (StringRef *phiVar = phiVars->begin(); phiVar != phiVars->end(); ++phiVar) {
-                if (i->getName() == phiVar->str()) return false;
+                if (i->getName() == phiVar->str()) { errs() << "is a PHI Var\t\t";  return false; }
             }
             return true;
         }
