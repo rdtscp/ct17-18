@@ -39,7 +39,7 @@ namespace {
             char green[] = { 0x1b, '[', '1', ';', '3', '2', 'm', 0 };
             char normal[] = { 0x1b, '[', '0', ';', '3', '9', 'm', 0 };
 
-            llvm::raw_string_ostream rso(removed);
+            llvm::raw_string_ostream summary(removed);
 
             bool instrRemoved;
             // // Do Liveness Analysis on entire Program and remove instructions.
@@ -68,13 +68,13 @@ namespace {
                 lastLivePass = instLiveness;
 
                 bool livenessCalculating;
-                errs() << mag << "\n\n //------ Calculating Liveness ------\\\\\n" << normal;
+                errs() << mag; printHeader("Calculating Liveness"); errs() << normal;
                 do {
                     livenessCalculating = false;
 
                     // Compute the IN/OUT sets for all Instructions in all BasicBlocks.
                     for (auto bb = F.getBasicBlockList().rbegin(), e = F.getBasicBlockList().rend(); bb != e; ++bb) {
-                        errs() << mag << "\n\n|---------[ --> " << bb->getName() << " <-- ]---------|";
+                        errs() << mag; printSubHeader(bb->getName()); errs() << normal;
                         // Calculate IN/OUT sets for all Instructions in this BasicBlock.
                         calculateInOutSets(&*bb);
                     }
@@ -88,18 +88,16 @@ namespace {
                         }
                     }
                 } while (livenessCalculating);
-                errs() << mag << "\n \\\\----------------------------------//\n" << normal;
+                errs() << mag; printFooter(); errs() << normal;
                 
 
                 // Loop through all Instructions in the Program, and mark dead Instructions for deletion.
-                errs() << blue << "\n //------ Checking Instructions Liveness ------\\\\\n" << normal;
+                errs() << blue; printHeader("Checking Instructions Liveness"); errs() << normal;
                 for (auto bb = F.getBasicBlockList().rbegin(), e = F.getBasicBlockList().rend(); bb != e; ++bb) {
                     // Loop through all Instructions in the current BasicBlock.
                     for (BasicBlock::reverse_iterator i = bb->rbegin(), e = bb->rend(); i != e; ++i) {
                         // Get Data required.
                         Instruction *currInst = &*i;
-                        errs() << "\n";
-                        currInst->print(errs());
                         SmallVector<Value*, 64> currInstDEF = getDef(currInst, 0);
                         SmallVector<Value*, 64> currInstOUT = getInstLiveness(currInst).out_set;
 
@@ -108,27 +106,31 @@ namespace {
                         Value *instDef = currInstDEF[0];
                         
                         // If this Instructions DEF is not in its OUT set, mark it for removal.
-                        if (!setContains(instDef, &currInstOUT)) Worklist.push_back(currInst);
+                        if (!setContains(instDef, &currInstOUT)) {
+                            Worklist.push_back(currInst);
+                            errs() << mag;
+                        }
+                        errs() << "\n\t";
+                        currInst->print(errs());
+                        errs() << normal;
                     }
                 }
-                errs() << blue << "\n \\\\---------------------------------------------//\n" << normal;
+                errs() << blue; printFooter(); errs() << normal;
                 
                 // Remove Dead Instructions.
-                
-                errs() << red <<  "\n --- Removing Instructions ---\n";
+                errs() << red << "\n"; printSubHeader("Removing Instructions"); errs() << normal;
                 for (Instruction *i: Worklist) {
-                    errs() << "\n";
+                    errs() << "\n\t";
                     if (safeToRemove(i)) {
                         errs() << red;
                         i->print(errs());
                         errs() << normal;
                         instrRemoved = true;
-                        rso << "\n\t";
-                        i->print(rso);
+                        summary << "\n\t"; i->print(summary);       // Add to Summary.
                         i->eraseFromParent();
                     }
                     else {
-                        errs() << green;
+                        errs() << normal;
                         i->print(errs());
                         errs() << normal;
                     }
@@ -137,11 +139,12 @@ namespace {
                 lastLivePass.clear();
                 instLiveness.clear();
                 
-                errs() << red <<  "\n\n -----------------------------" << normal;
+                errs() << red; printSubFooter(); errs() << normal;
             } while (instrRemoved);
-            errs() << red << "\n\n// -------- Removed Instructions Summary -------- \\\\\n";
+
+            errs() << red; printHeader("Removed Instructions Summary");
             errs() << removed;
-            errs() << red << "\n\n\\\\ ---------------------------------------------- //" << normal;
+            errs() << red; printFooter(); errs() << normal;
             
             return false;
         }
@@ -157,7 +160,7 @@ namespace {
                 // Get the current Instruction.
                 Instruction *currInst= &*i;
 
-                errs() << blue << "\n\n";
+                errs() << "\n\t";
                 currInst->print(errs());
                 errs() << normal;
 
@@ -214,8 +217,6 @@ namespace {
                         }
                     }
                 }
-                // printSet(&new_in, "IN    = ");
-                // printSet(&new_out, "OUT   = ");
 
                 // Update our Liveness model.
                 instLiveness[getInstLivenessIdx(currInst)].in_set  = new_in;
@@ -223,7 +224,19 @@ namespace {
             }
         }
 
-        bool noDefRemovable(Instruction *i) {
+        bool safeToRemove(Instruction *i) {
+            // Output Colours
+            char blue[] = { 0x1b, '[', '1', ';', '3', '4', 'm', 0 };
+            char red[] = { 0x1b, '[', '1', ';', '3', '1', 'm', 0 };
+            char mag[] = { 0x1b, '[', '1', ';', '3', '5', 'm', 0 };
+            char green[] = { 0x1b, '[', '1', ';', '3', '3', 'm', 0 };
+            char normal[] = { 0x1b, '[', '0', ';', '3', '9', 'm', 0 };
+
+            if (i->isTerminator()) { errs() << green << "isTerminator\t\t"; return false; }
+            if (i->mayHaveSideEffects()) { errs() << green<< "mayHaveSideEffects\t"; return false; }
+            if (isa<ReturnInst>(i) || isa<SwitchInst>(i) || isa<BranchInst>(i) || isa<IndirectBrInst>(i) || isa<CallInst>(i)) { errs() << green<< "isa<OTHER>(i)\t\t";  return false; }
+            if (isa<StoreInst>(i)) { errs() << green<< "isa<StoreInst>(i)\t\t";  return false; }
+            errs() << red << "    ----->\t\t" << normal;
             if (isa<AllocaInst>(i)) return true;
             if (isa<LoadInst>(i)) return true;
             if (isa<PHINode>(i)) return true;
@@ -305,26 +318,12 @@ namespace {
             return output;
         }        
 
-        bool safeToRemove(Instruction *i) {
-            // Output Colours
-            char blue[] = { 0x1b, '[', '1', ';', '3', '4', 'm', 0 };
-            char red[] = { 0x1b, '[', '1', ';', '3', '1', 'm', 0 };
-            char mag[] = { 0x1b, '[', '1', ';', '3', '5', 'm', 0 };
-            char green[] = { 0x1b, '[', '1', ';', '3', '3', 'm', 0 };
-            char normal[] = { 0x1b, '[', '0', ';', '3', '9', 'm', 0 };
-
-            if (i->isTerminator()) { errs() << green << "isTerminator()\t\t"; return false; }
-            if (i->mayHaveSideEffects()) { errs() << green<< "mayHaveSideEffects\t"; return false; }
-            if (isa<ReturnInst>(i) || isa<SwitchInst>(i) || isa<BranchInst>(i) || isa<IndirectBrInst>(i) || isa<CallInst>(i)) { errs() << green<< "isa<OTHER>(i)\t\t";  return false; }
-            if (isa<StoreInst>(i)) { errs() << green<< "isa<StoreInst>(i)\t\t";  return false; }
-            return true;
-        }
-
+        // Returns if two Sets are equal/permutations of one another.
         bool setsEqual(SmallVector<Value*, 64> *set_a, SmallVector<Value*, 64> *set_b) {
             return std::is_permutation(set_a->begin(), set_a->end(), set_b->begin());
         }
 
-        // Returns if a string[target] (i.e. a variable) exists in a Set[set].
+        // Returns if a Value pointer (i.e. a variable) exists in a Set.
         bool setContains(Value *target, SmallVector<Value*, 64> *set) {
             bool output = false;
             for (Value *elem: *set) {
@@ -333,84 +332,45 @@ namespace {
             return output;
         }
 
+        // -- HELPERS
 
-        // HELPERS
+        void printHeader(string heading) {
+            int line_len = 44;
+            int num_dash = line_len - heading.length();
+            if (num_dash % 2 != 0) num_dash++;
+            string output = "\n// ";
+            for (int i=0; i < (num_dash/2); i++) {
+                output += "-";
+            }
+            output += " " + heading + " ";
+            for (int i=0; i < (num_dash/2); i++) {
+                output += "-";
+            }
+            errs() << output << " \\\\\n";
+        }
 
-        // void printLiveness() {
-        //     // Output Colours
-        //     char blue[] = { 0x1b, '[', '1', ';', '3', '4', 'm', 0 };
-        //     char normal[] = { 0x1b, '[', '0', ';', '3', '9', 'm', 0 };
-        //     errs() << "\n ########### DUMPING LIVENESS ########### ";
-        //     for (LivenessBlock lb: instLiveness) {
-        //         errs() << "\n" << blue;
-        //         lb.i->print(errs());
-        //         errs() << normal;
-        //         printIN(&lb.in_set);
-        //         printOUT(&lb.out_set);
-        //     }
-        //     errs() << "\n ######################################## ";
-        // }
+        void printFooter() {
+            errs() << "\n\n\\\\ ---------------------------------------------- //";
+        }
 
-        // void printIN(SmallVector<string, 64> *in_set) {
-        //     // Output the sets.
-        //     errs() << "\n\t  - IN:\t\t\t[ ";
-        //     for (string *curr_var = in_set->begin(); curr_var != in_set->end(); ++curr_var) {
-        //         errs() << *curr_var  << ", ";
-        //     }
-        //     errs() << "]";
-        // }
+        void printSubHeader(string heading) {
+            int line_len = 34;
+            int num_dash = line_len - heading.length();
+            if (num_dash % 2 != 0) num_dash++;
+            string output = "\n\n    | ";
+            for (int i=0; i < (num_dash/2); i++) {
+                output += "-";
+            }
+            output += "[ " + heading + " ]";
+            for (int i=0; i < (num_dash/2); i++) {
+                output += "-";
+            }
+            errs() << output << " |\n";
+        }
 
-        // void printOUT(SmallVector<string, 64> *in_set) {
-        //     // Output the sets.
-        //     errs() << "\n\t  - OUT:\t\t[ ";
-        //     for (string *curr_var = in_set->begin(); curr_var != in_set->end(); ++curr_var) {
-        //         errs() << *curr_var  << ", ";
-        //     }
-        //     errs() << "]";
-        // }
-
-        // void printInOut(LivenessBlock *currBlock, LivenessBlock *tempBlock) {
-        //     // Output Colours
-        //     char blue[] = { 0x1b, '[', '1', ';', '3', '4', 'm', 0 };
-        //     char normal[] = { 0x1b, '[', '0', ';', '3', '9', 'm', 0 };
-
-
-        //     errs() << "\n" << blue;
-        //     currBlock->i->print(errs());
-        //     errs() << normal;
-
-        //     // Output the sets.
-        //     errs() << "\n\t  - IN:\t\t\t[ ";
-        //     for (string *curr_var = currBlock->in_set.begin(); curr_var != currBlock->in_set.end(); ++curr_var) {
-        //         errs() << *curr_var << ", ";
-        //     }
-        //     errs() << "]";
-        //     errs() << "\n\t  - IN_TEMP:\t\t[ ";
-        //     for (string *curr_var = tempBlock->in_set.begin(); curr_var != tempBlock->in_set.end(); ++curr_var) {
-        //         errs() << *curr_var << ", ";
-        //     }
-        //     errs() << "]";
-        //     errs() << "\n\t\t\t\t ==" << setsEqual(&currBlock->in_set, &tempBlock->in_set);
-        //     errs() << "\n\t  - OUT:\t\t[ ";
-        //     for (string *curr_var = currBlock->out_set.begin(); curr_var != currBlock->out_set.end(); ++curr_var) {
-        //         errs() << *curr_var << ", ";
-        //     }
-        //     errs() << "]";
-        //     errs() << "\n\t  - OUT_TEMP:\t\t[ ";
-        //     for (string *curr_var = tempBlock->out_set.begin(); curr_var != tempBlock->out_set.end(); ++curr_var) {
-        //         errs() << *curr_var << ", ";
-        //     }
-        //     errs() << "]";
-        //     errs() << "\n\t\t\t\t ==" << setsEqual(&currBlock->out_set, &tempBlock->out_set);
-        // }
-
-        // void printSet(SmallVector<string, 64> *set, string label) {
-        //     errs() << "\n" << label << "[ ";
-        //     for (string elem: *set) {
-        //         errs() << elem << ", ";
-        //     }
-        //     errs() << " ]";
-        // }
+        void printSubFooter() {
+            errs() << "\n\n    | --------------------------------------- |\n";
+        }
     };
     
 }
