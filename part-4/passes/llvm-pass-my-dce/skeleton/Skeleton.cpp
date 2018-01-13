@@ -36,10 +36,12 @@ namespace {
             char blue[] = { 0x1b, '[', '1', ';', '3', '4', 'm', 0 };
             char red[] = { 0x1b, '[', '1', ';', '3', '1', 'm', 0 };
             char mag[] = { 0x1b, '[', '1', ';', '3', '5', 'm', 0 };
-            char green[] = { 0x1b, '[', '1', ';', '3', '2', 'm', 0 };
             char normal[] = { 0x1b, '[', '0', ';', '3', '9', 'm', 0 };
+            char grey[] = { 0x1b, '[', '0', ';', '3', '6', 'm', 0 };
 
             llvm::raw_string_ostream summary(removed);
+
+            errs() << grey; printHeader("Starting Function Pass"); errs() << normal;
 
             bool instrRemoved;
             // // Do Liveness Analysis on entire Program and remove instructions.
@@ -118,7 +120,7 @@ namespace {
                 errs() << blue; printFooter(); errs() << normal;
                 
                 // Remove Dead Instructions.
-                errs() << red << "\n"; printSubHeader("Removing Instructions"); errs() << normal;
+                errs() << red; printHeader("Removing Insts"); errs() << normal;
                 for (Instruction *i: Worklist) {
                     errs() << "\n\t";
                     if (safeToRemove(i)) {
@@ -139,19 +141,17 @@ namespace {
                 lastLivePass.clear();
                 instLiveness.clear();
                 
-                errs() << red; printSubFooter(); errs() << normal;
+                errs() << red; printFooter(); errs() << normal;
             } while (instrRemoved);
 
-            errs() << red; printHeader("Removed Instructions Summary");
+            errs() << red << "\n\n\n\n"; printSubHeader("Removed Insts Summary");
             errs() << removed;
-            errs() << red; printFooter(); errs() << normal;
-            
+            errs() << red; printSubFooter(); errs() << normal;
+            errs() << grey; printFooter(); errs() << normal << "\n";
             return false;
         }
 
         void calculateInOutSets(BasicBlock *bb) {
-            // Output Colours
-            char blue[] = { 0x1b, '[', '1', ';', '3', '4', 'm', 0 };
             char normal[] = { 0x1b, '[', '0', ';', '3', '9', 'm', 0 };
 
             // Loop through Instructions in reverse, calculating IN/OUT sets until convergence.
@@ -237,32 +237,33 @@ namespace {
             if (isa<ReturnInst>(i) || isa<SwitchInst>(i) || isa<BranchInst>(i) || isa<IndirectBrInst>(i) || isa<CallInst>(i)) { errs() << green<< "isa<OTHER>(i)\t\t";  return false; }
             if (isa<StoreInst>(i)) { errs() << green<< "isa<StoreInst>(i)\t\t";  return false; }
             errs() << red << "    ----->\t\t" << normal;
-            if (isa<AllocaInst>(i)) return true;
-            if (isa<LoadInst>(i)) return true;
-            if (isa<PHINode>(i)) return true;
-            if (isa<GetElementPtrInst>(i)) return true;
-            if (isa<SelectInst>(i)) return true;
-            if (isa<ExtractElementInst>(i)) return true;
-            if (isa<InsertElementInst>(i)) return true;
-            if (isa<ExtractValueInst>(i)) return true;
-            if (isa<InsertValueInst>(i)) return true;
-            if (isa<BinaryOperator>(i)) return true;
-            if (isa<ICmpInst>(i)) return true;
-            if (isa<FCmpInst>(i)) return true;
-            if (isa<TruncInst>(i)) return true;
-            if (isa<ZExtInst>(i)) return true;
-            if (isa<SExtInst>(i)) return true;
-            if (isa<FPToUIInst>(i)) return true;
-            if (isa<FPToSIInst>(i)) return true;
-            if (isa<UIToFPInst>(i)) return true;
-            if (isa<SIToFPInst>(i)) return true;
-            if (isa<FPTruncInst>(i)) return true;
-            if (isa<FPExtInst>(i)) return true;
-            if (isa<PtrToIntInst>(i)) return true;
-            if (isa<IntToPtrInst>(i)) return true;
-            if (isa<BitCastInst>(i)) return true;
-            if (isa<AddrSpaceCastInst>(i)) return true;
-            return false;
+            return true;
+            // if (isa<AllocaInst>(i)) return true;
+            // if (isa<LoadInst>(i)) return true;
+            // if (isa<PHINode>(i)) return true;
+            // if (isa<GetElementPtrInst>(i)) return true;
+            // if (isa<SelectInst>(i)) return true;
+            // if (isa<ExtractElementInst>(i)) return true;
+            // if (isa<InsertElementInst>(i)) return true;
+            // if (isa<ExtractValueInst>(i)) return true;
+            // if (isa<InsertValueInst>(i)) return true;
+            // if (isa<BinaryOperator>(i)) return true;
+            // if (isa<ICmpInst>(i)) return true;
+            // if (isa<FCmpInst>(i)) return true;
+            // if (isa<TruncInst>(i)) return true;
+            // if (isa<ZExtInst>(i)) return true;
+            // if (isa<SExtInst>(i)) return true;
+            // if (isa<FPToUIInst>(i)) return true;
+            // if (isa<FPToSIInst>(i)) return true;
+            // if (isa<UIToFPInst>(i)) return true;
+            // if (isa<SIToFPInst>(i)) return true;
+            // if (isa<FPTruncInst>(i)) return true;
+            // if (isa<FPExtInst>(i)) return true;
+            // if (isa<PtrToIntInst>(i)) return true;
+            // if (isa<IntToPtrInst>(i)) return true;
+            // if (isa<BitCastInst>(i)) return true;
+            // if (isa<AddrSpaceCastInst>(i)) return true;
+            // return false;
         }
 
         SmallVector<Value*, 64> getUse(Instruction *i, int print_out) {
