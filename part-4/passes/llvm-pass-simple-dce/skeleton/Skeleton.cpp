@@ -2,9 +2,12 @@
 #include "llvm/Pass.h"
 #include "llvm//Transforms/Utils/Local.h"
 #include "llvm/IR/Function.h"
+#include "llvm/IR/Instruction.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/IR/InstIterator.h"
 #include <map>
+#include <string>
+
 #include <vector>
 using namespace llvm;
 using namespace std;
@@ -17,7 +20,9 @@ namespace {
             // Output Colours
             char blue[] = { 0x1b, '[', '1', ';', '3', '4', 'm', 0 };
             char normal[] = { 0x1b, '[', '0', ';', '3', '9', 'm', 0 };
-            
+            char red[] = { 0x1b, '[', '1', ';', '3', '1', 'm', 0 };
+
+
             errs() << "\nFunction " << F.getName() << '\n';
             bool changed;
             do {
@@ -28,8 +33,8 @@ namespace {
                         Instruction *currInst= &*i;
                         
                         bool isDead = isInstructionTriviallyDead(currInst);
-                        if (isDead) {
-                            errs() << blue << "-->";
+                        if (isDead && !currInst->mayHaveSideEffects()) {
+                            errs() << red;
                             Worklist.push_back(currInst);
                             changed = true;
                         }
@@ -41,15 +46,12 @@ namespace {
                 }
 
                 // Remove trivially dead instructions, and its operands.
-                errs() << "\n\nRemoving " << Worklist.size() << " :\n\n" << blue;
                 for (int i=(Worklist.size() - 1); i >= 0; i--) {
                     Instruction *currInst = Worklist[i];
-                    currInst->print(errs());
-                    errs() << '\n';
                     currInst->eraseFromParent();
                 }
                 Worklist.clear();
-                errs() << '\n';
+                errs() << "\n   ---   \n";
             } while (changed);
 
             
