@@ -237,33 +237,32 @@ namespace {
             if (isa<ReturnInst>(i) || isa<SwitchInst>(i) || isa<BranchInst>(i) || isa<IndirectBrInst>(i) || isa<CallInst>(i)) { errs() << green<< "isa<OTHER>(i)\t\t";  return false; }
             if (isa<StoreInst>(i)) { errs() << green<< "isa<StoreInst>(i)\t\t";  return false; }
             errs() << red << "    ----->\t\t" << normal;
-            return true;
-            // if (isa<AllocaInst>(i)) return true;
-            // if (isa<LoadInst>(i)) return true;
-            // if (isa<PHINode>(i)) return true;
-            // if (isa<GetElementPtrInst>(i)) return true;
-            // if (isa<SelectInst>(i)) return true;
-            // if (isa<ExtractElementInst>(i)) return true;
-            // if (isa<InsertElementInst>(i)) return true;
-            // if (isa<ExtractValueInst>(i)) return true;
-            // if (isa<InsertValueInst>(i)) return true;
-            // if (isa<BinaryOperator>(i)) return true;
-            // if (isa<ICmpInst>(i)) return true;
-            // if (isa<FCmpInst>(i)) return true;
-            // if (isa<TruncInst>(i)) return true;
-            // if (isa<ZExtInst>(i)) return true;
-            // if (isa<SExtInst>(i)) return true;
-            // if (isa<FPToUIInst>(i)) return true;
-            // if (isa<FPToSIInst>(i)) return true;
-            // if (isa<UIToFPInst>(i)) return true;
-            // if (isa<SIToFPInst>(i)) return true;
-            // if (isa<FPTruncInst>(i)) return true;
-            // if (isa<FPExtInst>(i)) return true;
-            // if (isa<PtrToIntInst>(i)) return true;
-            // if (isa<IntToPtrInst>(i)) return true;
-            // if (isa<BitCastInst>(i)) return true;
-            // if (isa<AddrSpaceCastInst>(i)) return true;
-            // return false;
+            if (isa<AllocaInst>(i)) return true;
+            if (isa<LoadInst>(i)) return true;
+            if (isa<PHINode>(i)) return true;
+            if (isa<GetElementPtrInst>(i)) return true;
+            if (isa<SelectInst>(i)) return true;
+            if (isa<ExtractElementInst>(i)) return true;
+            if (isa<InsertElementInst>(i)) return true;
+            if (isa<ExtractValueInst>(i)) return true;
+            if (isa<InsertValueInst>(i)) return true;
+            if (isa<BinaryOperator>(i)) return true;
+            if (isa<ICmpInst>(i)) return true;
+            if (isa<FCmpInst>(i)) return true;
+            if (isa<TruncInst>(i)) return true;
+            if (isa<ZExtInst>(i)) return true;
+            if (isa<SExtInst>(i)) return true;
+            if (isa<FPToUIInst>(i)) return true;
+            if (isa<FPToSIInst>(i)) return true;
+            if (isa<UIToFPInst>(i)) return true;
+            if (isa<SIToFPInst>(i)) return true;
+            if (isa<FPTruncInst>(i)) return true;
+            if (isa<FPExtInst>(i)) return true;
+            if (isa<PtrToIntInst>(i)) return true;
+            if (isa<IntToPtrInst>(i)) return true;
+            if (isa<BitCastInst>(i)) return true;
+            if (isa<AddrSpaceCastInst>(i)) return true;
+            return false;
         }
 
         SmallVector<Value*, 64> getUse(Instruction *i, int print_out) {
