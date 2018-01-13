@@ -1,4 +1,4 @@
-# Results at time 2018-01-12T16-25-07+0000
+# Results at time 2018-01-13T04-16-20+0000
 
 Results for student *blue turkey*
 
@@ -14,12 +14,12 @@ test03|True|12|12|12|12|0|0
 test04|True|13|13|13|13|0|0
 test05|True|8|8|8|7|0|0
 test06|True|10|10|10|9|0|0
-test07|True|10|10|10|8|0|0
+test07|True|10|10|9|8|0|0
 test08|True|11|11|11|11|0|0
-test09|True|11|11|11|10|0|0
+test09|True|11|11|10|10|0|0
 test10|True|19|19|19|18|0|0
 test11|True|21|21|21|20|0|0
-test12|True|23|23|23|20|0|0
+test12|True|23|23|21|20|0|0
 test13|True|7|7|7|7|1|1
 test14|True|17|17|17|17|2|2
 test15|True|18|18|18|18|2|2
