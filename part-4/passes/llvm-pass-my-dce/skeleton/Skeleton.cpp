@@ -27,7 +27,8 @@ namespace {
         SmallVector<LivenessBlock, 64> lastLivePass;     // Stores temp state of all Instructions IN/OUT sets.
         SmallVector<LivenessBlock, 64> instLiveness;     // List of Instruction Liveness data.
 
-        SmallVector<StringRef, 64> phiVars;              // List of Variables used in PHI instructions.
+        std::string removed;                             // Removed Instructions.
+        
         
 
         static char ID;
@@ -39,6 +40,8 @@ namespace {
             char mag[] = { 0x1b, '[', '1', ';', '3', '5', 'm', 0 };
             char green[] = { 0x1b, '[', '1', ';', '3', '2', 'm', 0 };
             char normal[] = { 0x1b, '[', '0', ';', '3', '9', 'm', 0 };
+
+            llvm::raw_string_ostream rso(removed);
 
             bool instrRemoved;
             // // Do Liveness Analysis on entire Program and remove instructions.
@@ -100,6 +103,11 @@ namespace {
                         SmallVector<StringRef, 64> currInstDEF = getDef(currInst);
                         SmallVector<StringRef, 64> currInstOUT = getInstLiveness(currInst).out_set;
 
+                        // // If this is an instruction that is safe to remove, and is of removable type.
+                        // if (noDefRemovable(currInst) && currInst->use_empty()) {
+                        //     Worklist.push_back(currInst);
+                        //     continue;
+                        // }
                         // If this Instruction does not have a DEF, skip it.
                         if (currInstDEF.size() == 0) continue;
                         StringRef instDef = currInstDEF[0];
@@ -114,11 +122,13 @@ namespace {
                 errs() << red <<  "\n --- Removing Instructions ---\n";
                 for (Instruction *i: Worklist) {
                     errs() << "\n";
-                    if (safeToRemove(i, &phiVars)) {
+                    if (safeToRemove(i)) {
                         errs() << red;
                         i->print(errs());
                         errs() << normal;
                         instrRemoved = true;
+                        rso << "\n\t";
+                        i->print(rso);
                         i->eraseFromParent();
                     }
                     else {
@@ -133,6 +143,9 @@ namespace {
                 
                 errs() << red <<  "\n\n -----------------------------" << normal;
             } while (instrRemoved);
+            errs() << red << "\n\n// -------- Removed Instructions Summary -------- \\\\\n";
+            errs() << removed;
+            errs() << red << "\n\n\\\\ ---------------------------------------------- //" << normal;
             
             return false;
         }
@@ -218,6 +231,35 @@ namespace {
             }
         }
 
+        bool noDefRemovable(Instruction *i) {
+            if (isa<AllocaInst>(i)) return true;
+            if (isa<LoadInst>(i)) return true;
+            if (isa<PHINode>(i)) return true;
+            if (isa<GetElementPtrInst>(i)) return true;
+            if (isa<SelectInst>(i)) return true;
+            if (isa<ExtractElementInst>(i)) return true;
+            if (isa<InsertElementInst>(i)) return true;
+            if (isa<ExtractValueInst>(i)) return true;
+            if (isa<InsertValueInst>(i)) return true;
+            if (isa<BinaryOperator>(i)) return true;
+            if (isa<ICmpInst>(i)) return true;
+            if (isa<FCmpInst>(i)) return true;
+            if (isa<TruncInst>(i)) return true;
+            if (isa<ZExtInst>(i)) return true;
+            if (isa<SExtInst>(i)) return true;
+            if (isa<FPToUIInst>(i)) return true;
+            if (isa<FPToSIInst>(i)) return true;
+            if (isa<UIToFPInst>(i)) return true;
+            if (isa<SIToFPInst>(i)) return true;
+            if (isa<FPTruncInst>(i)) return true;
+            if (isa<FPExtInst>(i)) return true;
+            if (isa<PtrToIntInst>(i)) return true;
+            if (isa<IntToPtrInst>(i)) return true;
+            if (isa<BitCastInst>(i)) return true;
+            if (isa<AddrSpaceCastInst>(i)) return true;
+            return false;
+        }
+
         SmallVector<StringRef, 64> getUse(Instruction *i) {
             // Get the USE of this instruction.
             SmallVector<StringRef, 64> output;
@@ -281,26 +323,7 @@ namespace {
             return output;
         }        
 
-        SmallVector<StringRef, 64> updatePHIVars(Instruction *i, SmallVector<StringRef, 64> *phiVars) {
-            // Get the StringRef's used by this PHI.
-            SmallVector<StringRef, 64> instVars;
-            for (Use &U: i->operands()) {
-                Value *v = U.get();
-                if (v->getName() != "") {
-                    instVars.push_back(v->getName());
-                }
-            }
-            // Generate the output SmallVector.
-            SmallVector<StringRef, 64> output;
-            for (StringRef var: *phiVars) {
-                if (!setContains(var, &instVars)) {
-                    output.push_back(var);
-                }
-            }
-            return output;
-        }
-
-        bool safeToRemove(Instruction *i, SmallVector<StringRef, 64> *phiVars) {
+        bool safeToRemove(Instruction *i) {
             // Output Colours
             char blue[] = { 0x1b, '[', '1', ';', '3', '4', 'm', 0 };
             char red[] = { 0x1b, '[', '1', ';', '3', '1', 'm', 0 };
