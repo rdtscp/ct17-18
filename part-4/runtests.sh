@@ -1,6 +1,6 @@
 #!/bin/bash
 echo " --- Starting tests ---"
-if [ $1 -ne 0 ]; then
+if [ -n "$1" ]; then
     echo "Running Test $1"
     $LLVM_DIR/bin/clang -S -emit-llvm -Xclang -disable-O0-optnone ./tests/test$1.c -o ./.temp/test_$1.ll 2>/dev/null
     $LLVM_DIR/bin/opt -S -mem2reg ./.temp/test_$1.ll -o ./.temp/test_$1.ll 2>/dev/null
