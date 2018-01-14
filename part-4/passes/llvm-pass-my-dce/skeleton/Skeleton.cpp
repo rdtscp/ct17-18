@@ -39,6 +39,7 @@ namespace {
             char normal[] = { 0x1b, '[', '0', ';', '3', '9', 'm', 0 };
             char grey[] = { 0x1b, '[', '0', ';', '3', '6', 'm', 0 };
 
+            // Store string representation of removed instructions.
             llvm::raw_string_ostream summary(removed);
 
             errs() << grey; printHeader("Starting Function Pass"); errs() << normal;
